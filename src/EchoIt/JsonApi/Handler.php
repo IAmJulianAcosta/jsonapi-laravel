@@ -68,6 +68,13 @@
 		protected $modelsNamespace;
 		
 		/**
+		 * Supported methods for handler. Override to limit available methods.
+		 *
+		 * @var array
+		 */
+		protected $supportedMethods = ["get", "post", "put", "patch", "delete"];
+		
+		/**
 		 * BaseHandler constructor. Defines modelName based of HandlerName
 		 *
 		 * @param Request $request
@@ -81,16 +88,8 @@
 		}
 
 		/**
-		 * Generates model names from handler name class
-		 */
-		private function generateModelName () {
-			$shortName = $this->resourceName;
-			$this->shortModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true, true);
-			$this->fullModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true);
-		}
-
-		/**
-		 * Fulfill the API request and return a response.
+		 * Fulfill the API request and return a response. This is the entrypoint of handler, and should be called from
+		 * controller.
 		 *
 		 * @return \EchoIT\JsonApi\Response
 		 * @throws Exception
@@ -111,8 +110,8 @@
 			 * Validates if this resource could be updated/deleted/created by all users.
 			 */
 			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
-				throw new Exception(
-					'This user cannot modify this resource', static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
+				throw new Exception('This user cannot modify this resource',
+					static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
 					BaseResponse::HTTP_FORBIDDEN);
 			}
 
@@ -120,9 +119,7 @@
 
 			if (is_null ($models)) {
 				throw new Exception(
-					'Unknown ID',
-					static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
-					BaseResponse::HTTP_NOT_FOUND
+					'Unknown ID', static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID, BaseResponse::HTTP_NOT_FOUND
 				);
 			}
 
@@ -181,37 +178,6 @@
 		}
 		
 		/**
-		 * Returns handler class name with namespace
-		 *
-		 * @param      $handlerShortName string The name of the model (in plural)
-		 *
-		 * @param bool $isPlural
-		 * @param bool $short
-		 *
-		 * @return string Class name of related resource
-		 */
-		public static function getHandlerFullClassName ($handlerShortName, $isPlural = true, $short = false) {
-			$handlerShortName = s ($handlerShortName)->camelize()->__toString();
-			
-			if ($isPlural) {
-				$handlerShortName = Pluralizer::singular ($handlerShortName);
-			}
-			
-			return (!$short ? static::$namespace . '\\' : "") . ucfirst ($handlerShortName) . 'Handler';
-		}
-		
-		/**
-		 * Returns handler short class name
-		 *
-		 * @return string
-		 */
-		private static function getHandlerShortClassName () {
-			$class = explode ('\\', get_called_class ());
-			
-			return array_pop ($class);
-		}
-
-		/**
 		 * @param $models
 		 * @param $loadRelations
 		 * @return JsonResponse
@@ -261,7 +227,7 @@
 		 * @return mixed
 		 */
 		private function getModel (Request $request) {
-			$methodName = static::methodHandlerName ($request->method);
+			$methodName = Utils::methodHandlerName($request->method);
 			$models = $this->{$methodName}($request);
 
 			return $models;
@@ -271,9 +237,23 @@
 		 * Generates resource name from class name (ResourceHandler -> resource)
 		 */
 		private function setResourceName () {
-			$shortClassName = self::getHandlerShortClassName ();
+			$shortClassName = Utils::getHandlerShortClassName();
 			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
+		}
+		
+		/**
+		 * Function to handle filtering requests.
+		 *
+		 * @param  array $filters key=>value pairs of column and value to filter on
+		 * @param  \EchoIt\JsonApi\Model $model
+		 * @return \EchoIt\JsonApi\Model
+		 */
+		protected function handleFilterRequest($filters, $model) {
+			foreach ($filters as $key=>$value) {
+				$model = $model->where($key, '=', $value);
+			}
+			return $model;
 		}
 
 		/**
@@ -693,7 +673,7 @@
 		 * @return boolean
 		 */
 		public function supportsMethod($method) {
-			return method_exists($this, static::methodHandlerName($method));
+			return in_array(s($method)->toLowerCase (), $this->supportedMethods);
 		}
 
 		/**
@@ -834,17 +814,7 @@
 			// client has made a bad request.
 			return BaseResponse::HTTP_BAD_REQUEST;
 		}
-
-		/**
-		 * Convert HTTP method to it's handler method counterpart.
-		 *
-		 * @param  string $method HTTP method
-		 * @return string
-		 */
-		protected static function methodHandlerName($method) {
-			return 'handle' . ucfirst(strtolower($method));
-		}
-
+		
 		/**
 		 * Returns the models from a relationship. Will always return as array.
 		 *
@@ -956,20 +926,6 @@
 		}
 
 		/**
-		 * Function to handle filtering requests.
-		 *
-		 * @param  array $filters key=>value pairs of column and value to filter on
-		 * @param  \EchoIt\JsonApi\Model $model
-		 * @return \EchoIt\JsonApi\Model
-		 */
-		protected function handleFilterRequest($filters, $model) {
-			foreach ($filters as $key=>$value) {
-				$model = $model->where($key, '=', $value);
-			}
-			return $model;
-		}
-
-		/**
 		 * Validates passed data against a model
 		 * Validation performed safely and only if model provides rules
 		 *
@@ -1050,5 +1006,14 @@
 					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
 					BaseResponse::HTTP_BAD_REQUEST);
 			}
+		}
+		
+		/**
+		 * Generates model names from handler name class
+		 */
+		private function generateModelName () {
+			$shortName = $this->resourceName;
+			$this->shortModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true, true);
+			$this->fullModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}
 	}
