@@ -4,9 +4,6 @@
 	
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\CacheManager;
-	use Illuminate\Database\Eloquent\Relations\BelongsTo;
-	use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
-	use Illuminate\Database\Eloquent\Relations\Relation;
 	use Illuminate\Http\JsonResponse;
 	use Illuminate\Support\Collection;
 	use Illuminate\Http\Response as BaseResponse;
@@ -15,6 +12,7 @@
 	use Illuminate\Pagination\Paginator;
 	use function Stringy\create as s;
 	use Cache;
+	use Illuminate\Support\Facades\DB;
 
 	abstract class Handler {
 

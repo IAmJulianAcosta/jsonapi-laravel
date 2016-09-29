@@ -15,10 +15,11 @@
 	
 	namespace EchoIt\JsonApi;
 	
-	use DB;
-	use Illuminate\Database\Eloquent\Builder;
+	use Illuminate\Support\Facades\DB;
 	
 	class QueryFilter {
+		
+		static private $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 		
 		/**
 		 * Filters the request by [filter] parameters in request
@@ -51,7 +52,7 @@
 		 */
 		static private function applyFilters ($filters, &$query) {
 			foreach ($filters as $filterName => $filterValues) {
-				QueryFilter::parse($filterValues, $filterName, $query);
+				static::parse($filterValues, $filterName, $query);
 			}
 		}
 		
@@ -61,13 +62,11 @@
 		 */
 		static private function parseGroup($filterValues, &$query) {
 			//This regex matches the method: method[...] and removes it from array https://regex101.com/r/ml0o88/4
-			//		$mainRegex = '/([a-zA-Z]*)\[((?:\([a-z]+=(?:[[:alnum:]]+,?)+\),?)+)\]/';
 			$mainRegex = '/([a-zA-Z]*)\[((?:\([a-z]+=(?:[0-9a-zA-Z,=<>\[\]\(\)]+,?)+\),?)+)\]/';
 			preg_match_all($mainRegex, $filterValues, $matches);
 			$method = $matches [1][0];
 			if (empty($matches[2]) === false) {
 				//This regex separates the group methods https://regex101.com/r/pLeQCq/4
-				//			$parenthesesRegex = '/\([a-z]+=(?:[[:alnum:]]+,?)+\)/';
 				$parenthesesRegex = '/\((?:(?:[a-z]+=(?:[[:alnum:]<>=]+,?)+)|(?:[a-z]+=\[?[a-zA-Z0-9,=<>\[\]\(\)]*?\]))\)/';
 				preg_match_all($parenthesesRegex, $matches[2][0], $parenthesesMatches);
 				$parenthesesMatches = $parenthesesMatches [0];
@@ -133,5 +132,4 @@
 				static::parseMethod($filterValues, $filterName, $query);
 			}
 		}
-		static $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 	}
