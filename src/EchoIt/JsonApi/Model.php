@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Relations\Relation;
 use EchoIt\JsonApi\CacheManager;
 use Carbon\Carbon;
 use Cache;
+use Illuminate\Http\Response as BaseResponse;
+
 use function Stringy\create as s;
 
 abstract class Model extends \Eloquent {
