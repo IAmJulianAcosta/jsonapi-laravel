@@ -297,11 +297,13 @@
 				$key, static::$cacheTime,
 				function () use ($modelName) {
 					if (count (static::$exposedRelations) > 0) {
-						return forward_static_call_array (array ($modelName, 'with'), static::$exposedRelations)->get ();
+						$query = forward_static_call_array (array ($modelName, 'with'), static::$exposedRelations);
 					}
 					else {
-						return $modelName::all ();
+						$query = DB::table (Pluralizer::plural ($modelName));
 					}
+					QueryFilter::handleFilterRequest($request, Pluralizer::plural ($modelName));
+					$query->get ();
 				}
 			);
 
