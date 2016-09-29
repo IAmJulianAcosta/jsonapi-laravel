@@ -115,7 +115,10 @@
 					BaseResponse::HTTP_FORBIDDEN);
 			}
 
-			$models = $this->getModel ($request);
+			/*
+			 * Executes the request
+			 */
+			$models = $this->handleRequest ($request);
 
 			if (is_null ($models)) {
 				throw new Exception(
@@ -124,10 +127,10 @@
 			}
 
 			if ($httpMethod === 'GET') {
-				return $this->fulfillCacheableRequest ($models, $request);
+				return $this->generateCacheableResponse ($models, $request);
 			}
 			else {
-				return $this->fulfillNonCacheableRequest ($models);
+				return $this->generateNonCacheableResponse ($models);
 			}
 		}
 		
@@ -139,7 +142,7 @@
 		 *
 		 * @return mixed
 		 */
-		private function fulfillCacheableRequest ($models, Request $request) {
+		private function generateCacheableResponse ($models, Request $request) {
 			$id = $request->id;
 			if (empty($id)) {
 				$key = CacheManager::getResponseCacheForMultipleResources($this->dasherizedResourceName());
@@ -165,16 +168,8 @@
 		 * @internal param $request
 		 *
 		 */
-		private function fulfillNonCacheableRequest ($models) {
+		private function generateNonCacheableResponse ($models) {
 			return $this->generateResponse($models);
-		}
-
-		/**
-		 * @return boolean
-		 */
-		protected function allowsModifyingByAllUsers () {
-			$modelName = $this->fullModelName;
-			return $modelName::allowsModifyingByAllUsers ();
 		}
 		
 		/**
@@ -224,9 +219,9 @@
 		}
 
 		/**
-		 * @return mixed
+		 * @return Model|Collection
 		 */
-		private function getModel (Request $request) {
+		private function handleRequest (Request $request) {
 			$methodName = Utils::methodHandlerName($request->method);
 			$models = $this->{$methodName}($request);
 
@@ -234,32 +229,9 @@
 		}
 		
 		/**
-		 * Generates resource name from class name (ResourceHandler -> resource)
-		 */
-		private function setResourceName () {
-			$shortClassName = Utils::getHandlerShortClassName();
-			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
-			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
-		}
-		
-		/**
-		 * Function to handle filtering requests.
-		 *
-		 * @param  array $filters key=>value pairs of column and value to filter on
-		 * @param  \EchoIt\JsonApi\Model $model
-		 * @return \EchoIt\JsonApi\Model
-		 */
-		protected function handleFilterRequest($filters, $model) {
-			foreach ($filters as $key=>$value) {
-				$model = $model->where($key, '=', $value);
-			}
-			return $model;
-		}
-
-		/**
 		 * @param Request $request
 		 *
-		 * @return mixed
+		 * @return Model|Collection
 		 */
 		public function handleGet (Request $request) {
 			$id = $request->id;
@@ -288,7 +260,7 @@
 		/**
 		 * @param Request $request
 		 *
-		 * @return \Illuminate\Database\Eloquent\Collection
+		 * @return Collection
 		 */
 		protected function handleGetAll () {
 			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
@@ -330,8 +302,8 @@
 			$model = new $modelName ($attributes);
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
-			$this->updateRelationships ($data, $model, true);
-			$this->validateModelData ($model, $attributes);
+			$model->updateRelationships ($data, $model, true);
+			$model->validateData ($attributes);
 
 			if (!$model->save ()) {
 				throw new Exception(
@@ -339,9 +311,9 @@
 					BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
 			}
 
-			$this->updateRelationships ($data, $model, true);
+			$model->updateRelationships ($data, $model, true);
 			$model->markChanged ();
-			$this->clearCache();
+			CacheManager::clearCache($this->dasherizedResourceName());
 
 			return $model;
 		}
@@ -375,10 +347,10 @@
 				$attributes = $data ["attributes"];
 				
 				$model->fill ($attributes);
-				$this->validateModelData ($model, $attributes);
+				$this->validateData ($attributes);
 			}
 
-			$this->updateRelationships ($data, $model, false);
+			$model->updateRelationships ($data, $model, false);
 
 			// ensure we can get a successful save
 			if (!$model->save ()) {
@@ -390,7 +362,7 @@
 			$this->verifyIfModelChanged ($model, $originalAttributes);
 
 			if ($model->isChanged()) {
-				$this->clearCache ($id, $model);
+				CacheManager::clearCache ($this->dasherizedResourceName(), $id, $model);
 			}
 			return $model;
 		}
@@ -535,79 +507,6 @@
 		}
 		
 		/**
-		 * Associate models relationships
-		 *
-		 * @param               $data
-		 * @param Model $model
-		 *
-		 * @throws Exception
-		 */
-		protected function updateRelationships ($data, Model $model, $creating = false) {
-			if (array_key_exists ("relationships", $data)) {
-				//If we have a relationship object in the payload
-				$relationships = $data ["relationships"];
-				
-				//Iterate all the relationships object
-				foreach ($relationships as $relationshipName => $relationship) {
-					if (is_array ($relationship)) {
-						//If the relationship object is an array
-						if (array_key_exists ('data', $relationship)) {
-							//If the relationship has a data object
-							$relationshipData = $relationship ['data'];
-							if (is_array ($relationshipData)) {
-								//One to one
-								if (array_key_exists ('type', $relationshipData)) {
-									$this->updateSingleRelationship ($model, $relationshipData, $relationshipName, $creating);
-								}
-								//One to many
-								else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
-									$relationshipDataItems = $relationshipData;
-									foreach ($relationshipDataItems as $relationshipDataItem) {
-										if (array_key_exists ('type', $relationshipDataItem)) {
-											$this->updateSingleRelationship ($model, $relationshipDataItem, $relationshipName, $creating);
-										}
-										else {
-											throw new Exception(
-												'Relationship type key not present in the request for an item',
-												static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-												BaseResponse::HTTP_BAD_REQUEST);
-										}
-									}
-								}
-								else {
-									throw new Exception(
-										'Relationship type key not present in the request',
-										static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-										BaseResponse::HTTP_BAD_REQUEST);
-								}
-							}
-							else if (is_null ($relationshipData)) {
-								//If the data object is null, do nothing, nothing to associate
-							}
-							else {
-								//If the data object is not array or null (invalid)
-								throw new Exception(
-									'Relationship "data" object must be an array or null',
-									static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
-							}
-						}
-						else {
-							throw new Exception(
-								'Relationship must have an object with "data" key',
-								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
-						}
-					}
-					else {
-						//If the relationship is not an array, return error
-						throw new Exception(
-							'Relationship object is not an array', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							BaseResponse::HTTP_BAD_REQUEST);
-					}
-				}
-			}
-		}
-		
-		/**
 		 * @param Model $model
 		 * @param               $originalAttributes
 		 *
@@ -628,29 +527,6 @@
 					break;
 				}
 			}
-		}
-
-		/**
-		 * @param null $id
-		 * @param Model $model
-		 */
-		private function clearCache ($id = null, Model $model = null) {
-			//ID passed = update record
-			if ($id !== null && $model !== null) {
-				$key = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
-				Cache::forget($key);
-				$key = CacheManager::getResponseCacheForSingleResource($id, $this->dasherizedResourceName());
-				Cache::forget($key);
-				$key = CacheManager::getArrayCacheKeyForSingleResource($model->getResourceType(), $model->getKey());
-				Cache::forget($key);
-				$key = CacheManager::getArrayCacheKeyForSingleResourceWithoutRelations($model->getResourceType(),
-					$model->getKey());
-				Cache::forget($key);
-			}
-			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
-			Cache::forget($key);
-			$key = CacheManager::getResponseCacheForMultipleResources($this->dasherizedResourceName());
-			Cache::forget($key);
 		}
 
 		/**
@@ -926,89 +802,6 @@
 
 			return $paginator;
 		}
-
-		/**
-		 * Validates passed data against a model
-		 * Validation performed safely and only if model provides rules
-		 *
-		 * @param  \EchoIt\JsonApi\Model $model  model to validate against
-		 * @param  array                 $values passed array of values
-		 *
-		 * @throws Exception\Validation          Exception thrown when validation fails
-		 *
-		 * @return Bool                          true if validation successful
-		 */
-		protected function validateModelData(Model $model, Array $values) {
-			$validationResponse = $model->validateArray($values);
-
-			if ($validationResponse === true) {
-				return true;
-			}
-
-			throw new Exception\Validation(
-				'Bad Request',
-				static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
-				BaseResponse::HTTP_BAD_REQUEST,
-				$validationResponse
-			);
-		}
-		
-		/**
-		 * @param \EchoIt\JsonApi\Model $model
-		 * @param                       $relationshipData
-		 *
-		 * @param                       $relationshipName
-		 *
-		 * @throws \EchoIt\JsonApi\Exception
-		 */
-		protected function updateSingleRelationship (Model $model, $relationshipData, $relationshipName, $creating) {
-			//If we have a type of the relationship data
-			$type                  = $relationshipData['type'];
-			$relationshipModelName = Model::getModelClassName ($type, $this->modelsNamespace);
-			$relationshipName      = s ($relationshipName)->camelize ()->__toString ();
-			//If we have an id of the relationship data
-			if (array_key_exists ('id', $relationshipData)) {
-				/** @var $relationshipModelName Model */
-				$relationshipId       = $relationshipData['id'];
-				$newRelationshipModel = $relationshipModelName::find ($relationshipId);
-				
-				if ($newRelationshipModel) {
-					//Relationship exists in model
-					if (method_exists ($model, $relationshipName)) {
-						/** @var Relation $relationship */
-						$relationship = $model->$relationshipName ();
-						//If creating, only update belongs to before saving. If not creating (updating), update
-						if ($relationship instanceof BelongsTo && (($creating && $model->isDirty()) || !$creating)) {
-							$relationship->associate ($newRelationshipModel);
-						}
-						//If creating, only update polymorphic saving. If not creating (updating), update
-						else if ($relationship instanceof MorphOneOrMany && (($creating && !$model->isDirty()) || !$creating)) {
-							$relationship->save ($newRelationshipModel);
-							
-						}
-					}
-					else {
-						throw new Exception(
-							"Relationship $relationshipName is not invalid",
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							BaseResponse::HTTP_BAD_REQUEST);
-					}
-				}
-				else {
-					$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
-					throw new Exception(
-						"Model $formattedType with id $relationshipId not found in database",
-						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						BaseResponse::HTTP_BAD_REQUEST);
-				}
-			}
-			else {
-				throw new Exception(
-					'Relationship id key not present in the request',
-					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-					BaseResponse::HTTP_BAD_REQUEST);
-			}
-		}
 		
 		/**
 		 * Generates model names from handler name class
@@ -1017,5 +810,22 @@
 			$shortName = $this->resourceName;
 			$this->shortModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true, true);
 			$this->fullModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true);
+		}
+		
+		/**
+		 * Generates resource name from class name (ResourceHandler -> resource)
+		 */
+		private function setResourceName () {
+			$shortClassName = Utils::getHandlerShortClassName();
+			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
+			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
+		}
+		
+		/**
+		 * @return boolean
+		 */
+		protected function allowsModifyingByAllUsers () {
+			$modelName = $this->fullModelName;
+			return $modelName::allowsModifyingByAllUsers ();
 		}
 	}

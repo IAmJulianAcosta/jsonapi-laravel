@@ -9,6 +9,7 @@
 	namespace EchoIt\JsonApi;
 	
 	use Illuminate\Support\Pluralizer;
+	use Cache;
 	
 	class CacheManager {
 		
@@ -62,5 +63,29 @@
 		
 		public static function getArrayCacheKeyForSingleResourceWithoutRelations($resourceType, $key) {
 			return $resourceType . ":array:" . $key . ":no_relations";
+		}
+		
+		
+		/**
+		 * @param null $id
+		 * @param Model $model
+		 */
+		public static function clearCache ($resourceName, $id = null, Model $model = null) {
+			//ID passed = update record
+			if ($id !== null && $model !== null) {
+				$key = static::getQueryCacheForSingleResource($id, $resourceName);
+				Cache::forget($key);
+				$key = static::getResponseCacheForSingleResource($id, $resourceName);
+				Cache::forget($key);
+				$key = static::getArrayCacheKeyForSingleResource($model->getResourceType(), $model->getKey());
+				Cache::forget($key);
+				$key = static::getArrayCacheKeyForSingleResourceWithoutRelations($model->getResourceType(),
+					$model->getKey());
+				Cache::forget($key);
+			}
+			$key = static::getQueryCacheForMultipleResources($resourceName);
+			Cache::forget($key);
+			$key = static::getResponseCacheForMultipleResources($resourceName);
+			Cache::forget($key);
 		}
 	}

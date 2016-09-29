@@ -426,5 +426,160 @@ abstract class Model extends \Eloquent {
 	public function getPrimaryKey () {
 		return $this->primaryKey;
 	}
-
+	
+	/**
+	 * Associate models' relationships
+	 *
+	 * @param array $data
+	 * @param bool  $creating
+	 *
+	 * @throws Exception
+	 */
+	public function updateRelationships ($data, $creating = false) {
+		if (array_key_exists ("relationships", $data)) {
+			//If we have a relationship object in the payload
+			$relationships = $data ["relationships"];
+			
+			//Iterate all the relationships object
+			foreach ($relationships as $relationshipName => $relationship) {
+				if (is_array ($relationship)) {
+					//If the relationship object is an array
+					if (array_key_exists ('data', $relationship)) {
+						//If the relationship has a data object
+						$relationshipData = $relationship ['data'];
+						if (is_array ($relationshipData)) {
+							//One to one
+							if (array_key_exists ('type', $relationshipData)) {
+								$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating);
+							}
+							//One to many
+							else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
+								$relationshipDataItems = $relationshipData;
+								foreach ($relationshipDataItems as $relationshipDataItem) {
+									if (array_key_exists ('type', $relationshipDataItem)) {
+										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating);
+									}
+									else {
+										throw new Exception(
+											'Relationship type key not present in the request for an item',
+											static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+											BaseResponse::HTTP_BAD_REQUEST);
+									}
+								}
+							}
+							else {
+								throw new Exception(
+									'Relationship type key not present in the request',
+									static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+									BaseResponse::HTTP_BAD_REQUEST);
+							}
+						}
+						else if (is_null ($relationshipData)) {
+							//If the data object is null, do nothing, nothing to associate
+						}
+						else {
+							//If the data object is not array or null (invalid)
+							throw new Exception(
+								'Relationship "data" object must be an array or null',
+								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
+						}
+					}
+					else {
+						throw new Exception(
+							'Relationship must have an object with "data" key',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
+					}
+				}
+				else {
+					//If the relationship is not an array, return error
+					throw new Exception(
+						'Relationship object is not an array', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+						BaseResponse::HTTP_BAD_REQUEST);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * @param array  $relationshipData
+	 * @param string $relationshipName
+	 * @param bool   $creating
+	 *
+	 * @throws \EchoIt\JsonApi\Exception
+	 */
+	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating) {
+		//If we have a type of the relationship data
+		$type                  = $relationshipData['type'];
+		$relationshipModelName = Model::getModelClassName ($type, $this->modelsNamespace);
+		$relationshipName      = s ($relationshipName)->camelize ()->__toString ();
+		//If we have an id of the relationship data
+		if (array_key_exists ('id', $relationshipData)) {
+			/** @var $relationshipModelName Model */
+			$relationshipId       = $relationshipData['id'];
+			$newRelationshipModel = $relationshipModelName::find ($relationshipId);
+			
+			if ($newRelationshipModel) {
+				//Relationship exists in model
+				if (method_exists ($this, $relationshipName)) {
+					/** @var Relation $relationship */
+					$relationship = $this->$relationshipName ();
+					//If creating, only update belongs to before saving. If not creating (updating), update
+					if ($relationship instanceof BelongsTo && (($creating && $this->isDirty()) || !$creating)) {
+						$relationship->associate ($newRelationshipModel);
+					}
+					//If creating, only update polymorphic saving. If not creating (updating), update
+					else if ($relationship instanceof MorphOneOrMany && (($creating && !$this->isDirty()) || !$creating)) {
+						$relationship->save ($newRelationshipModel);
+						
+					}
+				}
+				else {
+					throw new Exception(
+						"Relationship $relationshipName is not invalid",
+						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+						BaseResponse::HTTP_BAD_REQUEST);
+				}
+			}
+			else {
+				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
+				throw new Exception(
+					"Model $formattedType with id $relationshipId not found in database",
+					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+					BaseResponse::HTTP_BAD_REQUEST);
+			}
+		}
+		else {
+			throw new Exception(
+				'Relationship id key not present in the request',
+				static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+				BaseResponse::HTTP_BAD_REQUEST);
+		}
+	}
+	
+	/**
+	 * Validates passed data against a model
+	 * Validation performed safely and only if model provides rules
+	 *
+	 * @param  array                 $values passed array of values
+	 *
+	 * @throws Exception\Validation          Exception thrown when validation fails
+	 *
+	 * @return Bool                          true if validation successful
+	 */
+	public function validateData(array $values) {
+		$validationResponse = $this->validateArray($values);
+		
+		if ($validationResponse === true) {
+			return true;
+		}
+		
+		throw new Exception\Validation(
+			'Bad Request',
+			static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
+			BaseResponse::HTTP_BAD_REQUEST,
+			$validationResponse
+		);
+	}
+	
+	
 }
