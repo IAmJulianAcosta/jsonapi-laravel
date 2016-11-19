@@ -128,7 +128,9 @@
 				return $this->generateCacheableResponse ($models, $request);
 			}
 			else {
-				return $this->generateNonCacheableResponse ($models);
+				if ($models instanceof Model) {
+					return $this->generateNonCacheableResponse ($models);
+				}
 			}
 		}
 		
