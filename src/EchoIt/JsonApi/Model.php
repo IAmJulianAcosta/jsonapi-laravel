@@ -326,6 +326,7 @@ abstract class Model extends \Eloquent {
 	 */
 	protected $defaultExposedRelations = [];
 	protected $exposedRelations = [];
+	
 	/**
 	 * An array of relation names of relations who
 	 * simply return a collection, and not a Relation instance
@@ -335,30 +336,12 @@ abstract class Model extends \Eloquent {
 	protected $relationsFromMethod = [];
 
 	/**
-	 * Get the model's default exposed relations
-	 *
-	 * @return  Array
-	 */
-	public function defaultExposedRelations () {
-		return $this->defaultExposedRelations;
-	}
-
-	/**
 	 * Get the model's exposed relations
 	 *
 	 * @return  Array
 	 */
 	public function exposedRelations () {
 		return $this->exposedRelations;
-	}
-
-	/**
-	 * Set this model's exposed relations
-	 *
-	 * @param  Array $relations
-	 */
-	public function setExposedRelations (Array $relations) {
-		$this->exposedRelations = $relations;
 	}
 
 	/**
@@ -586,5 +569,26 @@ abstract class Model extends \Eloquent {
 		);
 	}
 	
+	/**
+	 * Load model relations
+	 *
+	 * @param array $requestedRelations
+	 */
+	public function loadRelatedModels($requestedRelations = []) {
+		if (empty($requestedRelations)) {
+			$this->exposedRelations = $this->defaultExposedRelations;
+		}
+		else {
+			$this->exposedRelations = array_intersect($requestedRelations, $this->exposedRelations);
+		}
+		/** @var string $relation */
+		foreach ($this->exposedRelations as $relation) {
+			//Explode the relation separated by dots
+			$relationArray = explode(".", $relation);
+			
+			//Pass the array to loadModels
+			$this->loadModel($relationArray);
+		}
+	}
 	
 }

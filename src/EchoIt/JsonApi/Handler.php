@@ -195,15 +195,16 @@
 			}
 			else {
 				if ($models instanceof Collection) {
+					/** @var Model $model */
 					foreach ($models as $model) {
 						if ($loadRelations) {
-							$this->loadRelatedModels ($model);
+							$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 						}
 					}
 				}
-				else {
+				else if ($models instanceof Model){
 					if ($loadRelations) {
-						$this->loadRelatedModels ($models);
+						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
 				}
 
@@ -422,8 +423,11 @@
 			$links = new Collection();
 			$models = $models instanceof Collection ? $models : [$models];
 			
+			/** @var Model $model */
 			foreach ($models as $model) {
-				foreach ($this->exposedRelationsFromRequest ($model) as $relationName) {
+				$exposedRelations = $model->exposedRelations();
+				
+				foreach ($exposedRelations as $relationName) {
 					$value = static::getModelsForRelation ($model, $relationName);
 					
 					if (is_null ($value)) {
@@ -552,56 +556,18 @@
 			return in_array(s($method)->toLowerCase (), $this->supportedMethods);
 		}
 
-		/**
-		 * Load a model's relations
-		 *
-		 * @param   Model  $model  the model to load relations of
-		 * @return  void
-		 */
-		protected function loadRelatedModels(Model $model) {
-			// get the relations to load
-			$relations = $this->exposedRelationsFromRequest($model);
-
-			foreach ($relations as $relation) {
-				// if this relation is loaded via a method, then call said method
-				/** @var $model Model */
-				if (in_array($relation, $model->relationsFromMethod())) {
-					$model->$relation = $model->$relation();
-					continue;
-				}
-				
-				$model->load($relation);
-			}
-		}
-
+		
 		/**
 		 * Returns which requested resources are available to include.
 		 *
-		 * @param Model $model
 		 * @return array
 		 */
-		protected function exposedRelationsFromRequest($model = null) {
-			$exposedRelations = static::$exposedRelations;
-
-			// if no relations are to be included by request
-			if (count($this->request->include) == 0) {
-				// and if we have a model
-				if ($model !== null && $model instanceof Model) {
-					// then use the relations exposed by default
-					/** @var $model Model */
-					$exposedRelations = array_intersect($exposedRelations, $model->defaultExposedRelations());
-					$model->setExposedRelations($exposedRelations);
-					return $exposedRelations;
-				}
-
+		protected function exposedRelationsFromRequest() {
+			$include = $this->request->originalRequest->input('include');
+			if (is_null($include)) {
+				return [];
 			}
-
-			$exposedRelations = array_intersect($exposedRelations, $this->request->include);
-			if ($model !== null && $model instanceof Model) {
-				$model->setExposedRelations($exposedRelations);
-			}
-
-			return $exposedRelations;
+			return explode(",", $include);
 		}
 
 		/**
