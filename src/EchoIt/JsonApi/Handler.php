@@ -746,29 +746,7 @@
 		protected static function getModelNameForRelation($relationName) {
 			return \str_plural($relationName);
 		}
-
-		/**
-		 * Function to handle sorting requests.
-		 *
-		 * @param  array $cols list of column names to sort on
-		 * @param  \EchoIt\JsonApi\Model $model
-		 * @return \EchoIt\JsonApi\Model
-		 * @throws Exception
-		 */
-		protected function handleSortRequest($cols, $model) {
-			foreach ($cols as $col) {
-				$dir = 'asc';
-
-				if (substr($col, 0, 1) == '-') {
-					$dir = 'desc';
-					$col = substr($col, 1);
-				}
-
-				$model = $model->orderBy($col, $dir);
-			}
-			return $model;
-		}
-
+		
 		/**
 		 * Function to handle pagination requests.
 		 *

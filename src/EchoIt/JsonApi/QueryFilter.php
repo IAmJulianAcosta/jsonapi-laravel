@@ -20,6 +20,22 @@
 	class QueryFilter {
 		
 		static private $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
+		/**
+		 * Function to handle sorting requests.
+		 */
+		public static function sortRequest (Request $request, Builder &$query) {
+			$sort = $request->originalRequest->input('sort');
+			$explodedSort = explode(",", $sort);
+			foreach ($explodedSort as $parameter) {
+				$isDesc = starts_with ($parameter, "-");
+				$direction = $isDesc ? 'desc' : 'asc';
+				if ($isDesc) {
+					$parameter = substr($parameter, 1);
+				}
+				$query->orderBy($parameter, $direction);
+			}
+		}
+		
 		
 		/**
 		 * Filters the request by [filter] parameters in request
