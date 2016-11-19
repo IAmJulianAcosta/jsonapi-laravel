@@ -19,23 +19,25 @@
 	
 	class QueryFilter {
 		
+		protected static $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
+		
 		/**
 		 * Function to handle sorting requests.
 		 */
-		public static function sortRequest (Request $request, Builder &$query) {
+		public static function sortRequest(Request $request, &$query) {
 			$sort = $request->originalRequest->input('sort');
-			$explodedSort = explode(",", $sort);
-			foreach ($explodedSort as $parameter) {
-				$isDesc = starts_with ($parameter, "-");
-				$direction = $isDesc ? 'desc' : 'asc';
-				if ($isDesc) {
-					$parameter = substr($parameter, 1);
+			if (is_null($sort) === false) {
+				$explodedSort = explode(",", $sort);
+				foreach ($explodedSort as $parameter) {
+					$isDesc    = starts_with($parameter, "-");
+					$direction = $isDesc ? 'desc' : 'asc';
+					if ($isDesc) {
+						$parameter = substr($parameter, 1);
+					}
+					$query->orderBy($parameter, $direction);
 				}
-				$query->orderBy($parameter, $direction);
 			}
 		}
-		
-		protected static $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 		
 		/**
 		 * Filters the request by [filter] parameters in request
@@ -56,16 +58,17 @@
 			static::applyFilters($filters, $query);
 		}
 		
-		
 		/**
 		 * Will receive the query and apply the filters defined in GET parameters
 		 *
 		 * @param $filters
 		 * @param $query
 		 */
-		protected static function applyFilters ($filters, &$query) {
-			foreach ($filters as $filterName => $filterValues) {
-				static::parse($filterValues, $filterName, $query);
+		protected static function applyFilters($filters, &$query) {
+			if (is_null($filters) === false) {
+				foreach ($filters as $filterName => $filterValues) {
+					static::parse($filterValues, $filterName, $query);
+				}
 			}
 		}
 		
