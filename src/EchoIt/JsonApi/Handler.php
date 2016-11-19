@@ -759,7 +759,7 @@
 		 * Generates resource name from class name (ResourceHandler -> resource)
 		 */
 		private function setResourceName () {
-			$shortClassName = Utils::getHandlerShortClassName();
+			$shortClassName = Utils::getHandlerShortClassName(get_called_class());
 			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}

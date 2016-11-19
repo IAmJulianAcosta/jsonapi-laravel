@@ -17,8 +17,7 @@
 	
 	use Illuminate\Support\Pluralizer;
 	use function Stringy\create as s;
-	
-	
+
 	class Utils {
 		/**
 		 * Returns handler class name with namespace
@@ -45,8 +44,8 @@
 		 *
 		 * @return string
 		 */
-		public static function getHandlerShortClassName() {
-			$class = explode('\\', get_called_class());
+		public static function getHandlerShortClassName($handlerClass) {
+			$class = explode('\\', $handlerClass);
 			
 			return array_pop($class);
 		}
