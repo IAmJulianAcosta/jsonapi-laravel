@@ -165,7 +165,6 @@
 		 * @param \Illuminate\Http\Request $models
 		 *
 		 * @return \EchoIt\JsonApi\Response
-		 * @internal param $request
 		 *
 		 */
 		private function generateNonCacheableResponse ($models) {
@@ -232,7 +231,7 @@
 		/**
 		 * @param Request $request
 		 *
-		 * @return Model|Collection
+		 * @return Model|Collection|null
 		 */
 		public function handleGet (Request $request) {
 			$id = $request->id;
