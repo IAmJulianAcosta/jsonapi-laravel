@@ -78,6 +78,11 @@
 		protected $request;
 		
 		/**
+		 * Current application
+		 */
+		private $cacheDriver;
+
+		/**
 		 * BaseHandler constructor. Defines modelName based of HandlerName
 		 *
 		 * @param Request $request
@@ -88,6 +93,7 @@
 			$this->modelsNamespace = $modelsNamespace;
 			$this->setResourceName ();
 			$this->generateModelName ();
+			$this->cacheDriver = config('cache.default');
 		}
 
 		/**
