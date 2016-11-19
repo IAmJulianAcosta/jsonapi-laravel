@@ -591,4 +591,30 @@ abstract class Model extends \Eloquent {
 		}
 	}
 	
+	/**
+	 * @param array $relations
+	 */
+	private function loadModel ($relations) {
+		//Get the first relation to load
+		$relation = array_shift($relations);
+		
+		//Now load it
+		
+		// if this relation is loaded via a method, then call said method
+		if (in_array($relation, $this->relationsFromMethod)) {
+			$this->$relation = $this->$relation();
+			return;
+		}
+		
+		$this->load($relation);
+		
+		// If relations is not empty, load recursively
+		if (empty($relations) === false) {
+			/** @var Model $nestedModel */
+			$nestedModel = $this->{$relationToLoad};
+			$nestedModel->loadModel($relations);
+		}
+		
+	}
+	
 }
