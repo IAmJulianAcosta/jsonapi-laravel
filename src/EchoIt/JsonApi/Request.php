@@ -7,6 +7,7 @@ use Illuminate\Http\Request as BaseRequest;
  *
  * @author Ronni Egeriis Persson <ronni@egeriis.me>
  */
+//TODO extend Illuminate\Http\Request
 class Request
 {
 	
