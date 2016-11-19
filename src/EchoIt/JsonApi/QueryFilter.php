@@ -19,7 +19,6 @@
 	
 	class QueryFilter {
 		
-		static private $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 		/**
 		 * Function to handle sorting requests.
 		 */
@@ -36,6 +35,7 @@
 			}
 		}
 		
+		protected static $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 		
 		/**
 		 * Filters the request by [filter] parameters in request
@@ -43,7 +43,7 @@
 		 * @param Request $request
 		 * @param         $tableName
 		 */
-		static public function filterRequest(Request $request, $tableName, $query = null) {
+		public static function filterRequest(Request $request, &$query) {
 			/*
 			 * ?filter[foo]=where,bar&filter[people]=whereBetween,1,100&filter[bar]=where[(orWhere,body),(orWhere,foo)]
 			 *
@@ -52,9 +52,6 @@
 			 * Also is telling me that I need to filter the request by people, with parameter name
 			 *
 			 */
-			if (is_null($query)) {
-				$query = DB::table ($tableName);
-			}
 			$filters = $request->originalRequest->input('filter');
 			static::applyFilters($filters, $query);
 		}
@@ -66,7 +63,7 @@
 		 * @param $filters
 		 * @param $query
 		 */
-		static private function applyFilters ($filters, &$query) {
+		protected static function applyFilters ($filters, &$query) {
 			foreach ($filters as $filterName => $filterValues) {
 				static::parse($filterValues, $filterName, $query);
 			}
@@ -76,7 +73,7 @@
 		 * @param             $filterValues
 		 * @param             $query
 		 */
-		static private function parseGroup($filterValues, &$query) {
+		protected static function parseGroup($filterValues, &$query) {
 			//This regex matches the method: method[...] and removes it from array https://regex101.com/r/ml0o88/4
 			$mainRegex = '/([a-zA-Z]*)\[((?:\([a-z]+=(?:[0-9a-zA-Z,=<>\[\]\(\)]+,?)+\),?)+)\]/';
 			preg_match_all($mainRegex, $filterValues, $matches);
@@ -110,7 +107,7 @@
 		 * @param $filterName
 		 * @param $query
 		 */
-		static private function parseMethod($filterValues, $filterName, &$query) {
+		protected static function parseMethod($filterValues, $filterName, &$query) {
 			//First explode the comma separated string into array
 			$filterValuesArray = explode(",", $filterValues);
 			
@@ -139,7 +136,7 @@
 		 * @param $filterName
 		 * @param $query
 		 */
-		static private function parse($filterValues, $filterName, &$query) {
+		protected static function parse($filterValues, $filterName, &$query) {
 			/*The first step if checking if filter name is "group", If is the case, split them and treat this as
 			a single query, if not, parse the string and group the methods:  */
 			if ($filterName === "group") {
