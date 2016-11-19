@@ -73,6 +73,11 @@
 		protected $supportedMethods = ["get", "post", "put", "patch", "delete"];
 		
 		/**
+		 * @var Request
+		 */
+		protected $request;
+		
+		/**
 		 * BaseHandler constructor. Defines modelName based of HandlerName
 		 *
 		 * @param Request $request
@@ -236,8 +241,7 @@
 		public function handleGet (Request $request) {
 			$id = $request->id;
 			if (empty($id)) {
-				$models = $this->handleGetAll ();
-
+				$models = $this->handleGetAll ($request);
 				return $models;
 			}
 
@@ -246,9 +250,12 @@
 			$model = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($modelName, $request) {
-					$model = $modelName::find ($request->id);
-					if ($model) {
-						$this->loadRelatedModels ($model);
+					$query = $this->generateSelectQuery ($modelName);
+					
+					$query->where('id', $request->id);
+					$model = $query->first ();
+					if ($model instanceof Model) {
+						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
 					return $model;
 				}
@@ -257,28 +264,30 @@
 			return $model;
 		}
 
+		public function applyInclude ($modelName) {
+			
+		}
+
 		/**
 		 * @param Request $request
 		 *
 		 * @return Collection
 		 */
-		protected function handleGetAll () {
+		protected function handleGetAll (Request $request) {
 			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
 			$modelName = $this->fullModelName;
 			$models = Cache::remember (
 				$key, static::$cacheTime,
-				function () use ($modelName) {
-					if (count (static::$exposedRelations) > 0) {
-						$query = forward_static_call_array (array ($modelName, 'with'), static::$exposedRelations);
-					}
-					else {
-						$query = DB::table (Pluralizer::plural ($modelName));
-					}
-					QueryFilter::handleFilterRequest($request, Pluralizer::plural ($modelName));
-					$query->get ();
+				function () use ($request, $modelName) {
+					$query = $this->generateSelectQuery ($modelName);
+					
+					QueryFilter::filterRequest($request, $query);
+					QueryFilter::sortRequest($request, $query);
+					$this->applyFilters ($request, $query);
+					$model = $query->get ();
+					return $model;
 				}
 			);
-
 			return $models;
 		}
 
@@ -771,4 +780,31 @@
 			$modelName = $this->fullModelName;
 			return $modelName::allowsModifyingByAllUsers ();
 		}
+		
+		/**
+		 * Generates a find query from model name
+		 *
+		 * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder|null
+		 */
+		private function generateSelectQuery ($modelName) {
+			//If this model has any relation, use Eloquent, eager load
+			if (count (static::$exposedRelations) > 0) {
+				//Model::with ();
+				return forward_static_call_array ([$modelName, 'with'], static::$exposedRelations);
+			}
+			//If this model doesn't have any relations, use Fluent
+			else {
+				//DB::table(Models)
+				return DB::table (Pluralizer::plural ($modelName));
+			}
+		}
+		
+		/**
+		 * This abstract function allows implementations to implement own filters
+		 *
+		 * @param $query
+		 *
+		 * @return void
+		 */
+		protected abstract function applyFilters ($request, &$query);
 	}
