@@ -617,4 +617,12 @@ abstract class Model extends \Eloquent {
 		
 	}
 	
+	public static function queryAllModels ($columns = ['*']) {
+		$columns = is_array($columns) ? $columns : func_get_args();
+		
+		$instance = new static;
+		
+		return $instance->newQuery();
+	}
+	
 }

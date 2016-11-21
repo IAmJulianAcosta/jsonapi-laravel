@@ -256,7 +256,7 @@
 			$model = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($modelName, $request) {
-					$query = $this->generateSelectQuery ($modelName);
+					$query = $this->generateSelectQuery ($request);
 					
 					$query->where('id', $request->id);
 					$model = $query->first ();
@@ -281,11 +281,10 @@
 		 */
 		protected function handleGetAll (Request $request) {
 			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
-			$modelName = $this->fullModelName;
 			$models = Cache::remember (
 				$key, static::$cacheTime,
-				function () use ($request, $modelName) {
-					$query = $this->generateSelectQuery ($modelName);
+				function () use ($request) {
+					$query = $this->generateSelectQuery ($request);
 					
 					QueryFilter::filterRequest($request, $query);
 					QueryFilter::sortRequest($request, $query);
@@ -790,18 +789,22 @@
 		/**
 		 * Generates a find query from model name
 		 *
-		 * @return \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Query\Builder|null
+		 * @param $modelName
+		 * @param $request
+		 *
+		 * @return \Illuminate\Database\Eloquent\Builder|null
 		 */
-		private function generateSelectQuery ($modelName) {
-			//If this model has any relation, use Eloquent, eager load
+		protected function generateSelectQuery($request) {
+			$modelName = $this->fullModelName;
+			$modelInstance = new $modelName;
+			//If this model has any relation, eager load
 			if (count (static::$exposedRelations) > 0) {
 				//Model::with ();
 				return forward_static_call_array ([$modelName, 'with'], static::$exposedRelations);
 			}
-			//If this model doesn't have any relations, use Fluent
+			//If this model doesn't have any relations, generate a new empty query
 			else {
-				//DB::table(Models)
-				return DB::table (Pluralizer::plural ($modelName));
+				return forward_static_call_array ([$modelName, 'queryAllModels'], []);
 			}
 		}
 		
