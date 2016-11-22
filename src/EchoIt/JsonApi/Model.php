@@ -341,6 +341,9 @@ abstract class Model extends \Eloquent {
 	 * @return  Array
 	 */
 	public function exposedRelations () {
+		if (empty($this->exposedRelations)) {
+			return $this->defaultExposedRelations;
+		}
 		return $this->exposedRelations;
 	}
 
