@@ -317,7 +317,7 @@
 			$model = new $modelName ($attributes);
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
-			$model->updateRelationships ($data, $model, true);
+			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->validateData ($attributes);
 
 			if (!$model->save ()) {
@@ -326,7 +326,7 @@
 					BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
 			}
 
-			$model->updateRelationships ($data, $model, true);
+			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache($this->dasherizedResourceName());
 

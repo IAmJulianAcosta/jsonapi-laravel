@@ -426,7 +426,7 @@ abstract class Model extends \Eloquent {
 	 *
 	 * @throws Exception
 	 */
-	public function updateRelationships ($data, $creating = false) {
+	public function updateRelationships ($data, $modelsNamespace, $creating = false) {
 		if (array_key_exists ("relationships", $data)) {
 			//If we have a relationship object in the payload
 			$relationships = $data ["relationships"];
@@ -441,14 +441,14 @@ abstract class Model extends \Eloquent {
 						if (is_array ($relationshipData)) {
 							//One to one
 							if (array_key_exists ('type', $relationshipData)) {
-								$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating);
+								$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
 							}
 							//One to many
 							else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
 								$relationshipDataItems = $relationshipData;
 								foreach ($relationshipDataItems as $relationshipDataItem) {
 									if (array_key_exists ('type', $relationshipDataItem)) {
-										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating);
+										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
 									}
 									else {
 										throw new Exception(
@@ -498,10 +498,10 @@ abstract class Model extends \Eloquent {
 	 *
 	 * @throws \EchoIt\JsonApi\Exception
 	 */
-	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating) {
+	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace) {
 		//If we have a type of the relationship data
 		$type                  = $relationshipData['type'];
-		$relationshipModelName = Model::getModelClassName ($type, $this->modelsNamespace);
+		$relationshipModelName = Model::getModelClassName ($type, $modelsNamespace);
 		$relationshipName      = s ($relationshipName)->camelize ()->__toString ();
 		//If we have an id of the relationship data
 		if (array_key_exists ('id', $relationshipData)) {
