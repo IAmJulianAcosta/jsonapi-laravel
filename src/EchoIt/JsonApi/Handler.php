@@ -215,6 +215,7 @@
 					}
 				}
 				else if ($models instanceof Model){
+					$models = $model;
 					if ($loadRelations) {
 						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
