@@ -362,7 +362,7 @@
 				$attributes = $data ["attributes"];
 				
 				$model->fill ($attributes);
-				$this->validateData ($attributes);
+				$model->validateData ($attributes);
 			}
 
 			$model->updateRelationships ($data, $model, false);
