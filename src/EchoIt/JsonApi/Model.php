@@ -136,11 +136,13 @@ abstract class Model extends \Eloquent {
 	}
 
 	/**
+	 * Convert this model to an array, caching it before return
+	 *
 	 * @return array
 	 */
 	public function toArray () {
 		if ($this->isChanged ()) {
-			return $this->convertToArray ();
+			return $this->convertToJsonApiArray ();
 		} else {
 			if (empty($this->getRelations ())) {
 				$key = CacheManager::getArrayCacheKeyForSingleResourceWithoutRelations($this->getResourceType(), $this->getKey());
@@ -150,24 +152,18 @@ abstract class Model extends \Eloquent {
 			return Cache::remember (
 				$key, static::$cacheTime,
 				function () {
-					return $this->convertToArray ();
+					return $this->convertToJsonApiArray ();
 				}
 			);
 		}
 	}
 
 	/**
+	 * Convert this model to an array with the JSON Api structure
+	 *
 	 * @return array
 	 */
-	private function convertToArray () {
-		$relations = [];
-		$arrayableRelations = [];
-
-		// fetch the relations that can be represented as an array
-		$arrayableRelations = array_merge ($this->getArrayableRelations (), $arrayableRelations);
-
-		// add the relations to the linked array
-		$relations = $this->relationshipsToArray ($arrayableRelations, $relations);
+	private function convertToJsonApiArray () {
 
 		//add type parameter
 		$model_attributes = $this->attributesToArray ();
@@ -187,8 +183,9 @@ abstract class Model extends \Eloquent {
 				'self' => $this->getModelURL ()
 			)
 		];
-
-		if (!count ($relations)) {
+		
+		$relations = $this->relationsToArray ();
+		if (count ($relations) === 0) {
 			return $attributes;
 		}
 
@@ -198,40 +195,61 @@ abstract class Model extends \Eloquent {
 	}
 
 	/**
+	 * Convert the relations of model to array
+	 *
 	 * @param $arrayableRelations
 	 * @param $relations
 	 * @return mixed
 	 */
-	private function relationshipsToArray ($arrayableRelations, $relations) {
+	private function relationsToArray () {
+		$relations = [];
+		
+		// fetch the relations that can be represented as an array
+		$arrayableRelations = $this->getArrayableRelations ();
+		
 		foreach ($arrayableRelations as $relation => $value) {
-
+			//If relation is hidden, don't add
 			if (in_array ($relation, $this->hidden)) {
 				continue;
 			}
-
-			if ($value instanceof Pivot) {
+			//If is Pivot, don't add
+			else if ($value instanceof Pivot) {
 				continue;
 			}
-
-			if ($value instanceof Model) {
-				$resourceType = $value->getResourceType ();
-				$relations[s ($resourceType)->dasherize ()->__toString ()] = array(
-					'data' => array(
-						'id'   => s ($value->getKey ())->dasherize ()->__toString (),
-						'type' => Pluralizer::plural ($resourceType)
-					)
-				);
-			} elseif ($value instanceof Collection && $value->count () > 0) {
-				$resourceType = $value->get (0)->getResourceType ();
-				$relation = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
-				$relations[$relation] = array();
-				$relations[$relation]['data'] = array();
-				$value->each (
-					function (Model $item) use (&$relations, $relation, $resourceType) {
-						array_push ($relations[$relation]['data'], array(
-							'id'   => s ($item->getKey ())->dasherize ()->__toString (),
-							'type' => Pluralizer::plural ($resourceType)
-						));
+			//If is Model
+			else if ($value instanceof Model) {
+				//Rename $value
+				$model = $value;
+				
+				//Get resource type
+				$resourceType = $model->getResourceType ();
+				
+				//Generate index of array to add
+				$index = s($resourceType)->dasherize()->__toString();
+				
+				$relations[$index] = [
+					'data' => $this->generateRelationArrayInformation($model, $resourceType)
+				];
+			}
+			//If is Collection and has items
+			elseif ($value instanceof Collection && $value->count () > 0) {
+				//Rename value
+				$collection = $value;
+				
+				//Get resource type from first item
+				$resourceType = $collection->get (0)->getResourceType ();
+				
+				//Generate index of array to add
+				$index = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
+				
+				//The relation to add is an array with a data key that is itself an array
+				$relation = $relations[$index] = [];
+				$relationData = $relation['data'] = [];
+				
+				//Iterate the collection and add to $relationData
+				$collection->each (
+					function (Model $model) use (&$relationData, $resourceType) {
+						array_push ($relationData, $this->generateRelationArrayInformation($model, $resourceType));
 					}
 				);
 			}
@@ -240,9 +258,24 @@ abstract class Model extends \Eloquent {
 			if (in_array ($relation, $this->relationsFromMethod)) {
 				unset($this->$relation);
 			}
+			
+			return $relations;
 		}
-
-		return $relations;
+	}
+	
+	/**
+	 * Generates the array required to generate an array representation of a model to use as included model
+	 *
+	 * @param Model $model
+	 * @param       $resourceType
+	 *
+	 * @return array
+	 */
+	private function generateRelationArrayInformation(Model $model, $resourceType) {
+		return [
+			'id'   => s($model->getKey())->dasherize()->__toString(),
+			'type' => Pluralizer::plural($resourceType)
+		];
 	}
 
 	public function getModelURL () {
