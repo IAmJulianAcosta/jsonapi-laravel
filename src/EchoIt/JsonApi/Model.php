@@ -141,9 +141,10 @@ abstract class Model extends \Eloquent {
 	 * @return array
 	 */
 	public function toArray () {
-		if ($this->isChanged ()) {
+		if ($this->isChanged () === true) {
 			return $this->convertToJsonApiArray ();
-		} else {
+		}
+		else {
 			if (empty($this->getRelations ())) {
 				$key = CacheManager::getArrayCacheKeyForSingleResourceWithoutRelations($this->getResourceType(), $this->getKey());
 			} else {
@@ -167,7 +168,7 @@ abstract class Model extends \Eloquent {
 
 		//add type parameter
 		$model_attributes = $this->attributesToArray ();
-		$dasherized_model_attributes = array();
+		$dasherized_model_attributes = [];
 
 		foreach ($model_attributes as $key => $attribute) {
 			$dasherized_model_attributes [$this->dasherizeKey($key)] = $attribute;
@@ -179,9 +180,9 @@ abstract class Model extends \Eloquent {
 			'id'         => $this->getKey (),
 			'type'       => $this->getResourceType (),
 			'attributes' => $dasherized_model_attributes,
-			'links'      => array(
+			'links'      => [
 				'self' => $this->getModelURL ()
-			)
+			]
 		];
 		
 		$relations = $this->relationsToArray ();

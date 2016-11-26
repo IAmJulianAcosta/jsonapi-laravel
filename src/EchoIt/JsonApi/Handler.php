@@ -455,7 +455,7 @@
 					foreach ($value as $obj) {
 						// Check whether the object is already included in the response on it's ID
 						$duplicate = false;
-						$items = $links->where ($obj->getPrimaryKey (), $obj->getKey ());
+						$items = $modelsCollection->where ($obj->getPrimaryKey (), $obj->getKey ());
 						
 						if (count ($items) > 0) {
 							foreach ($items as $item) {
@@ -475,12 +475,12 @@
 						
 						$obj->setRawAttributes ($attributes);
 						
-						$links->push ($obj);
+						$modelsCollection->push ($obj);
 					}
 				}
 			}
 			
-			return $links->toArray ();
+			return $modelsCollection->toArray ();
 		}
 		
 		/**
