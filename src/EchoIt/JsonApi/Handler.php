@@ -105,6 +105,7 @@
 		 */
 		public function fulfillRequest () {
 			$request = $this->request;
+			$this->beforeFulfillRequest($request);
 			$httpMethod = $request->method;
 
 			if (!$this->supportsMethod ($httpMethod)) {
@@ -115,19 +116,17 @@
 				);
 			}
 
-			/*
-			 * Validates if this resource could be updated/deleted/created by all users.
-			 */
+			//Validates if this resource could be updated/deleted/created by all users.
 			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
 				throw new Exception('This user cannot modify this resource',
 					static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
 					BaseResponse::HTTP_FORBIDDEN);
 			}
-
-			/*
-			 * Executes the request
-			 */
+			
+			//Executes the request
+			$this->beforeHandleRequest($request);
 			$models = $this->handleRequest ($request);
+			$this->afterHandleRequest($request, $models);
 
 			if (is_null ($models)) {
 				throw new Exception(
@@ -135,14 +134,17 @@
 				);
 			}
 
+			$this->beforeGenerateResponse($request, $models);
 			if ($httpMethod === 'GET') {
-				return $this->generateCacheableResponse ($models, $request);
+				$response = $this->generateCacheableResponse ($models, $request);
 			}
 			else {
 				if ($models instanceof Model) {
-					return $this->generateNonCacheableResponse ($models);
+					$response = $this->generateNonCacheableResponse ($models);
 				}
 			}
+			$this->afterGenerateResponse($request, $models, $response);
+			return $response;
 		}
 		
 		/**
@@ -246,6 +248,7 @@
 		 * @return Model|Collection|null
 		 */
 		public function handleGet (Request $request) {
+			$this->beforeHandleGet ($request);
 			$id = $request->id;
 			if (empty($id)) {
 				$models = $this->handleGetAll ($request);
@@ -267,6 +270,7 @@
 					return $model;
 				}
 			);
+			$this->afterHandleGet ($request, $model);
 
 			return $model;
 		}
@@ -281,6 +285,8 @@
 		 * @return Collection
 		 */
 		protected function handleGetAll (Request $request) {
+			$this->beforeHandleGetAll ($request);
+			
 			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
 			$models = Cache::remember (
 				$key, static::$cacheTime,
@@ -294,6 +300,7 @@
 					return $model;
 				}
 			);
+			$this->afterHandleGetAll ($request, $models);
 			return $models;
 		}
 
@@ -307,6 +314,8 @@
 		 * @throws Exception\Validation
 		 */
 		public function handlePost (Request $request) {
+			$this->beforeHandlePost ($request);
+			
 			$modelName = $this->fullModelName;
 			$data = $this->parseRequestContent ($request->content);
 			$this->normalizeAttributes ($data ["attributes"]);
@@ -329,6 +338,7 @@
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache($this->dasherizedResourceName());
+			$this->afterHandlePost ($request, $model);
 
 			return $model;
 		}
@@ -342,6 +352,8 @@
 		 * @throws \EchoIt\JsonApi\Exception
 		 */
 		public function handlePatch (Request $request) {
+			$this->beforeHandlePatch ($request);
+			
 			$data = $this->parseRequestContent ($request->content, false);
 			$id = $data["id"];
 
@@ -379,6 +391,9 @@
 			if ($model->isChanged()) {
 				CacheManager::clearCache ($this->dasherizedResourceName(), $id, $model);
 			}
+			
+			$this->afterHandlePatch ($request, $model);
+			
 			return $model;
 		}
 
@@ -395,6 +410,8 @@
 		 * @throws \EchoIt\JsonApi\Exception
 		 */
 		public function handleDelete (Request $request) {
+			$this->beforeHandleDelete ($request);
+			
 			if (empty($request->id)) {
 				throw new Exception(
 					'No ID provided', static::ERROR_SCOPE | static::ERROR_NO_ID, BaseResponse::HTTP_BAD_REQUEST);
@@ -413,6 +430,7 @@
 			
 			$model->delete ();
 			
+			$this->afterHandleDelete ($request, $model);
 			return $model;
 		}
 
@@ -817,4 +835,111 @@
 		 * @return void
 		 */
 		protected abstract function applyFilters ($request, &$query);
+		
+		
+		/**
+		 * Method that runs before fullfilling a request. Should be used by child classes.
+		 */
+		protected function beforeFulfillRequest (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a request. Should be used by child classes.
+		 */
+		protected function beforeHandleRequest (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a request. Should be used by child classes.
+		 */
+		protected function afterHandleRequest (Request $request, $models) {
+			
+		}
+		
+		/**
+		 * Method that runs before generating the response. Should be used by child classes.
+		 */
+		protected function beforeGenerateResponse (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after generating the response. Should be used by child classes.
+		 */
+		protected function afterGenerateResponse (Request $request, $models, Response $response) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a GET request. Should be used by child classes.
+		 */
+		protected function beforeHandleGet (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a GET request. Should be used by child classes.
+		 */
+		protected function afterHandleGet (Request $request, Model $model) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a GET request of all resources. Should be used by child classes.
+		 */
+		protected function beforeHandleGetAll (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a GET request of all resources. Should be used by child classes.
+		 */
+		protected function afterHandleGetAll (Request $request, Model $model) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a POST request. Should be used by child classes.
+		 */
+		protected function beforeHandlePost (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a POST request. Should be used by child classes.
+		 */
+		protected function afterHandlePost (Request $request, Model $model) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a PATCH request. Should be used by child classes.
+		 */
+		protected function beforeHandlePatch (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a PATCH request. Should be used by child classes.
+		 */
+		protected function afterHandlePatch (Request $request, Model $model) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a DELETE request. Should be used by child classes.
+		 */
+		protected function beforeHandleDelete (Request $request) {
+			
+		}
+		
+		/**
+		 * Method that runs after handling a DELETE request. Should be used by child classes.
+		 */
+		protected function afterHandleDelete (Request $request, Model $model) {
+			
+		}
+		
 	}
