@@ -247,18 +247,31 @@
 		 *
 		 * @return Model|Collection|null
 		 */
-		public function handleGet (Request $request) {
-			$this->beforeHandleGet ($request);
+		protected function handleGet (Request $request) {
 			$id = $request->id;
 			if (empty($id)) {
 				$models = $this->handleGetAll ($request);
 				return $models;
 			}
-
+			else {
+				return $this->handleGetSingle($request, $id);
+			}
+		}
+		
+		/**
+		 * @param Request $request
+		 * @param         $id
+		 *
+		 * @return mixed
+		 */
+		protected function handleGetSingle(Request $request, $id) {
+			$this->beforeHandleGet($request);
+			
 			$modelName = $this->fullModelName;
-			$key = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
-			$model = Cache::remember (
-				$key, static::$cacheTime,
+			$key       = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
+			$model     = Cache::remember(
+				$key,
+				static::$cacheTime,
 				function () use ($modelName, $request) {
 					$query = $this->generateSelectQuery ($request);
 					
