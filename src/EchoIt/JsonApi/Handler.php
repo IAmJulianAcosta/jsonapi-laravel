@@ -39,9 +39,20 @@
 		
 		const HANDLER_WORD_LENGTH = 7;
 		const ERROR_UNAUTHORIZED = 256;
-	
+		
 		protected static $namespace;
 		protected static $exposedRelations;
+		
+		/**
+		 * @var integer request type. Is set before fulfilling each kind of request.
+		 */
+		protected $requestType;
+		
+		const GET = 0;
+		const GET_ALL = 1;
+		const POST = 2;
+		const PATCH = 3;
+		const DELETE = 4;
 		
 		/**
 		 * @var Model Class name used by this handler including namespace
@@ -125,25 +136,25 @@
 			
 			//Executes the request
 			$this->beforeHandleRequest($request);
-			$models = $this->handleRequest ($request);
-			$this->afterHandleRequest($request, $models);
+			$model = $this->handleRequest ($request);
+			$this->afterHandleRequest($request, $model);
 
-			if (is_null ($models)) {
+			if (is_null ($model)) {
 				throw new Exception(
 					'Unknown ID', static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID, BaseResponse::HTTP_NOT_FOUND
 				);
 			}
 
-			$this->beforeGenerateResponse($request, $models);
+			$this->beforeGenerateResponse($request, $model);
 			if ($httpMethod === 'GET') {
-				$response = $this->generateCacheableResponse ($models, $request);
+				$response = $this->generateCacheableResponse ($model, $request);
 			}
 			else {
-				if ($models instanceof Model) {
-					$response = $this->generateNonCacheableResponse ($models);
+				if ($model instanceof Model) {
+					$response = $this->generateNonCacheableResponse ($model);
 				}
 			}
-			$this->afterGenerateResponse($request, $models, $response);
+			$this->afterGenerateResponse($request, $model, $response);
 			return $response;
 		}
 		
@@ -266,6 +277,7 @@
 		 */
 		protected function handleGetSingle(Request $request, $id) {
 			$this->beforeHandleGet($request);
+			$this->requestType = static::GET;
 			
 			$modelName = $this->fullModelName;
 			$key       = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
@@ -288,10 +300,6 @@
 			return $model;
 		}
 
-		public function applyInclude ($modelName) {
-			
-		}
-
 		/**
 		 * @param Request $request
 		 *
@@ -299,6 +307,7 @@
 		 */
 		protected function handleGetAll (Request $request) {
 			$this->beforeHandleGetAll ($request);
+			$this->requestType = static::GET_ALL;
 			
 			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
 			$models = Cache::remember (
@@ -328,6 +337,7 @@
 		 */
 		public function handlePost (Request $request) {
 			$this->beforeHandlePost ($request);
+			$this->requestType = static::POST;
 			
 			$modelName = $this->fullModelName;
 			$data = $this->parseRequestContent ($request->content);
@@ -366,6 +376,7 @@
 		 */
 		public function handlePatch (Request $request) {
 			$this->beforeHandlePatch ($request);
+			$this->requestType = static::PATCH;
 			
 			$data = $this->parseRequestContent ($request->content, false);
 			$id = $data["id"];
@@ -424,6 +435,7 @@
 		 */
 		public function handleDelete (Request $request) {
 			$this->beforeHandleDelete ($request);
+			$this->requestType = static::DELETE;
 			
 			if (empty($request->id)) {
 				throw new Exception(
@@ -851,107 +863,159 @@
 		
 		
 		/**
-		 * Method that runs before fullfilling a request. Should be used by child classes.
+		 * Method that runs before fullfilling a request. Should be implemented by child classes.
 		 */
 		protected function beforeFulfillRequest (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs before handling a request. Should be used by child classes.
+		 * Method that runs before handling a request. Should be implemented by child classes.
 		 */
 		protected function beforeHandleRequest (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a request. Should be used by child classes.
+		 * Method that runs after handling a request. Should be implemented by child classes.
 		 */
 		protected function afterHandleRequest (Request $request, $models) {
 			
 		}
 		
 		/**
-		 * Method that runs before generating the response. Should be used by child classes.
+		 * Method that runs before generating the response. Should be implemented by child classes.
 		 */
 		protected function beforeGenerateResponse (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after generating the response. Should be used by child classes.
+		 * Method that runs after generating the response. Shouldn't be overriden by child classes.
 		 */
-		protected function afterGenerateResponse (Request $request, $models, Response $response) {
-			
+		protected function afterGenerateResponse (Request $request, $model, Response $response) {
+			switch ($this->requestType) {
+				case static::GET;
+					$this->afterGenerateGetResponse ($request, $model, $response);
+					break;
+				case static::GET_ALL;
+					$this->afterGenerateGetAllResponse($request, $model, $response);
+					break;
+				case static::POST;
+					$this->afterGeneratePostResponse($request, $model, $response);
+					break;
+				case static::PATCH;
+					$this->afterGeneratePatchResponse($request, $model, $response);
+					break;
+				case static::DELETE;
+					$this->afterGenerateDeleteResponse($request, $model, $response);
+					break;
+			}
 		}
 		
 		/**
-		 * Method that runs before handling a GET request. Should be used by child classes.
+		 * Method that runs before handling a GET request. Should be implemented by child classes.
 		 */
 		protected function beforeHandleGet (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a GET request. Should be used by child classes.
+		 * Method that runs after handling a GET request. Should be implemented by child classes.
 		 */
 		protected function afterHandleGet (Request $request, Model $model) {
 			
 		}
 		
 		/**
-		 * Method that runs before handling a GET request of all resources. Should be used by child classes.
+		 * Method that runs after generating a GET response. Should be implemented by child classes.
+		 */
+		protected function afterGenerateGetResponse (Request $request, $model, Response $response) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a GET request of all resources. Should be implemented by child classes.
 		 */
 		protected function beforeHandleGetAll (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a GET request of all resources. Should be used by child classes.
+		 * Method that runs after handling a GET request of all resources. Should be implemented by child classes.
 		 */
 		protected function afterHandleGetAll (Request $request, Model $model) {
 			
 		}
 		
+		
 		/**
-		 * Method that runs before handling a POST request. Should be used by child classes.
+		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+		 */
+		protected function afterGenerateGetAllResponse (Request $request, $model, Response $response) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a POST request. Should be implemented by child classes.
 		 */
 		protected function beforeHandlePost (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a POST request. Should be used by child classes.
+		 * Method that runs after handling a POST request. Should be implemented by child classes.
 		 */
 		protected function afterHandlePost (Request $request, Model $model) {
 			
 		}
 		
 		/**
-		 * Method that runs before handling a PATCH request. Should be used by child classes.
+		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+		 */
+		protected function afterGeneratePostResponse (Request $request, $model, Response $response) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a PATCH request. Should be implemented by child classes.
 		 */
 		protected function beforeHandlePatch (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a PATCH request. Should be used by child classes.
+		 * Method that runs after handling a PATCH request. Should be implemented by child classes.
 		 */
 		protected function afterHandlePatch (Request $request, Model $model) {
 			
 		}
 		
 		/**
-		 * Method that runs before handling a DELETE request. Should be used by child classes.
+		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+		 */
+		protected function afterGeneratePatchResponse (Request $request, $model, Response $response) {
+			
+		}
+		
+		/**
+		 * Method that runs before handling a DELETE request. Should be implemented by child classes.
 		 */
 		protected function beforeHandleDelete (Request $request) {
 			
 		}
 		
 		/**
-		 * Method that runs after handling a DELETE request. Should be used by child classes.
+		 * Method that runs after handling a DELETE request. Should be implemented by child classes.
 		 */
 		protected function afterHandleDelete (Request $request, Model $model) {
+			
+		}
+		
+		/**
+		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+		 */
+		protected function afterGenerateDeleteResponse (Request $request, $model, Response $response) {
 			
 		}
 		
