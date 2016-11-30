@@ -191,21 +191,21 @@
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
 			if ($models instanceof Response) {
-				$response = $models;
+				//				$response = $models;
 			}
 			elseif ($models instanceof LengthAwarePaginator) {
-				$items = new Collection($models->items ());
-				foreach ($items as $model) {
-					if ($loadRelations) {
-						$this->loadRelatedModels ($model);
-					}
-				}
-
-				$response = new Response($items, static::successfulHttpStatusCode ($this->request->method));
-
-				$response->links = $this->getPaginationLinks ($models);
-				$response->included = $this->getIncludedModels ($items);
-				$response->errors = $this->getNonBreakingErrors ();
+				//				$items = new Collection($models->items ());
+				//				foreach ($items as $model) {
+				//					if ($loadRelations) {
+				//						$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
+				//					}
+				//				}
+				//
+				//				$response = new Response($items, static::successfulHttpStatusCode ($this->request->method));
+				//
+				//				$response->links = $this->getPaginationLinks ($models);
+				//				$response->included = $this->getIncludedModels ($items);
+				//				$response->errors = $this->getNonBreakingErrors ();
 			}
 			else {
 				if ($models instanceof Collection) {
