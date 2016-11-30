@@ -202,7 +202,7 @@ abstract class Model extends \Eloquent {
 	 * @param $relations
 	 * @return mixed
 	 */
-	private function relationsToArray () {
+	public function relationsToArray () {
 		$relations = [];
 		
 		// fetch the relations that can be represented as an array
