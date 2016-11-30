@@ -454,8 +454,8 @@
 		 * @return array
 		 */
 		protected function getIncludedModels ($models) {
-			$links = new Collection();
-			$models = $models instanceof Collection ? $models : [$models];
+			$modelsCollection  = new Collection();
+			$models            = $models instanceof Collection ? $models : [$models];
 			
 			/** @var Model $model */
 			foreach ($models as $model) {
