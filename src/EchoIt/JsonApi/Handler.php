@@ -111,7 +111,7 @@
 		 * Fulfill the API request and return a response. This is the entrypoint of handler, and should be called from
 		 * controller.
 		 *
-		 * @return \EchoIT\JsonApi\Response
+		 * @return Response
 		 * @throws Exception
 		 */
 		public function fulfillRequest () {
@@ -240,7 +240,7 @@
 				$response->errors = $this->getNonBreakingErrors ();
 			}
 
-			return $response->toJsonResponse();
+			return $response;
 		}
 
 		/**

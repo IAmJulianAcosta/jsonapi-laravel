@@ -25,7 +25,7 @@ abstract class Model extends \Eloquent {
 	 *
 	 * @var array
 	 */
-	protected $rules = array();
+	protected $rules = [];
 	
 	/**
 	 * @var integer Amount time that response should be cached
@@ -423,7 +423,7 @@ abstract class Model extends \Eloquent {
 				return $validator->errors ();
 			}
 		}
-		return True;
+		return true;
 	}
 
 	/**
