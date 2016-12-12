@@ -944,7 +944,7 @@
 		/**
 		 * Method that runs after handling a GET request of all resources. Should be implemented by child classes.
 		 */
-		protected function afterHandleGetAll (Request $request, Model $model) {
+		protected function afterHandleGetAll (Request $request, Collection $models) {
 			
 		}
 		
