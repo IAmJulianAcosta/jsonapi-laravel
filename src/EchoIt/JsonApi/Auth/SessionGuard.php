@@ -24,7 +24,7 @@
 		
 		protected $authCookie;
 		
-		public function __construct($name, UserProvider $provider, SessionInterface $session, Request $request, $authCookie = "") {
+		public function __construct($name, UserProvider $provider, SessionInterface $session, Request $request = null, $authCookie = "") {
 			parent::__construct($name, $provider, $session, $request);
 			$authCookie = empty($authCookie) === false ? $authCookie : $name . "_cookie";
 			$this->authCookie = $authCookie;
