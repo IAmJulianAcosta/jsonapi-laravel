@@ -15,6 +15,8 @@
 	
 	namespace EchoIt\JsonApi;
 	
+	use Illuminate\Http\Response as BaseResponse;
+	use Illuminate\Support\Collection;
 	use Illuminate\Support\Pluralizer;
 	use function Stringy\create as s;
 
@@ -59,5 +61,87 @@
 		 */
 		public static function methodHandlerName($method) {
 			return 'handle' . ucfirst(strtolower($method));
+		}
+		
+		/**
+		 * Iterate through result set to fetch the requested resources to include.
+		 *
+		 * @param Model $models
+		 *
+		 * @return array
+		 */
+		public static function getIncludedModels($models) {
+			$modelsCollection = new Collection();
+			$models           = $models instanceof Collection ? $models : [$models];
+			
+			/** @var Model $model */
+			foreach ($models as $model) {
+				$exposedRelations = $model->exposedRelations();
+				
+				foreach ($exposedRelations as $relationName) {
+					$value = static::getModelsForRelation($model, $relationName);
+					
+					if (is_null($value)) {
+						continue;
+					}
+					
+					//Each one of the models relations
+					/* @var Model $obj */
+					foreach ($value as $obj) {
+						// Check whether the object is already included in the response on it's ID
+						$duplicate = false;
+						$items     = $modelsCollection->where($obj->getPrimaryKey(), $obj->getKey());
+						
+						if (count($items) > 0) {
+							foreach ($items as $item) {
+								/** @var $item Model */
+								if ($item->getResourceType() === $obj->getResourceType()) {
+									$duplicate = true;
+									break;
+								}
+							}
+							if ($duplicate) {
+								continue;
+							}
+						}
+						
+						//add type property
+						$attributes = $obj->getAttributes();
+						
+						$obj->setRawAttributes($attributes);
+						
+						$modelsCollection->push($obj);
+					}
+				}
+			}
+			
+			return $modelsCollection->toArray();
+		}
+		
+		/**
+		 * Returns the models from a relationship. Will always return as array.
+		 *
+		 * @param  Model $model
+		 * @param  string $relationKey
+		 *
+		 * @return array|\Illuminate\Database\Eloquent\Collection
+		 * @throws Exception
+		 */
+		public static function getModelsForRelation(Model $model, $relationKey) {
+			//TODO fix flags
+			if (method_exists($model, $relationKey) === false) {
+				throw new Exception('Relation "' . $relationKey . '" does not exist in model',
+					static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID, BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
+			}
+			$relationModels = $model->{$relationKey};
+			if (is_null($relationModels)) {
+				return null;
+			}
+			
+			if ( ! $relationModels instanceof Collection) {
+				return [$relationModels];
+			}
+			
+			return $relationModels;
 		}
 	}

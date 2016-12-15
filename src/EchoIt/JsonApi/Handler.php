@@ -236,7 +236,7 @@
 
 				$response = new Response($models, static::successfulHttpStatusCode ($this->request->method, $models));
 
-				$response->included = $this->getIncludedModels ($models);
+				$response->included = Utils::getIncludedModels($models);
 				$response->errors = $this->getNonBreakingErrors ();
 			}
 
@@ -353,7 +353,7 @@
 			$model->validateData ($attributes);
 
 			if (!$model->save ()) {
-				throw new Exception(
+					throw new Exception(
 					'An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
 					BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
 			}
@@ -470,60 +470,6 @@
 					$attributes[ s( $key )->underscored()->__toString() ] = $value;
 				}
 			}
-		}
-
-		/**
-		 * Iterate through result set to fetch the requested resources to include.
-		 *
-		 * @param Model $models
-		 * @return array
-		 */
-		protected function getIncludedModels ($models) {
-			$modelsCollection  = new Collection();
-			$models            = $models instanceof Collection ? $models : [$models];
-			
-			/** @var Model $model */
-			foreach ($models as $model) {
-				$exposedRelations = $model->exposedRelations();
-				
-				foreach ($exposedRelations as $relationName) {
-					$value = static::getModelsForRelation ($model, $relationName);
-					
-					if (is_null ($value)) {
-						continue;
-					}
-
-					//Each one of the models relations
-					/* @var Model $obj*/
-					foreach ($value as $obj) {
-						// Check whether the object is already included in the response on it's ID
-						$duplicate = false;
-						$items = $modelsCollection->where ($obj->getPrimaryKey (), $obj->getKey ());
-						
-						if (count ($items) > 0) {
-							foreach ($items as $item) {
-								/** @var $item Model */
-								if ($item->getResourceType () === $obj->getResourceType ()) {
-									$duplicate = true;
-									break;
-								}
-							}
-							if ($duplicate) {
-								continue;
-							}
-						}
-						
-						//add type property
-						$attributes = $obj->getAttributes ();
-						
-						$obj->setRawAttributes ($attributes);
-						
-						$modelsCollection->push ($obj);
-					}
-				}
-			}
-			
-			return $modelsCollection->toArray ();
 		}
 		
 		/**
@@ -716,34 +662,6 @@
 			return BaseResponse::HTTP_BAD_REQUEST;
 		}
 		
-		/**
-		 * Returns the models from a relationship. Will always return as array.
-		 *
-		 * @param  Model $model
-		 * @param  string $relationKey
-		 * @return array|\Illuminate\Database\Eloquent\Collection
-		 * @throws Exception
-		 */
-		protected static function getModelsForRelation(Model $model, $relationKey) {
-			if (!method_exists($model, $relationKey)) {
-				throw new Exception(
-					'Relation "' . $relationKey . '" does not exist in model',
-					static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
-					BaseResponse::HTTP_INTERNAL_SERVER_ERROR
-				);
-			}
-			$relationModels = $model->{$relationKey};
-			if (is_null($relationModels)) {
-				return null;
-			}
-
-			if (! $relationModels instanceof Collection) {
-				return [ $relationModels ];
-			}
-
-			return $relationModels;
-		}
-
 		/**
 		 * This method returns the value from given array and key, and will create a
 		 * new Collection instance on the key if it doesn't already exist
