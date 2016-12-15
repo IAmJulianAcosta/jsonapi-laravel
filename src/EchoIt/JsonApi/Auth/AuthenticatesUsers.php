@@ -151,22 +151,6 @@
 			);
 		}
 		
-		protected function generate_error_response ($error_code, $error_title, $error_detail, $status_code, $links = null) {
-			$return = [
-				"id"     => microtime (),
-				"code"   => $error_code,
-				"title"  => $error_title,
-				"detail" => $error_detail,
-				"status" => $status_code,
-			];
-			
-			if ($links) {
-				$return["links"] = $links;
-			}
-			
-			return $return;
-		}
-		
 		/**
 		 * @param Request $request
 		 *
@@ -178,4 +162,3 @@
 			return $attributes;
 		}
 	}
-	

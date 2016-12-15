@@ -24,12 +24,10 @@
 		
 		/**
 		 * @param Request $request
-		 * @param Authenticatable    $user
 		 */
-		public function register(Request $request, Authenticatable $user) {
+		public function register(Authenticatable $user) {
 			event(new Registered($user));
 			
 			$this->guard()->login($user, true);
 		}
 	}
-	

@@ -15,7 +15,7 @@
 	
 	namespace EchoIt\JsonApi;
 	
-	use Illuminate\Support\Facades\DB;
+	use Illuminate\Database\Eloquent\Builder;
 	
 	class QueryFilter {
 		
@@ -24,7 +24,7 @@
 		/**
 		 * Function to handle sorting requests.
 		 */
-		public static function sortRequest(Request $request, &$query) {
+		public static function sortRequest(Request $request, Builder &$query) {
 			$sort = $request->originalRequest->input('sort');
 			if (is_null($sort) === false) {
 				$explodedSort = explode(",", $sort);

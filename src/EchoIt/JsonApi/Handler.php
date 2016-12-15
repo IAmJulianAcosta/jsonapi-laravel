@@ -12,7 +12,6 @@
 	use Illuminate\Pagination\Paginator;
 	use function Stringy\create as s;
 	use Cache;
-	use Illuminate\Support\Facades\DB;
 
 	abstract class Handler {
 
@@ -279,13 +278,12 @@
 			$this->beforeHandleGet($request);
 			$this->requestType = static::GET;
 			
-			$modelName = $this->fullModelName;
 			$key       = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
 			$model     = Cache::remember(
 				$key,
 				static::$cacheTime,
-				function () use ($modelName, $request) {
-					$query = $this->generateSelectQuery ($request);
+				function () use ($request) {
+					$query = $this->generateSelectQuery ();
 					
 					$query->where('id', $request->id);
 					$model = $query->first ();
@@ -313,7 +311,7 @@
 			$models = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($request) {
-					$query = $this->generateSelectQuery ($request);
+					$query = $this->generateSelectQuery ();
 					
 					QueryFilter::filterRequest($request, $query);
 					QueryFilter::sortRequest($request, $query);
@@ -756,12 +754,11 @@
 		 *
 		 * @return \Illuminate\Database\Eloquent\Builder|null
 		 */
-		protected function generateSelectQuery($request) {
+		protected function generateSelectQuery() {
 			$modelName = $this->fullModelName;
-			$modelInstance = new $modelName;
 			//If this model has any relation, eager load
 			if (count (static::$exposedRelations) > 0) {
-				//Model::with ();
+				//Call static function with
 				return forward_static_call_array ([$modelName, 'with'], static::$exposedRelations);
 			}
 			//If this model doesn't have any relations, generate a new empty query
