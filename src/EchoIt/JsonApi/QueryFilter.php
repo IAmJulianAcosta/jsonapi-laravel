@@ -6,13 +6,6 @@
 	 * @author  Julian Acosta <iam@julianacosta.me>
 	 */
 	
-	/**
-	 * Created by PhpStorm.
-	 * User: julian-acosta
-	 * Date: 29/09/16
-	 * Time: 9:11 AM
-	 */
-	
 	namespace EchoIt\JsonApi;
 	
 	use Illuminate\Database\Eloquent\Builder;

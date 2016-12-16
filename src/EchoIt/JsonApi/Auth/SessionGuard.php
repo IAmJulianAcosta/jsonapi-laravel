@@ -6,13 +6,6 @@
 	 * @author  Julian Acosta <iam@julianacosta.me>
 	 */
 	
-	/**
-	 * Created by PhpStorm.
-	 * User: julian-acosta
-	 * Date: 11/29/16
-	 * Time: 11:08 AM
-	 */
-	
 	namespace EchoIt\JsonApi\Auth;
 	
 	use Illuminate\Contracts\Auth\Authenticatable;

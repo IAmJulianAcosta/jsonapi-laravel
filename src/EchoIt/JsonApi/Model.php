@@ -2,7 +2,7 @@
 
 namespace EchoIt\JsonApi;
 
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use \Illuminate\Support\Collection;
@@ -418,12 +418,12 @@ abstract class Model extends \Eloquent {
 	 */
 	public function validateArray (Array $values) {
 		if (count ($this->getValidationRules ())) {
+			/** @var Validator $validator */
 			$validator = Validator::make ($values, $this->getValidationRules ());
 			if ($validator->fails ()) {
-				return $validator->errors ();
+				throw new Exception\ValidationException($validator->errors());
 			}
 		}
-		return true;
 	}
 
 	/**
@@ -433,7 +433,7 @@ abstract class Model extends \Eloquent {
 	 * @return Array validation rules
 	 */
 	public function getValidationRules () {
-		return [];
+		return $this->rules;
 	}
 	
 	/**
@@ -587,23 +587,12 @@ abstract class Model extends \Eloquent {
 	 *
 	 * @param  array                 $values passed array of values
 	 *
-	 * @throws Exception\Validation          Exception thrown when validation fails
+	 * @throws Exception\ValidationException          Exception thrown when validation fails
 	 *
 	 * @return Bool                          true if validation successful
 	 */
 	public function validateData(array $values) {
-		$validationResponse = $this->validateArray($values);
-		
-		if ($validationResponse === true) {
-			return true;
-		}
-		
-		throw new Exception\Validation(
-			'Bad Request',
-			static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
-			BaseResponse::HTTP_BAD_REQUEST,
-			$validationResponse
-		);
+		$this->validateArray($values);
 	}
 	
 	/**
@@ -660,6 +649,12 @@ abstract class Model extends \Eloquent {
 		$instance = new static;
 		
 		return $instance->newQuery();
+	}
+	
+	public static function newRecord ($attributes) {
+		/** @var Model $model */
+		return new static ($attributes);
+		static::firstOrCreate ();
 	}
 	
 }

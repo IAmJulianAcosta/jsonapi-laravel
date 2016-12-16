@@ -1,34 +1,46 @@
 <?php namespace EchoIt\JsonApi;
 
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Response;
 
 /**
  * ErrorResponse represents a HTTP error response with a JSON API compliant payload.
  *
- * @author Ronni Egeriis Persson <ronni@egeriis.me>
+ * @author Julián Acosta <iam@julianacosta.me>
  */
-class ErrorResponse extends JsonResponse
-{
-    /**
-     * Constructor.
-     *
-     * @param int    $httpStatusCode HTTP status code
-     * @param mixed  $errorCode      Internal error code
-     * @param string $errorTitle     Error description
-     * @param array  $additionalAttrs
-     */
-    public function __construct($httpStatusCode, $errorCode, $errorTitle, array $additionalAttrs = array())
-    {
-        $data = [
-            'errors' => [ array_merge(
-                [
-                    'status' => (string) $httpStatusCode,
-                    'code'   => (string) $errorCode,
-                    'title'  => (string) $errorTitle
-                ],
-                $additionalAttrs
-            ) ]
-        ];
-        parent::__construct($data, $httpStatusCode);
+class ErrorResponse extends JsonResponse {
+	/**
+	 * ErrorResponse constructor.
+	 *
+	 * @param array $errors
+	 * @param int   $httpStatusCode
+	 */
+    public function __construct(array $errors, $httpStatusCode = Response::HTTP_BAD_REQUEST) {
+	    $data = [ 'errors' => [] ];
+	
+	    /** @var Error $error */
+	    foreach ($errors as $error) {
+		    $data['errors'][] = $this->generateErrorObject($error);
+	    }
+	    
+	    parent::__construct ($data, $httpStatusCode);
     }
+	
+	/**
+	 * @param $error
+	 *
+	 * @return array
+	 */
+	protected function generateErrorObject(Error $error) {
+		return array_merge(
+			[
+				'id'     => (string) microtime(),
+			    'code'   => (string) $error->getErrorCode(),
+			    'title'  => (string) $error->getTitle(),
+			    'detail' => (string) $error->getMessage(),
+			    'status' => (string) $error->getHttpErrorCode(),
+			],
+			$error->getAdditionalAttributes()
+		);
+	}
 }

@@ -1,29 +1,54 @@
 <?php namespace EchoIt\JsonApi;
 
+use Illuminate\Http\Response;
+
 /**
  * JsonApi\Exception represents an Exception that can be thrown where a JSON response may be expected.
  *
- * @author Ronni Egeriis Persson <ronni@egeriis.me>
+ * @author Julián Acosta <iam@julianacosta.me>
  */
-class Exception extends \Exception
-{
-    protected $httpStatusCode;
-    protected $additionalAttrs;
-
-    /**
-     * Constructor.
-     *
-     * @param string  $message        The Exception message to throw
-     * @param int     $code           The Exception code
-     * @param int     $httpStatusCode HTTP status code which can be used for broken request
-     * @param array   $additionalAttrs
-     */
-    public function __construct($message = '', $code = 0, $httpStatusCode = 500, array $additionalAttrs = array())
-    {
-        parent::__construct($message, $code);
-
-        $this->httpStatusCode = $httpStatusCode;
-        $this->additionalAttrs = $additionalAttrs;
+class Exception extends \Exception {
+	/**
+	 * @var array
+	 */
+	protected $errors;
+	
+	/**
+	 * @var int
+	 */
+	protected $httpErrorCode;
+	
+	/**
+	 * @var int
+	 */
+	protected $errorCode;
+	
+	/**
+	 *
+	 */
+	protected $multipleErrors;
+	
+	/**
+	 * Exception constructor.
+	 *
+	 * @param array $errors
+	 */
+    public function __construct(array $errors) {
+	    $this->multipleErrors = count($errors) > 1;
+	    if ($this->multipleErrors === true) {
+		    $this->httpErrorCode = Response::HTTP_BAD_REQUEST;
+		    $this->errorCode      = Error::MULTIPLE_ERRORS;
+		    $this->errorMessage   = "Bad request";
+	    }
+	    else {
+		    /** @var Error $error */
+		    $error                = $errors [0];
+		    $this->httpErrorCode  = $error->getHttpErrorCode();
+		    $this->errorCode      = $error->getErrorCode();
+		    $this->errorMessage   = $error->getMessage();
+	    }
+	    $this->errors = $errors;
+	    parent::__construct("Bad request", $this->errorCode, $this->httpErrorCode);
     }
 
     /**
@@ -31,8 +56,7 @@ class Exception extends \Exception
      *
      * @return \EchoIt\JsonApi\ErrorResponse
      */
-    public function response()
-    {
-        return new ErrorResponse($this->httpStatusCode, $this->code, $this->message, $this->additionalAttrs);
+    public function response() {
+        return new ErrorResponse($this->errors, $this->httpErrorCode);
     }
 }

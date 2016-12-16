@@ -6,16 +6,9 @@
 	 * @author  Julian Acosta <iam@julianacosta.me>
 	 */
 	
-	/**
-	 * Created by PhpStorm.
-	 * User: julian-acosta
-	 * Date: 27/09/16
-	 * Time: 3:47 PM
-	 */
-	
 	namespace EchoIt\JsonApi;
 	
-	use Illuminate\Http\Response as BaseResponse;
+	use Illuminate\Http\Response;
 	use Illuminate\Support\Collection;
 	use Illuminate\Support\Pluralizer;
 	use function Stringy\create as s;
@@ -128,10 +121,16 @@
 		 * @throws Exception
 		 */
 		public static function getModelsForRelation(Model $model, $relationKey) {
-			//TODO fix flags
 			if (method_exists($model, $relationKey) === false) {
-				throw new Exception('Relation "' . $relationKey . '" does not exist in model',
-					static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID, BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
+				throw new Exception(
+					[
+						new Error (
+							'Relation "' . $relationKey . '" does not exist in model',
+							Error::RELATION_DOESNT_EXISTS_IN_MODEL,
+							Response::HTTP_UNPROCESSABLE_ENTITY
+						)
+					]
+				);
 			}
 			$relationModels = $model->{$relationKey};
 			if (is_null($relationModels)) {

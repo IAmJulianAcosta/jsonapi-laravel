@@ -1,13 +1,8 @@
 <?php
-	/**
-	 * Created by PhpStorm.
-	 * User: julian-acosta
-	 * Date: 12/7/16
-	 * Time: 2:23 PM
-	 */
-	
+
 	namespace EchoIt\JsonApi\Auth;
 	
+	use EchoIt\JsonApi\Error;
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Model;
 	use Illuminate\Contracts\Validation\Validator;
@@ -50,7 +45,15 @@
 			
 			$this->sendFailedLoginResponse($request);
 			
-			throw new Exception("An unknown error ocurred during login", 1, 500);
+			throw new Exception(
+				[
+					new Error(
+						"An unknown error ocurred during login",
+						Error::UNKNOWN_ERROR,
+						Response::HTTP_INTERNAL_SERVER_ERROR
+					)
+				]
+			);
 		}
 		
 		public function validate(Request $request, array $rules, array $messages = [], array $customAttributes = []) {
@@ -87,21 +90,36 @@
 		protected function authenticated(Request $request, $user) {
 			if ($user instanceof Model) {
 				$response["meta"]  = [
-					//TODO generate auth cookie?
+					//TODO generate auth token?
 				];
 				$response["data"] = $user->toArray();
 				return new JsonResponse($response, 200, ['Content-Type' => 'application/vnd.api+json']);
 				
 			}
 			else {
-				throw new Exception("User not valid", 1, 500);
+				throw new Exception(
+					[
+						new Error (
+							'User passed is not a valid Model object',
+							Error::SERVER_GENERIC_ERROR,
+							Response::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 		}
 		
 		protected function credentials(Request $request) {
 			if ($request->isJson() === false) {
 				throw new Exception(
-					'Request must have a JSON API media type (application/vnd.api+json)', 0, Response::HTTP_BAD_REQUEST);
+					[
+						new Error (
+							'Request must have a JSON API media type (application/vnd.api+json)',
+							Error::MALFORMED_REQUEST,
+							Response::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 			$attributes = $this->getAttributes($request);
 			
@@ -112,11 +130,27 @@
 		}
 		
 		protected function sendLockoutResponse (Request $request) {
-			throw new Exception('Too many failed attempts', 0, Response::HTTP_BAD_REQUEST);
+			throw new Exception(
+				[
+					new Error (
+						'Too many failed attempts',
+						Error::LOCKOUT,
+						Response::HTTP_FORBIDDEN
+					)
+				]
+			);
 		}
 		
 		protected function sendFailedLoginResponse (Request $request) {
-			throw new Exception('Login invalid', 0, Response::HTTP_UNAUTHORIZED);
+			throw new Exception(
+				[
+					new Error (
+						'Invalid credentials',
+						Error::INVALID_CREDENTIALS,
+						Response::HTTP_UNAUTHORIZED
+					)
+				]
+			);
 		}
 		
 		/**

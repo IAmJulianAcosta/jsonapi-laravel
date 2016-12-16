@@ -4,6 +4,7 @@
 	
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\CacheManager;
+	use Illuminate\Database\QueryException;
 	use Illuminate\Http\JsonResponse;
 	use Illuminate\Support\Collection;
 	use Illuminate\Http\Response as BaseResponse;
@@ -103,6 +104,7 @@
 			$this->modelsNamespace = $modelsNamespace;
 			$this->setResourceName ();
 			$this->generateModelName ();
+			//TODO implement advanced cache with redis
 			$this->cacheDriver = config('cache.default');
 		}
 
@@ -120,17 +122,27 @@
 
 			if (!$this->supportsMethod ($httpMethod)) {
 				throw new Exception(
-					'Method not allowed',
-					static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
-					BaseResponse::HTTP_METHOD_NOT_ALLOWED
+					[
+						new Error (
+							'Method not allowed',
+							static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
+							BaseResponse::HTTP_METHOD_NOT_ALLOWED
+						)
+				    ]
 				);
 			}
 
 			//Validates if this resource could be updated/deleted/created by all users.
 			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
-				throw new Exception('This user cannot modify this resource',
-					static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
-					BaseResponse::HTTP_FORBIDDEN);
+				throw new Exception(
+					[
+						new Error (
+							'This user cannot modify this resource',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
+							BaseResponse::HTTP_FORBIDDEN
+						)
+					]
+				);
 			}
 			
 			//Executes the request
@@ -140,7 +152,13 @@
 
 			if (is_null ($model)) {
 				throw new Exception(
-					'Unknown ID', static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID, BaseResponse::HTTP_NOT_FOUND
+					[
+						new Error (
+							'Unknown ID',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
+							BaseResponse::HTTP_NOT_FOUND
+						)
+				    ]
 				);
 			}
 
@@ -201,21 +219,19 @@
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
 			if ($models instanceof Response) {
-				//				$response = $models;
+				//$response = $models;
 			}
 			elseif ($models instanceof LengthAwarePaginator) {
-				//				$items = new Collection($models->items ());
-				//				foreach ($items as $model) {
-				//					if ($loadRelations) {
-				//						$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
-				//					}
-				//				}
-				//
-				//				$response = new Response($items, static::successfulHttpStatusCode ($this->request->method));
-				//
-				//				$response->links = $this->getPaginationLinks ($models);
-				//				$response->included = $this->getIncludedModels ($items);
-				//				$response->errors = $this->getNonBreakingErrors ();
+				//$items = new Collection($models->items ());
+				//foreach ($items as $model) {
+				//	if ($loadRelations) {
+				//		$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
+				//	}
+				//}
+				//$response = new Response($items, static::successfulHttpStatusCode ($this->request->method));
+				//$response->links = $this->getPaginationLinks ($models);
+				//$response->included = $this->getIncludedModels ($items);
+				//$response->errors = $this->getNonBreakingErrors ();
 			}
 			else {
 				if ($models instanceof Collection) {
@@ -331,7 +347,7 @@
 		 *
 		 * @return Model
 		 * @throws Exception
-		 * @throws Exception\Validation
+		 * @throws Exception\ValidationException
 		 */
 		public function handlePost (Request $request) {
 			$this->beforeHandlePost ($request);
@@ -344,16 +360,57 @@
 			$attributes = $data ["attributes"];
 			
 			/** @var Model $model */
-			$model = new $modelName ($attributes);
-			
+			$model = forward_static_call_array ([$modelName, 'createNew'], [$attributes]);
+			if (is_null($model) === true) {
+				throw new Exception(
+					[
+						new Error (
+							'An unknown error occurred',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+						)
+				    ]
+				);
+			}
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
+
 			$model->validateData ($attributes);
 
-			if (!$model->save ()) {
+			try {
+				if (!$model->saveOrFail ()) {
 					throw new Exception(
-					'An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-					BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
+						[
+							new Error(
+								'An unknown error occurred saving the record',
+								static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+								BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+							)
+						]
+					);
+				}
+			}
+			catch (QueryException $e) {
+				throw new Exception(
+					[
+						new Error (
+							'Database error',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+						)
+					]
+				);
+			}
+			catch (\Exception $e) {
+				throw new Exception(
+					[
+						new Error (
+							'An unknown error occurred saving the record',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+						)
+					]
+				);
 			}
 
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
@@ -384,6 +441,7 @@
 			$model = $modelName::find ($id);
 			
 			if (is_null ($model)) {
+				//TODO throw exception
 				return null;
 			}
 			
@@ -403,9 +461,16 @@
 
 			// ensure we can get a successful save
 			if (!$model->save ()) {
-				throw new Exception(
-					'An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-					BaseResponse::HTTP_INTERNAL_SERVER_ERROR);
+				throw new Exception
+				(
+					[
+						new Error (
+							'An unknown error occurred',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+						)
+					]
+				);
 			}
 
 			$this->verifyIfModelChanged ($model, $originalAttributes);
@@ -436,8 +501,15 @@
 			$this->requestType = static::DELETE;
 			
 			if (empty($request->id)) {
-				throw new Exception(
-					'No ID provided', static::ERROR_SCOPE | static::ERROR_NO_ID, BaseResponse::HTTP_BAD_REQUEST);
+				throw new Exception (
+					[
+						new Error (
+							'No ID provided',
+							static::ERROR_SCOPE | static::ERROR_NO_ID,
+							BaseResponse::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 			
 			$modelName = $this->fullModelName;
@@ -487,23 +559,46 @@
 
 			if (empty($data)) {
 				throw new Exception(
-					'Payload either contains misformed JSON or missing "data" parameter.',
-					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
+					[
+						new Error (
+							'Payload either contains misformed JSON or missing "data" parameter.',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 			if (array_key_exists ("type", $data) === false) {
 				throw new Exception(
-					'"type" parameter not set in request.', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-					BaseResponse::HTTP_BAD_REQUEST);
+					[
+						new Error (
+							'"type" parameter not set in request.',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+							BaseResponse::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 			if ($data['type'] !== $type = Pluralizer::plural (s ($this->resourceName)->dasherize ()->__toString ())) {
 				throw new Exception(
-					'"type" parameter is not valid. Expecting ' . $type,
-					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_CONFLICT);
+					[
+						new Error (
+							'"type" parameter is not valid. Expecting ' . $type,
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+							BaseResponse::HTTP_CONFLICT
+						)
+					]
+				);
 			}
 			if ($newRecord === false && !isset($data['id'])) {
 				throw new Exception(
-					'"id" parameter not set in request.', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-					BaseResponse::HTTP_BAD_REQUEST);
+					[
+						new Error (
+							'"id" parameter not set in request.',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+							BaseResponse::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 			
 			unset ($content ['type']);
