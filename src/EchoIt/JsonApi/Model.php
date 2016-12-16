@@ -13,6 +13,7 @@ use EchoIt\JsonApi\CacheManager;
 use Carbon\Carbon;
 use Cache;
 use Illuminate\Http\Response as BaseResponse;
+use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 use function Stringy\create as s;
 
@@ -408,18 +409,16 @@ abstract class Model extends \Eloquent {
 	public function isChanged () {
 		return $this->changed;
 	}
-
+	
 	/**
-	 * Validate passed values
+	 * @param array $values
 	 *
-	 * @param  Array $values user passed values (request data)
-	 *
-	 * @return bool|\Illuminate\Support\MessageBag  True on pass, MessageBag of errors on fail
+	 * @throws Exception\ValidationException
 	 */
 	public function validateArray (Array $values) {
 		if (count ($this->getValidationRules ())) {
 			/** @var Validator $validator */
-			$validator = Validator::make ($values, $this->getValidationRules ());
+			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
 			if ($validator->fails ()) {
 				throw new Exception\ValidationException($validator->errors());
 			}
