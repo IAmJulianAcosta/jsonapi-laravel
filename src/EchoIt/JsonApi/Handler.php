@@ -186,10 +186,11 @@
 		private function generateCacheableResponse ($models, Request $request) {
 			$id = $request->id;
 			if (empty($id)) {
-				$key = CacheManager::getResponseCacheForMultipleResources($this->dasherizedResourceName());
+				$key = CacheManager::getResponseCacheForMultipleResources(Utils::dasherizedResourceName($this->resourceName));
 			}
 			else {
-				$key = CacheManager::getResponseCacheForSingleResource($id, $this->dasherizedResourceName());
+				$key = CacheManager::getResponseCacheForSingleResource($id,
+					Utils::dasherizedResourceName($this->resourceName));
 			}
 
 			return Cache::remember (
@@ -294,7 +295,8 @@
 			$this->beforeHandleGet($request);
 			$this->requestType = static::GET;
 			
-			$key       = CacheManager::getQueryCacheForSingleResource($id, $this->dasherizedResourceName());
+			$key       = CacheManager::getQueryCacheForSingleResource($id,
+				Utils::dasherizedResourceName($this->resourceName));
 			$model     = Cache::remember(
 				$key,
 				static::$cacheTime,
@@ -323,7 +325,7 @@
 			$this->beforeHandleGetAll ($request);
 			$this->requestType = static::GET_ALL;
 			
-			$key = CacheManager::getQueryCacheForMultipleResources($this->dasherizedResourceName());
+			$key = CacheManager::getQueryCacheForMultipleResources(Utils::dasherizedResourceName($this->resourceName));
 			$models = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($request) {
@@ -415,7 +417,7 @@
 
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
-			CacheManager::clearCache($this->dasherizedResourceName());
+			CacheManager::clearCache(Utils::dasherizedResourceName($this->resourceName));
 			$this->afterHandlePost ($request, $model);
 
 			return $model;
@@ -476,7 +478,7 @@
 			$this->verifyIfModelChanged ($model, $originalAttributes);
 
 			if ($model->isChanged()) {
-				CacheManager::clearCache ($this->dasherizedResourceName(), $id, $model);
+				CacheManager::clearCache (Utils::dasherizedResourceName($this->resourceName), $id, $model);
 			}
 			
 			$this->afterHandlePatch ($request, $model);
@@ -627,13 +629,6 @@
 					break;
 				}
 			}
-		}
-
-		/**
-		 * @return string
-		 */
-		private function dasherizedResourceName () {
-			return s ($this->resourceName)->dasherize ()->__toString ();
 		}
 		
 		/**

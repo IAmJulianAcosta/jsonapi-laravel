@@ -143,4 +143,13 @@
 			
 			return $relationModels;
 		}
+		
+		/**
+		 * @param $resourceName
+		 *
+		 * @return string
+		 */
+		public static function dasherizedResourceName($resourceName) {
+			return s($resourceName)->dasherize()->__toString();
+		}
 	}
