@@ -48,7 +48,7 @@ class Exception extends \Exception {
 		    $this->errorMessage   = $error->getMessage();
 	    }
 	    $this->errors = $errors;
-	    parent::__construct("Bad request", $this->errorCode, $this->httpErrorCode);
+	    parent::__construct("Bad request", $this->errorCode );
     }
 
     /**
