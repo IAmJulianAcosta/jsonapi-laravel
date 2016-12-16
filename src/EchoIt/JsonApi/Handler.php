@@ -557,9 +557,7 @@
 		protected function parseRequestContent ($content, $newRecord = true) {
 			$content = json_decode ($content, true);
 
-			$data = $content['data'];
-
-			if (empty($data)) {
+			if (array_key_exists('data', $content) === false) {
 				throw new Exception(
 					[
 						new Error (
@@ -569,6 +567,8 @@
 					]
 				);
 			}
+			$data = $content['data'];
+			
 			if (array_key_exists ("type", $data) === false) {
 				throw new Exception(
 					[
