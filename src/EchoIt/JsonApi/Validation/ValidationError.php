@@ -40,9 +40,7 @@
 		public function __construct($attribute, $rule, $message) {
 			$this->attribute     = s($attribute)->toLowerCase()->__toString();
 			$this->rule          = s($rule)->toLowerCase()->__toString();
-			$this->message       = $message;
-			$this->httpErrorCode = $this->generateHttpErrorCode();
-			$this->errorCode     = $this->generateErrorCode();
+			parent::__construct($message, $this->generateErrorCode(), $this->generateHttpErrorCode());
 		}
 		
 		protected function generateHttpErrorCode () {
