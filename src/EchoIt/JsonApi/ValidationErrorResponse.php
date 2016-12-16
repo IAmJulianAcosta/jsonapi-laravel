@@ -1,8 +1,6 @@
 <?php namespace EchoIt\JsonApi;
 
 use EchoIt\JsonApi\Validation\ValidationError;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
 /**
