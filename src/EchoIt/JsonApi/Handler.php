@@ -591,7 +591,7 @@
 					]
 				);
 			}
-			if ($newRecord === false && !isset($data['id'])) {
+			if ($newRecord === false && isset($data['id']) === false) {
 				throw new Exception(
 					[
 						new Error (
@@ -622,7 +622,7 @@
 			// loop through the new attributes, and ensure they are identical
 			// to the original ones. if not, then we need to return the model
 			foreach ($newAttributes as $attribute => $value) {
-				if (!array_key_exists ($attribute, $originalAttributes) ||
+				if (array_key_exists ($attribute, $originalAttributes === false) ||
 					$value !== $originalAttributes[$attribute]
 				) {
 					$model->markChanged ();
