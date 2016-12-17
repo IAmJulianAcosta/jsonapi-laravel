@@ -1,4 +1,5 @@
-<?php namespace EchoIt\JsonApi\Exception;
+<?php
+	namespace EchoIt\JsonApi\Validation;
 
 use EchoIt\JsonApi\Exception;
 use EchoIt\JsonApi\ValidationErrorResponse;

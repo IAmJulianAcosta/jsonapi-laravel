@@ -2,6 +2,7 @@
 
 namespace EchoIt\JsonApi;
 
+use EchoIt\JsonApi\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -420,7 +421,7 @@ abstract class Model extends \Eloquent {
 			/** @var Validator $validator */
 			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
 			if ($validator->fails ()) {
-				throw new Exception\ValidationException($validator->errors());
+				throw new ValidationException($validator->errors());
 			}
 		}
 	}
