@@ -29,6 +29,11 @@ class Exception extends \Exception {
 	protected $multipleErrors;
 	
 	/**
+	 * @var string
+	 */
+	protected $errorMessage;
+	
+	/**
 	 * Exception constructor.
 	 *
 	 * @param array $errors
@@ -48,7 +53,7 @@ class Exception extends \Exception {
 		    $this->errorMessage   = $error->getMessage();
 	    }
 	    $this->errors = $errors;
-	    parent::__construct("Bad request", $this->errorCode );
+	    parent::__construct($this->errorMessage, $this->errorCode );
     }
 
     /**
