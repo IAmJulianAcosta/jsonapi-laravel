@@ -64,6 +64,13 @@ class Request extends BaseRequest {
 		$this->initializeVariables();
 	}
 	
+	public function duplicate(array $query = null, array $request = null, array $attributes = null, array $cookies = null, array $files = null, array $server = null) {
+		/** @var Request $duplicated */
+		$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files), $server);
+		$duplicated->initializeVariables();
+		return $duplicated;
+	}
+	
 	protected function initializeVariables () {
 		$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
 		$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
