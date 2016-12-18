@@ -74,8 +74,8 @@ class Request extends BaseRequest {
 		
 		if (isset ($this->page) === true && empty($this->page) === false) {
 			if (is_array($this->page) === true && empty($this->page['size']) === false && empty($this->page['number']) === false) {
-				$this->pageSize   = $page['size'];
-				$this->pageNumber = $page['number'];
+				$this->pageSize   = $this->page['size'];
+				$this->pageNumber = $this->page['number'];
 			}
 			else {
 				//throw error
