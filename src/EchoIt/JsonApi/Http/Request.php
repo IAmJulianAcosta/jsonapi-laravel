@@ -1,4 +1,4 @@
-<?php namespace EchoIt\JsonApi;
+<?php namespace EchoIt\JsonApi\Http;
 
 use Illuminate\Http\Request as BaseRequest;
 

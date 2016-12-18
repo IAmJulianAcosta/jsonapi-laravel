@@ -4,7 +4,7 @@
 	
 	use EchoIt\JsonApi\Error;
 	use EchoIt\JsonApi\Exception;
-	use EchoIt\JsonApi\Model;
+	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Contracts\Validation\Validator;
 	use Illuminate\Foundation\Validation\ValidatesRequests;
 	use Illuminate\Http\JsonResponse;

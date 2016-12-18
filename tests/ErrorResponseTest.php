@@ -1,6 +1,6 @@
 <?php
 
-use EchoIt\JsonApi\ErrorResponse;
+use EchoIt\JsonApi\Http\ErrorResponse;
 use EchoIt\JsonApi\Tests\JsonSchemaValidationTrait;
 
 class ErrorResponseTest extends PHPUnit_Framework_TestCase

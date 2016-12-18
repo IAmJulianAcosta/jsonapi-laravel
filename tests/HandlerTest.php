@@ -1,7 +1,7 @@
 <?php
 
 use EchoIt\JsonApi\Request;
-use EchoIt\JsonApi\Response;
+use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Handler;
 
 class HandlerWithGETSupport extends Handler
@@ -29,7 +29,7 @@ class HandlerTest extends PHPUnit_Framework_TestCase
         $handler = new HandlerWithGETSupport($req);
         $handlerResult = $handler->fulfillRequest();
 
-        $this->assertInstanceOf('EchoIt\JsonApi\Response', $handlerResult);
+        $this->assertInstanceOf('EchoIt\JsonApi\Http\Response', $handlerResult);
     }
 
     public function testHandlerUnsupportedRequest()

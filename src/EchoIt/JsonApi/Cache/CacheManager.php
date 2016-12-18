@@ -6,8 +6,9 @@
 	 * @author  Julian Acosta <iam@julianacosta.me>
 	 */
 	
-	namespace EchoIt\JsonApi;
+	namespace EchoIt\JsonApi\Cache;
 	
+	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Support\Pluralizer;
 	use Cache;
 	
@@ -67,8 +68,8 @@
 		
 		
 		/**
-		 * @param null $id
-		 * @param Model $model
+		 * @param null                                    $id
+		 * @param \EchoIt\JsonApi\Database\Eloquent\Model $model
 		 */
 		public static function clearCache ($resourceName, $id = null, Model $model = null) {
 			//ID passed = update record

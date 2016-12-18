@@ -1,16 +1,17 @@
 <?php
 
-namespace EchoIt\JsonApi;
+namespace EchoIt\JsonApi\Database\Eloquent;
 
+use EchoIt\JsonApi\Exception;
 use EchoIt\JsonApi\Validation\ValidationException;
 use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
+use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use \Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use EchoIt\JsonApi\CacheManager;
+use EchoIt\JsonApi\Cache\CacheManager;
 use Carbon\Carbon;
 use Cache;
 use Illuminate\Http\Response as BaseResponse;
@@ -18,7 +19,7 @@ use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 use function Stringy\create as s;
 
-abstract class Model extends \Eloquent {
+abstract class Model extends Illuminate\Database\Eloquent\Model {
 
 	static protected $allowsModifyingByAllUsers;
 

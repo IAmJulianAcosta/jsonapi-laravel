@@ -1,4 +1,4 @@
-<?php namespace EchoIt\JsonApi;
+<?php namespace EchoIt\JsonApi\Http;
 
 use Illuminate\Http\JsonResponse;
 
@@ -7,8 +7,7 @@ use Illuminate\Http\JsonResponse;
  *
  * @property array $included included resources
  */
-class Response
-{
+class Response {
     /**
      * An array of parameters.
      *
@@ -36,8 +35,7 @@ class Response
      * @param array|object $body
      * @param int $httpStatusCode
      */
-    public function __construct($body, $httpStatusCode = 200)
-    {
+    public function __construct($body, $httpStatusCode = 200) {
         $this->body = $body;
         $this->httpStatusCode = $httpStatusCode;
     }
@@ -48,8 +46,7 @@ class Response
      * @param string $key
      * @param mixed  $value
      */
-    public function __set($key, $value)
-    {
+    public function __set($key, $value) {
         if ($key == 'body') {
             $this->body = $value;
             return;
@@ -63,8 +60,7 @@ class Response
      * @param  string $bodyKey The key on which to set the main response.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function toJsonResponse($bodyKey = 'data', $options = 0)
-    {
+    public function toJsonResponse($bodyKey = 'data', $options = 0) {
         return new JsonResponse(
         	array_merge(
                 [

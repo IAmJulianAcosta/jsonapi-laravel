@@ -1,5 +1,6 @@
-<?php namespace EchoIt\JsonApi;
+<?php namespace EchoIt\JsonApi\Http;
 
+use EchoIt\JsonApi\Error;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 

@@ -58,7 +58,7 @@ In few steps you can expose your models:
 			namespace App\Http\Controllers;
 		
 			use EchoIt\JsonApi\Request as ApiRequest;
-			use EchoIt\JsonApi\ErrorResponse as ApiErrorResponse;
+			use EchoIt\JsonApi\Http\ErrorResponse as ApiErrorResponse;
 			use EchoIt\JsonApi\Exception as ApiException;
 			use Request;
 		
@@ -161,7 +161,7 @@ In few steps you can expose your models:
 			/**
 			 * Handles GET requests. 
 			 * @param EchoIt\JsonApi\Request $request
-			 * @return EchoIt\JsonApi\Model|Illuminate\Support\Collection|EchoIt\JsonApi\Response|Illuminate\Pagination\LengthAwarePaginator
+			 * @return EchoIt\JsonApi\Database\Eloquent\Model|Illuminate\Support\Collection|EchoIt\JsonApi\Http\Response|Illuminate\Pagination\LengthAwarePaginator
 			 */
 			public function handleGet(ApiRequest $request)
 			{
@@ -172,7 +172,7 @@ In few steps you can expose your models:
 			/**
 			 * Handles PUT requests. 
 			 * @param EchoIt\JsonApi\Request $request
-			 * @return EchoIt\JsonApi\Model|Illuminate\Support\Collection|EchoIt\JsonApi\Response
+			 * @return EchoIt\JsonApi\Database\Eloquent\Model|Illuminate\Support\Collection|EchoIt\JsonApi\Http\Response
 			 */
 			public function handlePut(ApiRequest $request)
 			{
@@ -182,7 +182,7 @@ In few steps you can expose your models:
 		}
     ```
 
-    > **Note:** Extend your models from `EchoIt\JsonApi\Model` rather than `Eloquent` to get the proper response for linked resources.
+    > **Note:** Extend your models from `EchoIt\JsonApi\Database\Eloquent\Model` rather than `Eloquent` to get the proper response for linked resources.
 
 Current features
 -----

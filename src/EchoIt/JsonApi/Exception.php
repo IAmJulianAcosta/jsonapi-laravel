@@ -1,6 +1,6 @@
 <?php namespace EchoIt\JsonApi;
 
-use Illuminate\Http\Response;
+use EchoIt\JsonApi\Http\ErrorResponse;
 
 /**
  * JsonApi\Exception represents an Exception that can be thrown where a JSON response may be expected.
@@ -41,7 +41,7 @@ class Exception extends \Exception {
     public function __construct(array $errors) {
 	    $this->multipleErrors = count($errors) > 1;
 	    if ($this->multipleErrors === true) {
-		    $this->httpErrorCode = Response::HTTP_BAD_REQUEST;
+		    $this->httpErrorCode = ErrorResponse::HTTP_BAD_REQUEST;
 		    $this->errorCode      = Error::MULTIPLE_ERRORS;
 		    $this->errorMessage   = "Bad request";
 	    }
@@ -59,7 +59,7 @@ class Exception extends \Exception {
     /**
      * This method returns a HTTP response representation of the Exception
      *
-     * @return \EchoIt\JsonApi\ErrorResponse
+     * @return \EchoIt\JsonApi\Http\ErrorResponse
      */
     public function response() {
         return new ErrorResponse($this->errors, $this->httpErrorCode);

@@ -2,8 +2,13 @@
 
 	namespace EchoIt\JsonApi;
 	
+	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use EchoIt\JsonApi\Exception;
-	use EchoIt\JsonApi\CacheManager;
+	use EchoIt\JsonApi\Cache\CacheManager;
+	use EchoIt\JsonApi\Http\Response;
+	use EchoIt\JsonApi\Utils\ClassUtils;
+	use EchoIt\JsonApi\Utils\ModelsUtils;
+	use EchoIt\JsonApi\Utils\StringUtils;
 	use Illuminate\Database\QueryException;
 	use Illuminate\Http\JsonResponse;
 	use Illuminate\Support\Collection;
@@ -186,11 +191,11 @@
 		private function generateCacheableResponse ($models, Request $request) {
 			$id = $request->getId();
 			if (empty($id)) {
-				$key = CacheManager::getResponseCacheForMultipleResources(Utils::dasherizedResourceName($this->resourceName));
+				$key = CacheManager::getResponseCacheForMultipleResources(s::dasherizedResourceName($this->resourceName));
 			}
 			else {
 				$key = CacheManager::getResponseCacheForSingleResource($id,
-					Utils::dasherizedResourceName($this->resourceName));
+					StringUtils::dasherizedResourceName($this->resourceName));
 			}
 
 			return Cache::remember (
@@ -206,7 +211,7 @@
 		 *
 		 * @param \Illuminate\Http\Request $models
 		 *
-		 * @return \EchoIt\JsonApi\Response
+		 * @return \EchoIt\JsonApi\Http\Response
 		 *
 		 */
 		private function generateNonCacheableResponse ($models) {
@@ -252,7 +257,7 @@
 
 				$response = new Response($models, static::successfulHttpStatusCode ($this->request->getMethod(), $models));
 
-				$response->included = Utils::getIncludedModels($models);
+				$response->included = ModelsUtils::getIncludedModels($models);
 				$response->errors = $this->getNonBreakingErrors ();
 			}
 
@@ -263,7 +268,7 @@
 		 * @return Model|Collection
 		 */
 		private function handleRequest (Request $request) {
-			$methodName = Utils::methodHandlerName($request->getMethod());
+			$methodName = ClassUtils::methodHandlerName($request->getMethod());
 			$models = $this->{$methodName}($request);
 
 			return $models;
@@ -295,8 +300,8 @@
 			$this->beforeHandleGet($request);
 			$this->requestType = static::GET;
 			
-			$key       = CacheManager::getQueryCacheForSingleResource($id,
-				Utils::dasherizedResourceName($this->resourceName));
+			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
+			
 			$model     = Cache::remember(
 				$key,
 				static::$cacheTime,
@@ -325,7 +330,7 @@
 			$this->beforeHandleGetAll ($request);
 			$this->requestType = static::GET_ALL;
 			
-			$key = CacheManager::getQueryCacheForMultipleResources(Utils::dasherizedResourceName($this->resourceName));
+			$key = CacheManager::getQueryCacheForMultipleResources(s::dasherizedResourceName($this->resourceName));
 			$models = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($request) {
@@ -417,7 +422,7 @@
 
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
-			CacheManager::clearCache(Utils::dasherizedResourceName($this->resourceName));
+			CacheManager::clearCache(s::dasherizedResourceName($this->resourceName));
 			$this->afterHandlePost ($request, $model);
 
 			return $model;
@@ -426,10 +431,10 @@
 		/**
 		 * Handle PATCH requests
 		 *
-		 * @param \EchoIt\JsonApi\Request $request
+		 * @param Request $request
 		 *
-		 * @return \EchoIt\JsonApi\Model|null
-		 * @throws \EchoIt\JsonApi\Exception
+		 * @return Model|null
+		 * @throws Exception
 		 */
 		public function handlePatch (Request $request) {
 			$this->beforeHandlePatch ($request);
@@ -439,7 +444,7 @@
 			$id = $data["id"];
 
 			$modelName = $this->fullModelName;
-			/** @var Model $model */
+			/** @var \EchoIt\JsonApi\Database\Eloquent\Model $model */
 			$model = $modelName::find ($id);
 			
 			if (is_null ($model)) {
@@ -478,7 +483,7 @@
 			$this->verifyIfModelChanged ($model, $originalAttributes);
 
 			if ($model->isChanged()) {
-				CacheManager::clearCache (Utils::dasherizedResourceName($this->resourceName), $id, $model);
+				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $id, $model);
 			}
 			
 			$this->afterHandlePatch ($request, $model);
@@ -495,7 +500,7 @@
 		 *
 		 * @param  \EchoIt\JsonApi\Request $request
 		 *
-		 * @return \EchoIt\JsonApi\Model
+		 * @return \EchoIt\JsonApi\Database\Eloquent\Model
 		 * @throws \EchoIt\JsonApi\Exception
 		 */
 		public function handleDelete (Request $request) {
@@ -612,7 +617,7 @@
 		 * @param Model $model
 		 * @param               $originalAttributes
 		 *
-		 * @return Model
+		 * @return \EchoIt\JsonApi\Database\Eloquent\Model
 		 *
 		 */
 		public function verifyIfModelChanged (Model $model, $originalAttributes) {
@@ -781,9 +786,10 @@
 		/**
 		 * Function to handle pagination requests.
 		 *
-		 * @param  \EchoIt\JsonApi\Request $request
-		 * @param  \EchoIt\JsonApi\Model $model
-		 * @param integer $total the total number of records
+		 * @param  \EchoIt\JsonApi\Request                 $request
+		 * @param  \EchoIt\JsonApi\Database\Eloquent\Model $model
+		 * @param integer                                  $total the total number of records
+		 *
 		 * @return \Illuminate\Pagination\LengthAwarePaginator
 		 */
 		protected function handlePaginationRequest(Request $request, Model $model, $total = null) {
@@ -823,7 +829,7 @@
 		 * Generates resource name from class name (ResourceHandler -> resource)
 		 */
 		private function setResourceName () {
-			$shortClassName = Utils::getHandlerShortClassName(get_called_class());
+			$shortClassName = ClassUtils::getHandlerShortClassName(get_called_class());
 			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
