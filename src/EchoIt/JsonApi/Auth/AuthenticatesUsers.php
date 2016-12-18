@@ -22,7 +22,6 @@
 		 * @throws Exception
 		 */
 		public function login(Request $request) {
-			//TODO use JSON Api request
 			$this->validateLogin($request);
 			
 			// If the class is using the ThrottlesLogins trait, we can automatically throttle
