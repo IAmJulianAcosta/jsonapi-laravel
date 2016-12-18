@@ -118,7 +118,7 @@
 		public function fulfillRequest () {
 			$request = $this->request;
 			$this->beforeFulfillRequest($request);
-			$httpMethod = $request->method;
+			$httpMethod = $request->getMethod ();
 
 			if (!$this->supportsMethod ($httpMethod)) {
 				throw new Exception(
@@ -184,7 +184,7 @@
 		 * @return mixed
 		 */
 		private function generateCacheableResponse ($models, Request $request) {
-			$id = $request->id;
+			$id = $request->getId();
 			if (empty($id)) {
 				$key = CacheManager::getResponseCacheForMultipleResources(Utils::dasherizedResourceName($this->resourceName));
 			}
@@ -250,7 +250,7 @@
 					}
 				}
 
-				$response = new Response($models, static::successfulHttpStatusCode ($this->request->method, $models));
+				$response = new Response($models, static::successfulHttpStatusCode ($this->request->getMethod(), $models));
 
 				$response->included = Utils::getIncludedModels($models);
 				$response->errors = $this->getNonBreakingErrors ();
@@ -263,7 +263,7 @@
 		 * @return Model|Collection
 		 */
 		private function handleRequest (Request $request) {
-			$methodName = Utils::methodHandlerName($request->method);
+			$methodName = Utils::methodHandlerName($request->getMethod());
 			$models = $this->{$methodName}($request);
 
 			return $models;
@@ -275,7 +275,7 @@
 		 * @return Model|Collection|null
 		 */
 		protected function handleGet (Request $request) {
-			$id = $request->id;
+			$id = $request->getId();
 			if (empty($id)) {
 				$models = $this->handleGetAll ($request);
 				return $models;
@@ -303,7 +303,7 @@
 				function () use ($request) {
 					$query = $this->generateSelectQuery ();
 					
-					$query->where('id', $request->id);
+					$query->where('id', $request->getId());
 					$model = $query->first ();
 					if ($model instanceof Model) {
 						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
@@ -356,7 +356,7 @@
 			$this->requestType = static::POST;
 			
 			$modelName = $this->fullModelName;
-			$data = $this->parseRequestContent ($request->content);
+			$data = $this->parseRequestContent ($request->getContent());
 			$this->normalizeAttributes ($data ["attributes"]);
 			
 			$attributes = $data ["attributes"];
@@ -435,7 +435,7 @@
 			$this->beforeHandlePatch ($request);
 			$this->requestType = static::PATCH;
 			
-			$data = $this->parseRequestContent ($request->content, false);
+			$data = $this->parseRequestContent ($request->getContent(), false);
 			$id = $data["id"];
 
 			$modelName = $this->fullModelName;
@@ -502,7 +502,7 @@
 			$this->beforeHandleDelete ($request);
 			$this->requestType = static::DELETE;
 			
-			if (empty($request->id)) {
+			if (empty($request->getId())) {
 				throw new Exception (
 					[
 						new Error (
@@ -517,7 +517,7 @@
 			$modelName = $this->fullModelName;
 			
 			/** @var Model $model */
-			$model = $modelName::find ($request->id);
+			$model = $modelName::find ($request->getId());
 
 			$this->verifyUserPermission($request, $model);
 			
@@ -656,7 +656,7 @@
 		 * @return array
 		 */
 		protected function exposedRelationsFromRequest() {
-			$include = $this->request->originalRequest->input('include');
+			$include = $this->request->input('include');
 			if (is_null($include)) {
 				return [];
 			}
@@ -669,7 +669,7 @@
 		 * @return array
 		 */
 		protected function unknownRelationsFromRequest() {
-			return array_diff($this->request->include, static::$exposedRelations);
+			return array_diff($this->request->getInclude(), static::$exposedRelations);
 		}
 
 		/**
@@ -787,8 +787,8 @@
 		 * @return \Illuminate\Pagination\LengthAwarePaginator
 		 */
 		protected function handlePaginationRequest(Request $request, Model $model, $total = null) {
-			$page = $request->pageNumber;
-			$perPage = $request->pageSize;
+			$page = $request->getPageNumber();
+			$perPage = $request->getPageSize();
 			if (!$total) {
 				$total = $model->count();
 			}
@@ -798,13 +798,13 @@
 				'pageName' => 'page[number]'
 			]);
 			$paginator->appends('page[size]', $perPage);
-			if (!empty($request->filter)) {
-				foreach ($request->filter as $key=>$value) {
+			if (!empty($request->getFilter())) {
+				foreach ($request->getFilter() as $key=>$value) {
 					$paginator->appends($key, $value);
 				}
 			}
-			if (!empty($request->sort)) {
-				$paginator->appends('sort', implode(',', $request->sort));
+			if (!empty($request->getSort())) {
+				$paginator->appends('sort', implode(',', $request->getSort()));
 			}
 
 			return $paginator;

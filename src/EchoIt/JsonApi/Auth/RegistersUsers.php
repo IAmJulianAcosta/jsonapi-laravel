@@ -8,13 +8,15 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
+	use Illuminate\Http\Request;
 	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Auth\Events\Registered;
 	
 	trait RegistersUsers {
 		use \Illuminate\Foundation\Auth\RegistersUsers;
+		
 		/**
-		 * @param Authenticatable $user
+		 * @param Request $request
 		 */
 		public function register(Authenticatable $user) {
 			event(new Registered($user));

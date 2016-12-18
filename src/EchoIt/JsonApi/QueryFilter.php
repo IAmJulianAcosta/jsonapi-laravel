@@ -18,10 +18,9 @@
 		 * Function to handle sorting requests.
 		 */
 		public static function sortRequest(Request $request, Builder &$query) {
-			$sort = $request->originalRequest->input('sort');
-			if (is_null($sort) === false) {
-				$explodedSort = explode(",", $sort);
-				foreach ($explodedSort as $parameter) {
+			$sort = $request->getSort();
+			if (empty($sort) === false) {
+				foreach ($sort as $parameter) {
 					$isDesc    = starts_with($parameter, "-");
 					$direction = $isDesc ? 'desc' : 'asc';
 					if ($isDesc) {
@@ -47,7 +46,7 @@
 			 * Also is telling me that I need to filter the request by people, with parameter name
 			 *
 			 */
-			$filters = $request->originalRequest->input('filter');
+			$filters = $request->getFilter();
 			static::applyFilters($filters, $query);
 		}
 		
@@ -58,7 +57,7 @@
 		 * @param $query
 		 */
 		protected static function applyFilters($filters, &$query) {
-			if (is_null($filters) === false) {
+			if (empty($filters) === false) {
 				foreach ($filters as $filterName => $filterValues) {
 					static::parse($filterValues, $filterName, $query);
 				}

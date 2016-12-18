@@ -5,71 +5,51 @@ use Illuminate\Http\Request as BaseRequest;
 /**
  * A class used to represented a client request to the API.
  *
+ * @author Julián Acosta <julian.acosta@mandarinazul.co>
  * @author Ronni Egeriis Persson <ronni@egeriis.me>
  */
-//TODO extend Illuminate\Http\Request
-class Request
-{
-	
-	/**
-	 * @var \Illuminate\Http\Request
-	 */
-	public $originalRequest;
+class Request extends BaseRequest {
    
     /**
      * Contains the url of the request
      *
      * @var string
      */
-    public $url;
-
-    /**
-     * Contains the HTTP method of the request
-     *
-     * @var string
-     */
-    public $method;
+    protected $url;
 
     /**
      * Contains an optional model ID from the request
      *
      * @var int
      */
-    public $id;
-
-    /**
-     * Contains any content in request
-     *
-     * @var string
-     */
-    public $content;
+    protected $id;
 
     /**
      * Contains an array of linked resource collections to load
      *
      * @var array
      */
-    public $include;
+    protected $include;
 
     /**
      * Contains an array of column names to sort on
      *
      * @var array
      */
-    public $sort;
+    protected $sort;
 
     /**
      * Contains an array of key/value pairs to filter on
      *
      * @var array
      */
-    public $filter;
+    protected $filter;
 
     /**
      * Specifies the page number to return results for
      * @var integer
      */
-    public $pageNumber;
+    protected $pageNumber;
 
     /**
      * Specifies the number of results to return per page. Only used if
@@ -77,35 +57,128 @@ class Request
      *
      * @var integer
      */
-    public $pageSize = 50;
-
-    /**
-     * Constructor.
-     *
-     * @param string $url
-     * @param string $method
-     * @param int    $id
-     * @param mixed $content
-     * @param array  $include
-     * @param array  $sort
-     * @param array  $filter
-     * @param integer $pageNumber
-     * @param integer $pageSize
-     */
-    public function __construct(BaseRequest $originalRequest, $url, $method, $id = null, $content = null, $include = [], $sort = [], $filter = [], $pageNumber = null, $pageSize = null)
-    {
-        $this->originalRequest = $originalRequest;
-    	$this->url = $url;
-        $this->method = $method;
-        $this->id = $id;
-        $this->content = $content;
-        $this->include = $include ?: [];
-        $this->sort = $sort ?: [];
-        $this->filter = $filter ?: [];
-
-        $this->pageNumber = $pageNumber ?: null;
-        if ($pageSize) {
-            $this->pageSize = $pageSize;
-        }
-    }
+    protected $pageSize = 50;
+	
+	public function __construct(array $query = array(), array $request = array(), array $attributes = array(), array $cookies = array(), array $files = array(), array $server = array(), $content = null) {
+		parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
+		$this->initializeVariables();
+	}
+	
+	protected function initializeVariables () {
+		$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
+		$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
+		$this->filter     = ($parameter = $this->input('filter')) ? $parameter : [];
+		$this->page       = $this->input('page') ? $this->input('page') : [];
+		$this->pageSize   = null;
+		$this->pageNumber = null;
+		
+		if (isset ($this->page) === true && empty($this->page) === false) {
+			if (is_array($this->page) === true && empty($this->page['size']) === false && empty($this->page['number']) === false) {
+				$this->pageSize   = $page['size'];
+				$this->pageNumber = $page['number'];
+			}
+			else {
+				//throw error
+				//						return new ApiErrorResponse(400, 400, 'Expected page[size] and page[number]');
+			}
+		}
+	}
+	
+	/**
+	 * @return int
+	 */
+	public function getId() {
+		return $this->id;
+	}
+	
+	/**
+	 * @param int $id
+	 */
+	public function setId($id) {
+		$this->id = $id;
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getFilter() {
+		return $this->filter;
+	}
+	
+	/**
+	 * @param array $filter
+	 */
+	public function setFilter($filter) {
+		$this->filter = $filter;
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getInclude() {
+		return $this->include;
+	}
+	
+	/**
+	 * @param array $include
+	 */
+	public function setInclude($include) {
+		$this->include = $include;
+	}
+	
+	/**
+	 * @return int
+	 */
+	public function getPageNumber() {
+		return $this->pageNumber;
+	}
+	
+	/**
+	 * @param int $pageNumber
+	 */
+	public function setPageNumber($pageNumber) {
+		$this->pageNumber = $pageNumber;
+	}
+	
+	/**
+	 * @return int
+	 */
+	public function getPageSize() {
+		return $this->pageSize;
+	}
+	
+	/**
+	 * @param int $pageSize
+	 */
+	public function setPageSize($pageSize) {
+		$this->pageSize = $pageSize;
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getUrl() {
+		return $this->url;
+	}
+	
+	/**
+	 * @param string $url
+	 */
+	public function setUrl($url) {
+		$this->url = $url;
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getSort() {
+		return $this->sort;
+	}
+	
+	/**
+	 * @param array $sort
+	 */
+	public function setSort($sort) {
+		$this->sort = $sort;
+	}
 }
