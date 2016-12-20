@@ -184,7 +184,7 @@
 		private function generateCacheableResponse ($models, Request $request) {
 			$id = $request->getId();
 			if (empty($id)) {
-				$key = CacheManager::getResponseCacheForMultipleResources(s::dasherizedResourceName($this->resourceName));
+				$key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			}
 			else {
 				$key = CacheManager::getResponseCacheForSingleResource($id,
@@ -323,7 +323,7 @@
 			$this->beforeHandleGetAll ($request);
 			$this->requestType = static::GET_ALL;
 			
-			$key = CacheManager::getQueryCacheForMultipleResources(s::dasherizedResourceName($this->resourceName));
+			$key = CacheManager::getQueryCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			$models = Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($request) {
@@ -415,7 +415,7 @@
 
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
-			CacheManager::clearCache(s::dasherizedResourceName($this->resourceName));
+			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
 			$this->afterHandlePost ($request, $model);
 
 			return $model;

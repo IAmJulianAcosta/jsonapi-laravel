@@ -9,6 +9,7 @@ use EchoIt\JsonApi\Cache\CacheManager;
 use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 use function Stringy\create as s;
 
-abstract class Model extends Illuminate\Database\Eloquent\Model {
+abstract class Model extends BaseModel {
 
 	static protected $allowsModifyingByAllUsers;
 
