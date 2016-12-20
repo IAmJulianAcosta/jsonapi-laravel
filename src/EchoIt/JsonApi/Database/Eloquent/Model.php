@@ -3,7 +3,9 @@
 namespace EchoIt\JsonApi\Database\Eloquent;
 
 use EchoIt\JsonApi\Exception;
+use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Validation\ValidationException;
+use EchoIt\JsonApi\Cache\CacheManager;
 use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Support\Collection;
@@ -11,10 +13,8 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use EchoIt\JsonApi\Cache\CacheManager;
 use Carbon\Carbon;
 use Cache;
-use Illuminate\Http\Response as BaseResponse;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
 
 use function Stringy\create as s;
@@ -489,7 +489,7 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 										throw new Exception(
 											'Relationship type key not present in the request for an item',
 											static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-											BaseResponse::HTTP_BAD_REQUEST);
+											Response::HTTP_BAD_REQUEST);
 									}
 								}
 							}
@@ -497,7 +497,7 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 								throw new Exception(
 									'Relationship type key not present in the request',
 									static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-									BaseResponse::HTTP_BAD_REQUEST);
+									Response::HTTP_BAD_REQUEST);
 							}
 						}
 						else if (is_null ($relationshipData)) {
@@ -507,20 +507,20 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 							//If the data object is not array or null (invalid)
 							throw new Exception(
 								'Relationship "data" object must be an array or null',
-								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
+								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST);
 						}
 					}
 					else {
 						throw new Exception(
 							'Relationship must have an object with "data" key',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST);
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST);
 					}
 				}
 				else {
 					//If the relationship is not an array, return error
 					throw new Exception(
 						'Relationship object is not an array', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						BaseResponse::HTTP_BAD_REQUEST);
+						Response::HTTP_BAD_REQUEST);
 				}
 			}
 		}
@@ -563,7 +563,7 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 					throw new Exception(
 						"Relationship $relationshipName is not invalid",
 						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						BaseResponse::HTTP_BAD_REQUEST);
+						Response::HTTP_BAD_REQUEST);
 				}
 			}
 			else {
@@ -571,14 +571,14 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 				throw new Exception(
 					"Model $formattedType with id $relationshipId not found in database",
 					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-					BaseResponse::HTTP_BAD_REQUEST);
+					Response::HTTP_BAD_REQUEST);
 			}
 		}
 		else {
 			throw new Exception(
 				'Relationship id key not present in the request',
 				static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-				BaseResponse::HTTP_BAD_REQUEST);
+				Response::HTTP_BAD_REQUEST);
 		}
 	}
 	
@@ -651,11 +651,4 @@ abstract class Model extends Illuminate\Database\Eloquent\Model {
 		
 		return $instance->newQuery();
 	}
-	
-	public static function newRecord ($attributes) {
-		/** @var Model $model */
-		return new static ($attributes);
-		static::firstOrCreate ();
-	}
-	
 }

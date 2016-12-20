@@ -6,13 +6,13 @@
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Cache\CacheManager;
 	use EchoIt\JsonApi\Http\Response;
+	use EchoIt\JsonApi\Http\Request;
 	use EchoIt\JsonApi\Utils\ClassUtils;
 	use EchoIt\JsonApi\Utils\ModelsUtils;
 	use EchoIt\JsonApi\Utils\StringUtils;
 	use Illuminate\Database\QueryException;
 	use Illuminate\Http\JsonResponse;
 	use Illuminate\Support\Collection;
-	use Illuminate\Http\Response as BaseResponse;
 	use Illuminate\Support\Pluralizer;
 	use Illuminate\Pagination\LengthAwarePaginator;
 	use Illuminate\Pagination\Paginator;
@@ -94,11 +94,6 @@
 		protected $request;
 		
 		/**
-		 * Current application
-		 */
-		private $cacheDriver;
-
-		/**
 		 * BaseHandler constructor. Defines modelName based of HandlerName
 		 *
 		 * @param Request $request
@@ -109,8 +104,6 @@
 			$this->modelsNamespace = $modelsNamespace;
 			$this->setResourceName ();
 			$this->generateModelName ();
-			//TODO implement advanced cache with redis
-			$this->cacheDriver = config('cache.default');
 		}
 
 		/**
@@ -131,7 +124,7 @@
 						new Error (
 							'Method not allowed',
 							static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
-							BaseResponse::HTTP_METHOD_NOT_ALLOWED
+							Response::HTTP_METHOD_NOT_ALLOWED
 						)
 				    ]
 				);
@@ -144,7 +137,7 @@
 						new Error (
 							'This user cannot modify this resource',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
-							BaseResponse::HTTP_FORBIDDEN
+							Response::HTTP_FORBIDDEN
 						)
 					]
 				);
@@ -161,7 +154,7 @@
 						new Error (
 							'Unknown ID',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
-							BaseResponse::HTTP_NOT_FOUND
+							Response::HTTP_NOT_FOUND
 						)
 				    ]
 				);
@@ -225,19 +218,19 @@
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
 			if ($models instanceof Response) {
-				//$response = $models;
+				$response = $models;
 			}
 			elseif ($models instanceof LengthAwarePaginator) {
-				//$items = new Collection($models->items ());
-				//foreach ($items as $model) {
-				//	if ($loadRelations) {
-				//		$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
-				//	}
-				//}
-				//$response = new Response($items, static::successfulHttpStatusCode ($this->request->method));
-				//$response->links = $this->getPaginationLinks ($models);
-				//$response->included = $this->getIncludedModels ($items);
-				//$response->errors = $this->getNonBreakingErrors ();
+				$items = new Collection($models->items ());
+				foreach ($items as $model) {
+					if ($loadRelations) {
+						$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
+					}
+				}
+				$response = new Response($items, static::successfulHttpStatusCode ($this->request->getMethod()));
+				$response->links = $this->getPaginationLinks ($models);
+				$response->included = $this->getIncludedModels ($items);
+				$response->errors = $this->getNonBreakingErrors ();
 			}
 			else {
 				if ($models instanceof Collection) {
@@ -374,7 +367,7 @@
 						new Error (
 							'An unknown error occurred',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 				    ]
 				);
@@ -391,7 +384,7 @@
 							new Error(
 								'An unknown error occurred saving the record',
 								static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-								BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+								Response::HTTP_INTERNAL_SERVER_ERROR
 							)
 						]
 					);
@@ -403,7 +396,7 @@
 						new Error (
 							'Database error',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
 				);
@@ -414,7 +407,7 @@
 						new Error (
 							'An unknown error occurred saving the record',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
 				);
@@ -474,7 +467,7 @@
 						new Error (
 							'An unknown error occurred',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							BaseResponse::HTTP_INTERNAL_SERVER_ERROR
+							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
 				);
@@ -513,7 +506,7 @@
 						new Error (
 							'No ID provided',
 							static::ERROR_SCOPE | static::ERROR_NO_ID,
-							BaseResponse::HTTP_BAD_REQUEST
+							Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -567,7 +560,7 @@
 					[
 						new Error (
 							'Payload either contains misformed JSON or missing "data" parameter.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, BaseResponse::HTTP_BAD_REQUEST
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -580,7 +573,7 @@
 						new Error (
 							'"type" parameter not set in request.',
 							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							BaseResponse::HTTP_BAD_REQUEST
+							Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -591,7 +584,7 @@
 						new Error (
 							'"type" parameter is not valid. Expecting ' . $type,
 							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							BaseResponse::HTTP_CONFLICT
+							Response::HTTP_CONFLICT
 						)
 					]
 				);
@@ -602,7 +595,7 @@
 						new Error (
 							'"id" parameter not set in request.',
 							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							BaseResponse::HTTP_BAD_REQUEST
+							Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -741,18 +734,18 @@
 
 			switch ($method) {
 				case 'POST':
-					return BaseResponse::HTTP_CREATED;
+					return Response::HTTP_CREATED;
 				case 'PATCH':
 				case 'PUT':
 				case 'DELETE':
-					return BaseResponse::HTTP_NO_CONTENT;
+					return Response::HTTP_NO_CONTENT;
 				case 'GET':
-					return BaseResponse::HTTP_OK;
+					return Response::HTTP_OK;
 			}
 
 			// Code shouldn't reach this point, but if it does we assume that the
 			// client has made a bad request.
-			return BaseResponse::HTTP_BAD_REQUEST;
+			return Response::HTTP_BAD_REQUEST;
 		}
 		
 		/**
