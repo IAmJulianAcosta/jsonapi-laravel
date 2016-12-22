@@ -995,21 +995,43 @@
 			
 		}
 		
+		/**
+		 * Method that runs before saving a new model. Should be implemented by child classes.
+		 *
+		 * @param Request $request
+		 * @param Model   $model
+		 */
 		protected function beforeSaveNewModel (Request $request, Model $model) {
 			
 		}
 		
+		/**
+		 * Method that runs after saving a new model. Should be implemented by child classes.
+		 *
+		 * @param Request $request
+		 * @param Model   $model
+		 */
 		protected function afterSaveNewModel (Request $request, Model $model) {
 			
 		}
 		
+		/**
+		 * Method that runs before updating a model. Should be implemented by child classes.
+		 *
+		 * @param Request $request
+		 * @param Model   $model
+		 */
 		protected function beforeSaveModel (Request $request, Model $model) {
 			
 		}
 		
+		/**
+		 * Method that runs after updating a model. Should be implemented by child classes.
+		 *
+		 * @param Request $request
+		 * @param Model   $model
+		 */
 		protected function afterSaveModel (Request $request, Model $model) {
 			
 		}
-		
-		
 	}
