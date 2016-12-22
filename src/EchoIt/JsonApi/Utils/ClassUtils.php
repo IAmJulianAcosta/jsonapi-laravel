@@ -8,11 +8,6 @@
 	
 	namespace EchoIt\JsonApi\Utils;
 	
-	use EchoIt\JsonApi\Database\Eloquent\Model;
-	use EchoIt\JsonApi\Error;
-	use EchoIt\JsonApi\Exception;
-	use Illuminate\Http\Response;
-	use Illuminate\Support\Collection;
 	use Illuminate\Support\Pluralizer;
 	use function Stringy\create as s;
 
