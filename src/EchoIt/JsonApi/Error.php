@@ -15,6 +15,7 @@
 		const MISSING_PARAMETER                  = 3;
 		const INVALID_ACTION                     = 4;
 		const MALFORMED_REQUEST                  = 5;
+		
 		const INVALID_USER_ID                    = 10;
 		const USER_CANT_MODIFY_PROFILE           = 11;
 		

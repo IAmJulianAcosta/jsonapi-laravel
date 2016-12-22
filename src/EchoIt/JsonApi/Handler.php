@@ -370,6 +370,7 @@
 
 			$model->validateData ($attributes);
 
+			$this->beforeSaveNewModel ($request, $model);
 			try {
 				$model->saveOrFail ();
 			}
@@ -391,7 +392,8 @@
 					]
 				);
 			}
-
+			$this->afterSaveNewModel ($request, $model);
+			
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
@@ -439,6 +441,7 @@
 			$model->updateRelationships ($data, $model, false);
 
 			// ensure we can get a successful save
+			$this->beforeSaveModel ($request, $model);
 			if (!$model->save ()) {
 				throw new Exception
 				(
@@ -449,7 +452,8 @@
 					]
 				);
 			}
-
+			$this->afterSaveModel ($request, $model);
+			
 			$this->verifyIfModelChanged ($model, $originalAttributes);
 
 			if ($model->isChanged()) {
@@ -990,5 +994,22 @@
 		protected function afterGenerateDeleteResponse (Request $request, $model, Response $response) {
 			
 		}
+		
+		protected function beforeSaveNewModel (Request $request, Model $model) {
+			
+		}
+		
+		protected function afterSaveNewModel (Request $request, Model $model) {
+			
+		}
+		
+		protected function beforeSaveModel (Request $request, Model $model) {
+			
+		}
+		
+		protected function afterSaveModel (Request $request, Model $model) {
+			
+		}
+		
 		
 	}
