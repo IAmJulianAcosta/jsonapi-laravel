@@ -7,72 +7,65 @@ use Illuminate\Http\JsonResponse;
  *
  * @property array $included included resources
  */
-class Response {
-    /**
-     * An array of parameters.
-     *
-     * @var array
-     */
-    protected $responseData = [];
+class Response extends JsonResponse {
+	/**
+	 * An array of parameters.
+	 *
+	 * @var array
+	 */
+	protected $responseData = [];
 
-    /**
-     * The main response.
-     *
-     * @var array|object
-     */
-    protected $body;
+	/**
+	 * The main response.
+	 *
+	 * @var array|object
+	 */
+	protected $jsonApiData;
 
-    /**
-     * HTTP status code
-     *
-     * @var int
-     */
-    protected $httpStatusCode;
+	/**
+	 * HTTP status code
+	 *
+	 * @var int
+	 */
+	protected $httpStatusCode;
 
-    /**
-     * Constructor
-     *
-     * @param array|object $body
-     * @param int $httpStatusCode
-     */
-    public function __construct($body, $httpStatusCode = 200) {
-        $this->body = $body;
-        $this->httpStatusCode = $httpStatusCode;
-    }
+	/**
+	 * Constructor
+	 *
+	 * @param array|object $data
+	 * @param int          $httpStatusCode
+	 */
+	public function __construct($jsonApiData, $httpStatusCode = 200, $headers = [], $options = 0) {
+		$this->jsonApiData    = $jsonApiData;
+		$this->httpStatusCode = $httpStatusCode;
+		parent::__construct(
+			$this->generateData(),
+			$this->httpStatusCode,
+			array_merge(['Content-Type' => 'application/vnd.api+json'], $headers),
+			$options
+		);
+	}
 
-    /**
-     * Used to set or overwrite a parameter.
-     *
-     * @param string $key
-     * @param mixed  $value
-     */
-    public function __set($key, $value) {
-        if ($key == 'body') {
-            $this->body = $value;
-            return;
-        }
-        $this->responseData[$key] = $value;
-    }
-
-    /**
-     * Returns a JsonResponse with the set parameters and body.
-     *
-     * @param  string $bodyKey The key on which to set the main response.
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function toJsonResponse($bodyKey = 'data', $options = 0) {
-        return new JsonResponse(
-        	array_merge(
-                [
-                	$bodyKey => $this->body
-                ],
-                array_filter($this->responseData)
-	        ),
-	        $this->httpStatusCode,
-	        [
-	        	'Content-Type' => 'application/vnd.api+json'
-	        ],
-	        $options
-        );
-    }
+	/**
+	 * Used to set or overwrite a parameter.
+	 *
+	 * @param string $key
+	 * @param mixed  $value
+	 */
+	public function __set($key, $value) {
+		if ($key === 'data' || $key === 'jsonApiData') {
+			$this->{$key} = $value;
+		}
+		else {
+			$this->responseData[$key] = $value;
+		}
+		$this->setData($this->generateData());
+	}
+	
+	/**
+	 * @return array
+	 */
+	protected function generateData() {
+		return array_merge(['data' => $this->jsonApiData], array_filter($this->responseData));
+	}
 }
