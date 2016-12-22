@@ -378,17 +378,7 @@
 			$model->validateData ($attributes);
 
 			try {
-				if (!$model->saveOrFail ()) {
-					throw new Exception(
-						[
-							new Error(
-								'An unknown error occurred saving the record',
-								static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-								Response::HTTP_INTERNAL_SERVER_ERROR
-							)
-						]
-					);
-				}
+				$model->saveOrFail ();
 			}
 			catch (QueryException $e) {
 				throw new Exception(
