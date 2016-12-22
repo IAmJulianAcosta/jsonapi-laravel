@@ -8,6 +8,7 @@
 	
 	namespace EchoIt\JsonApi;
 	
+	use EchoIt\JsonApi\Http\Request;
 	use Illuminate\Database\Eloquent\Builder;
 	
 	class QueryFilter {
