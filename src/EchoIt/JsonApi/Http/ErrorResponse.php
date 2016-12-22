@@ -2,7 +2,6 @@
 
 use EchoIt\JsonApi\Error;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 
 /**
  * ErrorResponse represents a HTTP error response with a JSON API compliant payload.
@@ -16,7 +15,7 @@ class ErrorResponse extends JsonResponse {
 	 * @param array $errors
 	 * @param int   $httpStatusCode
 	 */
-    public function __construct(array $errors, $httpStatusCode = Response::HTTP_BAD_REQUEST) {
+    public function __construct(array $errors, $httpStatusCode = self::HTTP_BAD_REQUEST) {
 	    $data = [ 'errors' => [] ];
 	
 	    /** @var Error $error */
