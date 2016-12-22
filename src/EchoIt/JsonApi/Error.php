@@ -91,11 +91,11 @@
 		}
 		
 		//TODO use flags
-		public function __construct($message, $errorCode, $httpErrorCode, $additionalAttributes = [], $title = "Error parsing JSON") {
-			$this->message              = $message;
+		public function __construct($title, $errorCode, $httpErrorCode, $message = null, $additionalAttributes = []) {
+			$this->title                = $title;
 			$this->httpErrorCode        = $httpErrorCode;
 			$this->errorCode            = $errorCode;
+			$this->message              = $message;
 			$this->additionalAttributes = $additionalAttributes;
-			$this->title                = $title;
 		}
 	}

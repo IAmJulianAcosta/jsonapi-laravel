@@ -121,9 +121,7 @@
 			if (!$this->supportsMethod ($httpMethod)) {
 				throw new Exception(
 					[
-						new Error (
-							'Method not allowed',
-							static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
+						new Error ('Method not allowed', static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
 							Response::HTTP_METHOD_NOT_ALLOWED
 						)
 				    ]
@@ -134,8 +132,7 @@
 			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
 				throw new Exception(
 					[
-						new Error (
-							'This user cannot modify this resource',
+						new Error ('This user cannot modify this resource',
 							static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
 							Response::HTTP_FORBIDDEN
 						)
@@ -151,9 +148,7 @@
 			if (is_null ($model)) {
 				throw new Exception(
 					[
-						new Error (
-							'Unknown ID',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
+						new Error ('Unknown ID', static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
 							Response::HTTP_NOT_FOUND
 						)
 				    ]
@@ -364,9 +359,7 @@
 			if (is_null($model) === true) {
 				throw new Exception(
 					[
-						new Error (
-							'An unknown error occurred',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+						new Error ('An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
 							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 				    ]
@@ -383,9 +376,7 @@
 			catch (QueryException $e) {
 				throw new Exception(
 					[
-						new Error (
-							'Database error',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+						new Error ('Database error', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
 							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
@@ -394,10 +385,8 @@
 			catch (\Exception $e) {
 				throw new Exception(
 					[
-						new Error (
-							'An unknown error occurred saving the record',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							Response::HTTP_INTERNAL_SERVER_ERROR
+						new Error ('An unknown error occurred saving the record',
+							static::ERROR_SCOPE | static::ERROR_UNKNOWN, Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
 				);
@@ -454,9 +443,7 @@
 				throw new Exception
 				(
 					[
-						new Error (
-							'An unknown error occurred',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+						new Error ('An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
 							Response::HTTP_INTERNAL_SERVER_ERROR
 						)
 					]
@@ -493,9 +480,7 @@
 			if (empty($request->getId())) {
 				throw new Exception (
 					[
-						new Error (
-							'No ID provided',
-							static::ERROR_SCOPE | static::ERROR_NO_ID,
+						new Error ('No ID provided', static::ERROR_SCOPE | static::ERROR_NO_ID,
 							Response::HTTP_BAD_REQUEST
 						)
 					]
@@ -548,8 +533,7 @@
 			if (array_key_exists('data', $content) === false) {
 				throw new Exception(
 					[
-						new Error (
-							'Payload either contains misformed JSON or missing "data" parameter.',
+						new Error ('Payload either contains misformed JSON or missing "data" parameter.',
 							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
 						)
 					]
@@ -560,10 +544,8 @@
 			if (array_key_exists ("type", $data) === false) {
 				throw new Exception(
 					[
-						new Error (
-							'"type" parameter not set in request.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							Response::HTTP_BAD_REQUEST
+						new Error ('"type" parameter not set in request.',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -571,10 +553,8 @@
 			if ($data['type'] !== $type = Pluralizer::plural (s ($this->resourceName)->dasherize ()->__toString ())) {
 				throw new Exception(
 					[
-						new Error (
-							'"type" parameter is not valid. Expecting ' . $type,
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							Response::HTTP_CONFLICT
+						new Error ('"type" parameter is not valid. Expecting ' . $type,
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_CONFLICT
 						)
 					]
 				);
@@ -582,10 +562,8 @@
 			if ($newRecord === false && isset($data['id']) === false) {
 				throw new Exception(
 					[
-						new Error (
-							'"id" parameter not set in request.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							Response::HTTP_BAD_REQUEST
+						new Error ('"id" parameter not set in request.',
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
 						)
 					]
 				);

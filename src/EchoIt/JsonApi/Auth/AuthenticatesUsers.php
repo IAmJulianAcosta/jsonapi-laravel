@@ -46,9 +46,7 @@
 			
 			throw new Exception(
 				[
-					new Error(
-						"An unknown error ocurred during login",
-						Error::UNKNOWN_ERROR,
+					new Error("An unknown error ocurred during login", Error::UNKNOWN_ERROR,
 						Response::HTTP_INTERNAL_SERVER_ERROR
 					)
 				]
@@ -98,9 +96,7 @@
 			else {
 				throw new Exception(
 					[
-						new Error (
-							'User passed is not a valid Model object',
-							Error::SERVER_GENERIC_ERROR,
+						new Error ('User passed is not a valid Model object', Error::SERVER_GENERIC_ERROR,
 							Response::HTTP_BAD_REQUEST
 						)
 					]
@@ -112,10 +108,8 @@
 			if ($request->isJson() === false) {
 				throw new Exception(
 					[
-						new Error (
-							'Request must have a JSON API media type (application/vnd.api+json)',
-							Error::MALFORMED_REQUEST,
-							Response::HTTP_BAD_REQUEST
+						new Error ('Request must have a JSON API media type (application/vnd.api+json)',
+							Error::MALFORMED_REQUEST, Response::HTTP_BAD_REQUEST
 						)
 					]
 				);
@@ -131,10 +125,7 @@
 		protected function sendLockoutResponse (Request $request) {
 			throw new Exception(
 				[
-					new Error (
-						'Too many failed attempts',
-						Error::LOCKOUT,
-						Response::HTTP_FORBIDDEN
+					new Error ('Too many failed attempts', Error::LOCKOUT, Response::HTTP_FORBIDDEN
 					)
 				]
 			);
@@ -143,10 +134,7 @@
 		protected function sendFailedLoginResponse (Request $request) {
 			throw new Exception(
 				[
-					new Error (
-						'Invalid credentials',
-						Error::INVALID_CREDENTIALS,
-						Response::HTTP_UNAUTHORIZED
+					new Error ('Invalid credentials', Error::INVALID_CREDENTIALS, Response::HTTP_UNAUTHORIZED
 					)
 				]
 			);
