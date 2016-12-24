@@ -1,7 +1,7 @@
-<?php namespace EchoIt\JsonApi;
+<?php namespace EchoIt\JsonApi\Validation;
 
+use EchoIt\JsonApi\Error;
 use EchoIt\JsonApi\Http\ErrorResponse;
-use EchoIt\JsonApi\Validation\ValidationError;
 use Illuminate\Http\Response;
 
 /**

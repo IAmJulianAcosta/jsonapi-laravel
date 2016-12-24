@@ -2,7 +2,7 @@
 	namespace EchoIt\JsonApi\Validation;
 
 use EchoIt\JsonApi\Exception;
-use EchoIt\JsonApi\ValidationErrorResponse;
+use EchoIt\JsonApi\Validation\ValidationErrorResponse;
 
 /**
  * Validation represents an Exception that can be thrown in the event of a validation failure where a JSON response may be expected.
