@@ -63,25 +63,4 @@
 			
 			$this->setUser($user);
 		}
-		
-		public function user() {
-			if ($this->loggedOut) {
-				return;
-			}
-			
-			$user = null;
-			$recaller = $this->getRecaller();
-			
-			if (is_null($recaller) === false) {
-				$user = $this->getUserByRecaller($recaller);
-				
-				if ($user) {
-					$this->updateSession($user->getAuthIdentifier());
-					
-					$this->fireLoginEvent($user, true);
-				}
-			}
-			
-			return $this->user = $user;
-		}
 	}
