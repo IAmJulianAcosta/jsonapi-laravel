@@ -15,12 +15,39 @@
 	
 	class SessionGuard extends \Illuminate\Auth\SessionGuard {
 		
-		protected $authCookie;
+		protected $authCookieName;
 		
-		public function __construct($name, UserProvider $provider, SessionInterface $session, Request $request = null, $authCookie = "") {
+		protected $authCookiePath;
+		
+		protected $authCookieDomain;
+		
+		protected $authCookieSecure;
+		
+		protected $authCookieHttpOnly;
+		
+		/**
+		 * SessionGuard constructor.
+		 *
+		 * @param string           $name
+		 * @param UserProvider     $provider
+		 * @param SessionInterface $session
+		 * @param Request|null     $request
+		 * @param string           $authCookieName
+		 * @param null             $authCookiePath
+		 * @param null             $authCookieDomain
+		 * @param null             $authCookieSecure
+		 * @param null             $authCookieHttpOnly
+		 */
+		public function __construct($name, UserProvider $provider, SessionInterface $session, Request $request = null,
+			$authCookieName = null, $authCookiePath = null, $authCookieDomain = null, $authCookieSecure = null,
+			$authCookieHttpOnly = null) {
 			parent::__construct($name, $provider, $session, $request);
-			$authCookie = empty($authCookie) === false ? $authCookie : $name . "_cookie";
-			$this->authCookie = $authCookie;
+			$authCookieName           = is_null($authCookieName) === false ? $authCookieName : $name . "_cookie";
+			$this->authCookieName     = $authCookieName;
+			$this->authCookiePath     = $authCookiePath;
+			$this->authCookieDomain   = $authCookieDomain;
+			$this->authCookieSecure   = $authCookieSecure;
+			$this->authCookieHttpOnly = $authCookieHttpOnly;
 		}
 		
 		/**
@@ -30,11 +57,12 @@
 		 * @return \Symfony\Component\HttpFoundation\Cookie
 		 */
 		protected function createRecaller($value) {
-			return $this->getCookieJar()->forever($this->getRecallerName(), $value, null, null, false, false);
+			return $this->getCookieJar()->forever($this->getRecallerName(), $value, $this->authCookiePath,
+				$this->authCookieDomain, $this->authCookieSecure, $this->authCookieHttpOnly);
 		}
 		
 		public function getRecallerName() {
-			return $this->authCookie;
+			return $this->authCookieName;
 		}
 		
 		/**
