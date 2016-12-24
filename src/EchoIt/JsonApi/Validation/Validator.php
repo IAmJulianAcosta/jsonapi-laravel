@@ -9,10 +9,10 @@
 	namespace EchoIt\JsonApi\Validation;
 	
 	class Validator extends \Illuminate\Validation\Validator {
-		protected $errors = [];
+		protected $validationErrors = [];
 		
-		public function errors () {
-			return $this->errors;
+		public function validationErrors () {
+			return $this->validationErrors;
 		}
 		
 		protected function addError($attribute, $rule, $parameters) {
@@ -22,6 +22,6 @@
 			
 			$this->messages->add($attribute, $message);
 			
-			$this->errors [] = new ValidationError($attribute, $rule, $message);
+			$this->validationErrors [] = new ValidationError($attribute, $rule, $message);
 		}
 	}
