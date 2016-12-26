@@ -423,7 +423,7 @@ abstract class Model extends BaseModel {
 			/** @var Validator $validator */
 			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
 			if ($validator->fails ()) {
-				throw new ValidationException($validator->errors());
+				throw new ValidationException($validator->validationErrors());
 			}
 		}
 	}
