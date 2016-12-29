@@ -652,4 +652,11 @@ abstract class Model extends BaseModel {
 		
 		return $instance->newQuery();
 	}
+	
+	public static function newRecord ($attributes) {
+		/** @var Model $model */
+		return new static ($attributes);
+		static::firstOrCreate ();
+	}
+	
 }
