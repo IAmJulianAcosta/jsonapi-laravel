@@ -355,7 +355,7 @@
 			$attributes = $data ["attributes"];
 			
 			/** @var Model $model */
-			$model = forward_static_call_array ([$modelName, 'createNew'], [$attributes]);
+			$model = new $modelName($attributes);
 			if (is_null($model) === true) {
 				throw new Exception(
 					[
