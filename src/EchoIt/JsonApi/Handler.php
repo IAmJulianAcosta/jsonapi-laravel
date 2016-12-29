@@ -534,7 +534,7 @@
 		protected function parseRequestContent ($content, $newRecord = true) {
 			$content = json_decode ($content, true);
 
-			if (array_key_exists('data', $content) === false) {
+			if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
 				throw new Exception(
 					[
 						new Error ('Payload either contains misformed JSON or missing "data" parameter.',
