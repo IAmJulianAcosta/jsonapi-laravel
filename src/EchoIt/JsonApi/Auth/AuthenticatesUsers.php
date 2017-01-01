@@ -76,22 +76,25 @@
 			);
 		}
 		
-		
 		/**
+		 * The user has been authenticated.
+		 *
 		 * @param Request $request
 		 * @param         $user
 		 *
-		 * @return mixed
+		 * @return JsonResponse
 		 * @throws Exception
 		 */
 		protected function authenticated(Request $request, $user) {
 			if ($user instanceof Model) {
-				$response["meta"]  = [
-					//TODO generate auth token?
+				$token            = str_random(60);
+				$user->api_token  = $token;
+				$user->save ();
+				$response["meta"] = [
+					
 				];
 				$response["data"] = $user->toArray();
 				return new JsonResponse($response, 200, ['Content-Type' => 'application/vnd.api+json']);
-				
 			}
 			else {
 				throw new Exception(
@@ -104,6 +107,14 @@
 			}
 		}
 		
+		/**
+		 * Get the needed authorization credentials from the request.
+		 *
+		 * @param Request $request
+		 *
+		 * @return array
+		 * @throws Exception
+		 */
 		protected function credentials(Request $request) {
 			if ($request->isJson() === false) {
 				throw new Exception(
@@ -122,6 +133,13 @@
 			];
 		}
 		
+		/**
+		 * Redirect the user after determining they are locked out.
+		 *
+		 * @param Request $request
+		 *
+		 * @throws Exception
+		 */
 		protected function sendLockoutResponse (Request $request) {
 			throw new Exception(
 				[
@@ -131,6 +149,13 @@
 			);
 		}
 		
+		/**
+		 * Get the failed login response instance.
+		 *
+		 * @param Request $request
+		 *
+		 * @throws Exception
+		 */
 		protected function sendFailedLoginResponse (Request $request) {
 			throw new Exception(
 				[

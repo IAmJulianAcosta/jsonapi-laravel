@@ -30,10 +30,12 @@ class Response extends JsonResponse {
 	protected $httpStatusCode;
 
 	/**
-	 * Constructor
+	 * Response constructor.
 	 *
-	 * @param array|object $data
-	 * @param int          $httpStatusCode
+	 * @param mixed|null $jsonApiData
+	 * @param int        $httpStatusCode
+	 * @param array      $headers
+	 * @param int        $options
 	 */
 	public function __construct($jsonApiData, $httpStatusCode = 200, $headers = [], $options = 0) {
 		$this->jsonApiData    = $jsonApiData;
