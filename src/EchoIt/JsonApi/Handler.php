@@ -421,9 +421,15 @@
 			/** @var \EchoIt\JsonApi\Database\Eloquent\Model $model */
 			$model = $modelName::find ($id);
 			
-			if (is_null ($model)) {
-				//TODO throw exception
-				return null;
+			if (is_null ($model) === true) {
+				throw new Exception
+				(
+					[
+						new Error ('Record not found in Database', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
+							Response::HTTP_NOT_FOUND
+						)
+					]
+				);
 			}
 			
 			$this->verifyUserPermission($request, $model);
