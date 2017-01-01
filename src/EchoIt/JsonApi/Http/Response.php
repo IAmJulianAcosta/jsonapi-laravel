@@ -63,6 +63,16 @@ class Response extends JsonResponse {
 	}
 	
 	/**
+	 * Adds a parameter to response "data" key.
+	 *
+	 * @param $key
+	 * @param $value
+	 */
+	public function addToJsonApiData ($key, $value) {
+		$this->jsonApiData[$key] = $value;
+	}
+	
+	/**
 	 * @return array
 	 */
 	protected function generateData() {
