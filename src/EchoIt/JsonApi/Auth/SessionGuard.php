@@ -51,4 +51,24 @@
 		public function getRecallerName() {
 			return $this->recallerCookie->getName();
 		}
+		
+		protected function clearUserDataFromStorage() {
+			$this->session->remove($this->getName());
+			
+			if (! is_null($this->getRecaller())) {
+				$this->getCookieJar()->queue($this->forgetRecaller());
+			}
+		}
+		
+		/**
+		 * Creates a cookie that forgets the recaller
+		 *
+		 * @return Cookie
+		 */
+		protected function forgetRecaller() {
+			$recaller = $this->getRecallerName();
+			$cookie = $this->recallerCookie;
+			
+			return $this->getCookieJar()->forget($recaller, $cookie->getPath(), $cookie->getDomain());
+		}
 	}
