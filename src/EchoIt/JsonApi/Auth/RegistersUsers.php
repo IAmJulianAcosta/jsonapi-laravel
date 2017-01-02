@@ -16,9 +16,10 @@
 		use \Illuminate\Foundation\Auth\RegistersUsers;
 		
 		/**
-		 * @param Request $request
+		 * Registers a new user
+		 * @param Authenticatable $user
 		 */
-		public function register(Authenticatable $user) {
+		public function registerUser(Authenticatable $user) {
 			event(new Registered($user));
 			
 			$this->guard()->login($user, true);
