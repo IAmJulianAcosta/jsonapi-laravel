@@ -14,6 +14,8 @@
 	
 	class TokenGuard extends BaseTokenGuard {
 		
+		static $realm = "Token";
+		
 		/**
 		 * Get the token for the current request.
 		 *
@@ -28,7 +30,7 @@
 			if (preg_match("/^(Basic\srealm=\"){1}([a-zA-Z]+)\"$/", $request->header("WWW-Authenticate"), $matches)) {
 				if (count($matches) >= 3) {
 					$realm = $matches[2];
-					if ($realm == "Token") {
+					if ($realm === static::$realm) {
 						if (preg_match("/^(Basic\s){1}([\|\-\_\.\\\@0-9a-zA-Z]+)$/", $request->header("Authorization"),
 							$matches)) {
 							if (count($matches) >= 3) {
