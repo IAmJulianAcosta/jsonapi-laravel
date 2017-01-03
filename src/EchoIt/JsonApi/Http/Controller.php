@@ -85,11 +85,9 @@
 		 * @param Request $request
 		 * @param         $modelsNamespace
 		 */
-		public function __construct (Request $request, $modelsNamespace) {
+		public function __construct (Request $request) {
 			$this->request = $request;
-			$this->modelsNamespace = $modelsNamespace;
 			$this->setResourceName ();
-			$this->generateModelName ();
 		}
 		
 		/**
