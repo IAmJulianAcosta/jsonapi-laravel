@@ -31,7 +31,7 @@
 		 */
 		const ERROR_SCOPE = 0;
 
-		const CONTROLLER_WORD_LENGTH = 7;
+		const CONTROLLER_WORD_LENGTH = 10;
 		
 		protected static $namespace;
 		protected static $exposedRelations;
@@ -792,7 +792,7 @@
 		 */
 		private function setResourceName () {
 			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
-			$resourceNameLength = $shortClassName - self::CONTROLLER_WORD_LENGTH;
+			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
 		
