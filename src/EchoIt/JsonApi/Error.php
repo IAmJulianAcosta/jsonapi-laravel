@@ -48,7 +48,7 @@
 		const NULL_ERROR_CODE      = 90;
 		const UNKNOWN_ERROR        = 91;
 		const SERVER_GENERIC_ERROR = 92;
-		const DATABASE_ERROR = 93;
+		const DATABASE_ERROR       = 93;
 		
 		const ERROR_LEVEL = 0;
 		
@@ -66,7 +66,6 @@
 		
 		/** @var array  */
 		protected $additionalAttributes;
-		private $resourceIdentifier;
 		
 		/**
 		 * @return int
@@ -149,7 +148,7 @@
 			$this->title                = $title;
 			$this->errorCode            = $errorCode;
 			$this->httpErrorCode        = $httpErrorCode;
-			$this->resourceIdentifier = $resourceIdentifier;
+			$this->resourceIdentifier   = $resourceIdentifier;
 			$this->message              = $message;
 			$this->additionalAttributes = $additionalAttributes;
 		}

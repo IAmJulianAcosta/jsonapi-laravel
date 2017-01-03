@@ -367,15 +367,12 @@
 				$model->saveOrFail ();
 			}
 			catch (QueryException $exception) {
-				$databaseError = new Error ('Database error', Error::DATABASE_ERROR,
-					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
-				);
-				if (config ("app.debug") === true) {
-					$message = sprintf ("Message: %s\nSQL: ", $exception->getMessage(), $exception->getSql());
-					$databaseError->setMessage ($message);
-				}
 				throw new Exception(
-					[$databaseError]
+					[
+						new SqlError ('Database error', Error::DATABASE_ERROR,
+							Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
+						)
+					]
 				);
 			}
 			catch (\Exception $exception) {

@@ -40,7 +40,9 @@ class ErrorResponse extends JsonResponse {
 			    'detail' => (string) $error->getMessage(),
 			    'status' => (string) $error->getHttpErrorCode(),
 			],
-			$error->getAdditionalAttributes()
+			[
+				'meta' => $error->getAdditionalAttributes()
+			]
 		);
 	}
 }
