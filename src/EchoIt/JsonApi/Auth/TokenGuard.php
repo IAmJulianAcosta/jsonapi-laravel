@@ -14,7 +14,7 @@
 	
 	class TokenGuard extends BaseTokenGuard {
 		
-		static $realm = "Token";
+		private static $realm = "Token";
 		
 		/**
 		 * Get the token for the current request.

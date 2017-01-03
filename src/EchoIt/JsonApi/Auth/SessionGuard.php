@@ -8,7 +8,6 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
-	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Contracts\Auth\UserProvider;
 	use Symfony\Component\HttpFoundation\Cookie;
 	use Symfony\Component\HttpFoundation\Request;

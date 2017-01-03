@@ -1,5 +1,7 @@
 <?php namespace EchoIt\JsonApi\Http;
 
+use EchoIt\JsonApi\Error;
+use EchoIt\JsonApi\Exception;
 use Illuminate\Http\Request as BaseRequest;
 
 /**
@@ -85,8 +87,12 @@ class Request extends BaseRequest {
 				$this->pageNumber = $this->page['number'];
 			}
 			else {
-				//throw error
-				//						return new ApiErrorResponse(400, 400, 'Expected page[size] and page[number]');
+				throw new Exception
+				(
+					[
+						new Error ('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST)
+					]
+				);
 			}
 		}
 	}
