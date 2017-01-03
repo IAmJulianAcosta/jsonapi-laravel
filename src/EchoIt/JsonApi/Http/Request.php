@@ -90,7 +90,7 @@ class Request extends BaseRequest {
 				throw new Exception
 				(
 					[
-						new Error ('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST,)
+						new Error ('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST)
 					]
 				);
 			}
