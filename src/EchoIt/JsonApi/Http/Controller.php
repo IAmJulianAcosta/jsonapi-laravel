@@ -366,16 +366,19 @@
 			try {
 				$model->saveOrFail ();
 			}
-			catch (QueryException $e) {
+			catch (QueryException $exception) {
+				$databaseError = new Error ('Database error', Error::DATABASE_ERROR,
+					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
+				);
+				if (config ("app.debug") === true) {
+					$message = sprintf ("Message: %s\nSQL: ", $exception->getMessage(), $exception->getSql());
+					$databaseError->setMessage ($message);
+				}
 				throw new Exception(
-					[
-						new Error ('Database error', Error::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-							static::ERROR_SCOPE
-						)
-					]
+					[$databaseError]
 				);
 			}
-			catch (\Exception $e) {
+			catch (\Exception $exception) {
 				throw new Exception(
 					[
 						new Error ('An unknown error occurred saving the record',

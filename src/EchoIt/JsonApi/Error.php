@@ -44,10 +44,11 @@
 		const VALIDATION_ERROR = 75;
 		const UNAUTHORIZED = 76;
 		
-		//Weird errors
+		//Other errors
 		const NULL_ERROR_CODE      = 90;
 		const UNKNOWN_ERROR        = 91;
 		const SERVER_GENERIC_ERROR = 92;
+		const DATABASE_ERROR = 93;
 		
 		const ERROR_LEVEL = 0;
 		
@@ -93,6 +94,41 @@
 		 */
 		public function getTitle () {
 			return $this->title;
+		}
+		
+		/**
+		 * @param int $httpErrorCode
+		 */
+		public function setHttpErrorCode($httpErrorCode) {
+			$this->httpErrorCode = $httpErrorCode;
+		}
+		
+		/**
+		 * @param string $message
+		 */
+		public function setMessage($message) {
+			$this->message = $message;
+		}
+		
+		/**
+		 * @param int $errorCode
+		 */
+		public function setErrorCode($errorCode) {
+			$this->errorCode = $errorCode;
+		}
+		
+		/**
+		 * @param string $title
+		 */
+		public function setTitle($title) {
+			$this->title = $title;
+		}
+		
+		/**
+		 * @param array $additionalAttributes
+		 */
+		public function setAdditionalAttributes($additionalAttributes) {
+			$this->additionalAttributes = $additionalAttributes;
 		}
 		
 		/**
