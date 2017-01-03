@@ -14,73 +14,75 @@
 	class ValidationError extends Error {
 		
 		//Validation errors
-		const ACCEPTED = 200;
-		const ACTIVE_URL = 201;
-		const CONFIRMED = 202;
-		const DIFFERENT = 203;
-		const FILLED = 204;
-		const IN = 205;
-		const NULLABLE = 206;
-		const NOT_IN = 207;
-		const PRESENT = 208;
-		const SAME = 209;
-		const SIZE = 210;
+		const ACCEPTED = 0;
+		const ACTIVE_URL = 1;
+		const CONFIRMED = 2;
+		const DIFFERENT = 3;
+		const FILLED = 4;
+		const IN = 5;
+		const NULLABLE = 6;
+		const NOT_IN = 7;
+		const PRESENT = 8;
+		const SAME = 9;
+		const SIZE = 10;
 		
 		//Required errors
-		const REQUIRED = 220;
-		const REQUIRED_IF = 221;
-		const REQUIRED_UNLESS = 222;
-		const REQUIRED_WITH = 223;
-		const REQUIRED_WITH_ALL = 224;
-		const REQUIRED_WITHOUT = 225;
-		const REQUIRED_WITHOUT_ALL = 226;
+		const REQUIRED = 20;
+		const REQUIRED_IF = 21;
+		const REQUIRED_UNLESS = 22;
+		const REQUIRED_WITH = 23;
+		const REQUIRED_WITH_ALL = 24;
+		const REQUIRED_WITHOUT = 25;
+		const REQUIRED_WITHOUT_ALL = 26;
 		
 		//File type errors
-		const MIMETYPES = 230;
-		const MIMES = 231;
+		const MIMETYPES = 30;
+		const MIMES = 31;
 		
 		//Validation date errors
-		const AFTER = 240;
-		const BEFORE = 241;
-		const DATE_FORMAT = 242;
+		const AFTER = 40;
+		const BEFORE = 41;
+		const DATE_FORMAT = 42;
 		
 		//Database errors
-		const EXISTS = 250;
-		const UNIQUE = 251;
+		const EXISTS = 50;
+		const UNIQUE = 51;
 		
 		//Text Format errors
-		const ALPHA = 260;
-		const ALPHA_DASH = 261;
-		const ALPHA_NUMERIC = 262;
-		const EMAIL = 263;
-		const IP = 264;
-		const REGEX = 265;
-		const URL = 266;
+		const ALPHA = 60;
+		const ALPHA_DASH = 61;
+		const ALPHA_NUMERIC = 62;
+		const EMAIL = 63;
+		const IP = 64;
+		const REGEX = 65;
+		const URL = 66;
 		
 		//Data type errors
-		const ARRAY_ERROR = 270;
-		const DATE = 271;
-		const FILE = 272;
-		const IMAGE = 273;
-		const JSON = 274;
-		const NUMERIC = 275;
-		const STRING = 276;
-		const TIMEZONE = 277;
+		const ARRAY_ERROR = 70;
+		const DATE = 71;
+		const FILE = 72;
+		const IMAGE = 73;
+		const JSON = 74;
+		const NUMERIC = 75;
+		const STRING = 76;
+		const TIMEZONE = 77;
 		
 		//Numeric type errors
-		const BETWEEN = 280;
-		const DIGITS = 281;
-		const DIGITS_BETWEEN = 282;
-		const INTEGER = 283;
-		const MAX = 284;
-		const MIN = 285;
+		const BETWEEN = 80;
+		const DIGITS = 81;
+		const DIGITS_BETWEEN = 82;
+		const INTEGER = 83;
+		const MAX = 84;
+		const MIN = 85;
 		
 		//Image type errors
-		const DIMENSIONS = 290;
+		const DIMENSIONS = 90;
 		
 		//Array type errors
-		const DISTINCT = 295;
-		const IN_ARRAY = 296;
+		const DISTINCT = 95;
+		const IN_ARRAY = 96;
+		
+		const ERROR_LEVEL = 1;
 		
 		/** @var string */
 		protected $attribute;
@@ -109,7 +111,7 @@
 		public function __construct($attribute, $rule, $message) {
 			$this->attribute     = s($attribute)->toLowerCase()->__toString();
 			$this->rule          = s($rule)->toLowerCase()->__toString();
-			parent::__construct($message, $this->generateErrorCode(), $this->generateHttpErrorCode());
+			parent::__construct($message, $this->generateValidationErrorCode(), $this->generateHttpErrorCode());
 		}
 		
 		protected function generateHttpErrorCode () {
@@ -121,7 +123,11 @@
 			}
 		}
 		
-		protected function generateErrorCode () {
+		public function generateErrorCodeInThisLevel () {
+			return $this->generateValidationErrorCode() * 100^static::ERROR_LEVEL;
+		}
+		
+		protected function generateValidationErrorCode () {
 			$rule = $this->rule;
 			switch ($rule) {
 				case "unique":

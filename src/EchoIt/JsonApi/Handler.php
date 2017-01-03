@@ -28,22 +28,7 @@
 		 */
 		const ERROR_SCOPE = 0;
 
-		/**
-		 * Default error codes.
-		 */
-		const ERROR_UNKNOWN_ID = 1;
-		const ERROR_UNKNOWN_LINKED_RESOURCES = 2;
-		const ERROR_NO_ID = 4;
-		const ERROR_INVALID_ATTRS = 8;
-		const ERROR_HTTP_METHOD_NOT_ALLOWED = 16;
-		const ERROR_ID_PROVIDED_NOT_ALLOWED = 32;
-		const ERROR_MISSING_DATA = 64;
-		const ERROR_UNKNOWN = 128;
-		const ERROR_RESERVED_8 = 256;
-		const ERROR_RESERVED_9 = 512;
-		
 		const HANDLER_WORD_LENGTH = 7;
-		const ERROR_UNAUTHORIZED = 256;
 		
 		protected static $namespace;
 		protected static $exposedRelations;
@@ -121,8 +106,8 @@
 			if (!$this->supportsMethod ($httpMethod)) {
 				throw new Exception(
 					[
-						new Error ('Method not allowed', static::ERROR_SCOPE | static::ERROR_HTTP_METHOD_NOT_ALLOWED,
-							Response::HTTP_METHOD_NOT_ALLOWED
+						new Error ('Method not allowed', Error::HTTP_METHOD_NOT_ALLOWED,
+							Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE
 						)
 				    ]
 				);
@@ -132,9 +117,8 @@
 			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
 				throw new Exception(
 					[
-						new Error ('This user cannot modify this resource',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN | static::ERROR_UNAUTHORIZED,
-							Response::HTTP_FORBIDDEN
+						new Error ('This user cannot modify this resource', Error::UNAUTHORIZED,
+							Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -148,9 +132,7 @@
 			if (is_null ($model)) {
 				throw new Exception(
 					[
-						new Error ('Unknown ID', static::ERROR_SCOPE | static::ERROR_UNKNOWN_ID,
-							Response::HTTP_NOT_FOUND
-						)
+						new Error ('Unknown ID', Error::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE)
 				    ]
 				);
 			}
@@ -225,6 +207,7 @@
 				$response = new Response($items, static::successfulHttpStatusCode ($this->request->getMethod()));
 				$response->links = $this->getPaginationLinks ($models);
 				$response->included = $this->getIncludedModels ($items);
+				//Use error system
 				$response->errors = $this->getNonBreakingErrors ();
 			}
 			else {
@@ -265,7 +248,7 @@
 		/**
 		 * @param Request $request
 		 *
-		 * @return Model|Collection|null
+		 * @return ModelCollection|null
 		 */
 		protected function handleGet (Request $request) {
 			$id = $request->getId();
@@ -359,8 +342,8 @@
 			if (is_null($model) === true) {
 				throw new Exception(
 					[
-						new Error ('An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							Response::HTTP_INTERNAL_SERVER_ERROR
+						new Error ('An unknown error occurred', Error::UNKNOWN_ERROR,
+							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
 						)
 				    ]
 				);
@@ -377,8 +360,8 @@
 			catch (QueryException $e) {
 				throw new Exception(
 					[
-						new Error ('Database error', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							Response::HTTP_INTERNAL_SERVER_ERROR
+						new Error ('Database error', Error::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+							static::ERROR_SCOPE
 						)
 					]
 				);
@@ -387,7 +370,8 @@
 				throw new Exception(
 					[
 						new Error ('An unknown error occurred saving the record',
-							static::ERROR_SCOPE | static::ERROR_UNKNOWN, Response::HTTP_INTERNAL_SERVER_ERROR
+							Error::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+							static::ERROR_SCOPE
 						)
 					]
 				);
@@ -425,8 +409,8 @@
 				throw new Exception
 				(
 					[
-						new Error ('Record not found in Database', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							Response::HTTP_NOT_FOUND
+						new Error ('Record not found in Database', Error::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND,
+							static::ERROR_SCOPE
 						)
 					]
 				);
@@ -452,8 +436,8 @@
 				throw new Exception
 				(
 					[
-						new Error ('An unknown error occurred', static::ERROR_SCOPE | static::ERROR_UNKNOWN,
-							Response::HTTP_INTERNAL_SERVER_ERROR
+						new Error ('An unknown error occurred', Error::UNKNOWN_ERROR,
+							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -490,9 +474,7 @@
 			if (empty($request->getId())) {
 				throw new Exception (
 					[
-						new Error ('No ID provided', static::ERROR_SCOPE | static::ERROR_NO_ID,
-							Response::HTTP_BAD_REQUEST
-						)
+						new Error ('No ID provided', Error::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE)
 					]
 				);
 			}
@@ -544,7 +526,7 @@
 				throw new Exception(
 					[
 						new Error ('Payload either contains misformed JSON or missing "data" parameter.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
+							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -555,7 +537,7 @@
 				throw new Exception(
 					[
 						new Error ('"type" parameter not set in request.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
+							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -564,7 +546,7 @@
 				throw new Exception(
 					[
 						new Error ('"type" parameter is not valid. Expecting ' . $type,
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_CONFLICT
+							Error::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -573,7 +555,7 @@
 				throw new Exception(
 					[
 						new Error ('"id" parameter not set in request.',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST
+							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 						)
 					]
 				);
@@ -682,7 +664,7 @@
 			$unknownRelations = $this->unknownRelationsFromRequest();
 			if (count($unknownRelations) > 0) {
 				$errors[] = [
-					'code' => static::ERROR_UNKNOWN_LINKED_RESOURCES,
+					'code' => Error::UNKNOWN_LINKED_RESOURCES,
 					'title' => 'Unknown included resource requested',
 					'description' => 'These included resources are not available: ' . implode(', ', $unknownRelations)
 				];

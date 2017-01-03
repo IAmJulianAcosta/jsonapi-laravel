@@ -36,10 +36,20 @@
 		//Generating response errors
 		const RELATION_DOESNT_EXISTS_IN_MODEL = 60;
 		
+		//Request Errors
+		const UNKNOWN_LINKED_RESOURCES = 70;
+		const NO_ID = 71;
+		const INVALID_ATTRIBUTES = 72;
+		const HTTP_METHOD_NOT_ALLOWED = 74;
+		const VALIDATION_ERROR = 75;
+		const UNAUTHORIZED = 76;
+		
 		//Weird errors
-		const NULL_ERROR_CODE      = 100;
-		const UNKNOWN_ERROR        = 101;
-		const SERVER_GENERIC_ERROR = 102;
+		const NULL_ERROR_CODE      = 90;
+		const UNKNOWN_ERROR        = 91;
+		const SERVER_GENERIC_ERROR = 92;
+		
+		const ERROR_LEVEL = 0;
 		
 		/** @var integer */
 		protected $httpErrorCode;
@@ -55,6 +65,7 @@
 		
 		/** @var array  */
 		protected $additionalAttributes;
+		private $resourceIdentifier;
 		
 		/**
 		 * @return int
@@ -91,12 +102,34 @@
 			return $this->additionalAttributes;
 		}
 		
-		//TODO use flags
-		public function __construct($title, $errorCode, $httpErrorCode, $message = null, $additionalAttributes = []) {
+		public function __construct(
+			$title,
+			$errorCode,
+			$httpErrorCode,
+			$resourceIdentifier = 0,
+			$message = null,
+			$additionalAttributes = []
+		) {
 			$this->title                = $title;
-			$this->httpErrorCode        = $httpErrorCode;
 			$this->errorCode            = $errorCode;
+			$this->httpErrorCode        = $httpErrorCode;
+			$this->resourceIdentifier = $resourceIdentifier;
 			$this->message              = $message;
 			$this->additionalAttributes = $additionalAttributes;
+		}
+		
+		/**
+		 * Generates an error code combining a resource identifier and an error code.
+		 *
+		 * Example: 3001. That means a INVALID_CREDENTIALS error, of resource 1
+		 *
+		 * @return mixed
+		 */
+		public function generateErrorCode () {
+			return $this->resourceIdentifier + $this->generateErrorCodeInThisLevel();
+		}
+		
+		protected function generateErrorCodeInThisLevel () {
+			return $this->errorCode * 100^static::ERROR_LEVEL;
 		}
 	}
