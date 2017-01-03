@@ -1,6 +1,6 @@
 <?php
 
-	namespace EchoIt\JsonApi;
+	namespace EchoIt\JsonApi\Http;
 	
 	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use EchoIt\JsonApi\Exception;
@@ -201,7 +201,6 @@
 		 * @return JsonResponse
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
-			//TODO fix response generation. Implement methods to add/update responses
 			if ($models instanceof Response) {
 				$response = $models;
 			}
