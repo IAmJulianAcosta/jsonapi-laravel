@@ -3,10 +3,12 @@
 	namespace EchoIt\JsonApi\Http;
 	
 	use EchoIt\JsonApi\Database\Eloquent\Model;
+	use EchoIt\JsonApi\Error;
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Cache\CacheManager;
 	use EchoIt\JsonApi\Http\Response;
 	use EchoIt\JsonApi\Http\Request;
+	use EchoIt\JsonApi\QueryFilter;
 	use EchoIt\JsonApi\Utils\ClassUtils;
 	use EchoIt\JsonApi\Utils\ModelsUtils;
 	use EchoIt\JsonApi\Utils\StringUtils;
