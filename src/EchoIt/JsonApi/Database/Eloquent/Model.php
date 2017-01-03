@@ -288,7 +288,7 @@ abstract class Model extends BaseModel {
 	}
 
 	/**
-	 * Create handler name from request name. Default output: Path\To\Model\ModelName
+	 * Generates model class name Default output: Path\To\Model\ModelName
 	 *
 	 * @param string $modelName The name of the model
 	 * @param bool $isPlural If is needed to convert this to singular

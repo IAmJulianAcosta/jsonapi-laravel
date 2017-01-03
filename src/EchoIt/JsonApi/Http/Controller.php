@@ -12,23 +12,24 @@
 	use EchoIt\JsonApi\Utils\StringUtils;
 	use Illuminate\Database\QueryException;
 	use Illuminate\Http\JsonResponse;
+	use Illuminate\Routing\Controller as BaseController;
 	use Illuminate\Support\Collection;
 	use Illuminate\Support\Pluralizer;
 	use Illuminate\Pagination\LengthAwarePaginator;
 	use Illuminate\Pagination\Paginator;
 	use function Stringy\create as s;
 	use Cache;
-
-	abstract class Handler {
+	
+	abstract class Controller extends BaseController {
 
 		/**
-		 * Override this const in the extended to distinguish model handlers from each other.
+		 * Override this const in the extended to distinguish model controllers from each other.
 		 *
 		 * See under default error codes which bits are reserved.
 		 */
 		const ERROR_SCOPE = 0;
 
-		const HANDLER_WORD_LENGTH = 7;
+		const CONTROLLER_WORD_LENGTH = 7;
 		
 		protected static $namespace;
 		protected static $exposedRelations;
@@ -45,7 +46,7 @@
 		const DELETE = 4;
 		
 		/**
-		 * @var Model Class name used by this handler including namespace
+		 * @var Model Class name used by this controller including namespace
 		 */
 		protected $fullModelName;
 
@@ -60,14 +61,14 @@
 		protected $shortModelName;
 
 		/**
-		 * @var string Resource name handler
+		 * @var string Controller resource name
 		 */
 		protected $resourceName;
 		
 		protected $modelsNamespace;
 		
 		/**
-		 * Supported methods for handler. Override to limit available methods.
+		 * Supported methods for controller. Override to limit available methods.
 		 *
 		 * @var array
 		 */
@@ -79,7 +80,7 @@
 		protected $request;
 		
 		/**
-		 * BaseHandler constructor. Defines modelName based of HandlerName
+		 * Controller constructor.
 		 *
 		 * @param Request $request
 		 * @param         $modelsNamespace
@@ -90,10 +91,18 @@
 			$this->setResourceName ();
 			$this->generateModelName ();
 		}
-
+		
 		/**
-		 * Fulfill the API request and return a response. This is the entrypoint of handler, and should be called from
-		 * controller.
+		 * @param string $modelsNamespace
+		 */
+		public function setModelsNamespace($modelsNamespace) {
+			$this->modelsNamespace = $modelsNamespace;
+			$this->generateModelName ();
+		}
+		
+		
+		/**
+		 * Fulfill the API request and return a response. This is the entrypoint of controller.
 		 *
 		 * @return Response
 		 * @throws Exception
@@ -194,6 +203,7 @@
 		 * @return JsonResponse
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
+			//TODO fix response generation. Implement methods to add/update responses
 			if ($models instanceof Response) {
 				$response = $models;
 			}
@@ -770,7 +780,7 @@
 		}
 		
 		/**
-		 * Generates model names from handler name class
+		 * Generates model names from controller name class
 		 */
 		private function generateModelName () {
 			$shortName = $this->resourceName;
@@ -779,11 +789,11 @@
 		}
 		
 		/**
-		 * Generates resource name from class name (ResourceHandler -> resource)
+		 * Generates resource name from class name
 		 */
 		private function setResourceName () {
-			$shortClassName = ClassUtils::getHandlerShortClassName(get_called_class());
-			$resourceNameLength = $shortClassName - self::HANDLER_WORD_LENGTH;
+			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
+			$resourceNameLength = $shortClassName - self::CONTROLLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
 		

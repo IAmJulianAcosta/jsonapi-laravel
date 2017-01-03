@@ -13,38 +13,38 @@
 
 	class ClassUtils {
 		/**
-		 * Returns handler class name with namespace
+		 * Generates controller class name with namespace
 		 *
-		 * @param      $handlerShortName string The name of the model (in plural)
+		 * @param      $controllerShortName string The name of the model (in plural)
 		 *
 		 * @param bool $isPlural
 		 * @param bool $short
 		 *
 		 * @return string Class name of related resource
 		 */
-		public static function getHandlerFullClassName ($handlerShortName, $namespace, $isPlural = true, $short = false) {
-			$handlerShortName = s ($handlerShortName)->camelize()->__toString();
+		public static function getControllerFullClassName ($controllerShortName, $namespace, $isPlural = true, $short = false) {
+			$controllerShortName = s ($controllerShortName)->camelize()->__toString();
 			
 			if ($isPlural) {
-				$handlerShortName = Pluralizer::singular ($handlerShortName);
+				$controllerShortName = Pluralizer::singular ($controllerShortName);
 			}
 			
-			return (!$short ? $namespace . '\\' : "") . ucfirst ($handlerShortName) . 'Handler';
+			return (!$short ? $namespace . '\\' : "") . ucfirst ($controllerShortName) . 'Controller';
 		}
 		
 		/**
-		 * Returns handler short class name
+		 * Generates controller short class name
 		 *
 		 * @return string
 		 */
-		public static function getHandlerShortClassName($handlerClass) {
-			$class = explode('\\', $handlerClass);
+		public static function getControllerShortClassName($controllerClass) {
+			$class = explode('\\', $controllerClass);
 			
 			return array_pop($class);
 		}
 		
 		/**
-		 * Convert HTTP method to it's handler method counterpart.
+		 * Convert HTTP method to it's controller method counterpart.
 		 *
 		 * @param  string $method HTTP method
 		 *
