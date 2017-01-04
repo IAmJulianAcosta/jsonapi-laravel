@@ -86,12 +86,6 @@
 		 */
 		protected function authenticated(Request $request, $user) {
 			if ($user instanceof Model) {
-				$token            = str_random(60);
-				$user->api_token  = $token;
-				$user->save ();
-				$response["meta"] = [
-					
-				];
 				$response["data"] = $user->toArray();
 				return new JsonResponse($response, 200, ['Content-Type' => 'application/vnd.api+json']);
 			}
