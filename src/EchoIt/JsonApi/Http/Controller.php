@@ -342,7 +342,7 @@
 			$this->requestType = static::POST;
 			
 			$modelName = $this->fullModelName;
-			$data = $this->parseRequestContent ($request->getContent());
+			$data = static::parseRequestContent ($request->getContent());
 			$this->normalizeAttributes ($data ["attributes"]);
 			
 			$attributes = $data ["attributes"];
@@ -408,7 +408,7 @@
 			$this->beforeHandlePatch ($request);
 			$this->requestType = static::PATCH;
 			
-			$data = $this->parseRequestContent ($request->getContent(), false);
+			$data = static::parseRequestContent ($request->getContent(), false);
 			$id = $data["id"];
 
 			$modelName = $this->fullModelName;
@@ -529,7 +529,7 @@
 		 * @throws \EchoIt\JsonApi\Exception
 		 * @internal param string $type the type the content is expected to be.
 		 */
-		protected function parseRequestContent ($content, $newRecord = true) {
+		public static function parseRequestContent ($content, $newRecord = true) {
 			$content = json_decode ($content, true);
 
 			if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
