@@ -8,11 +8,15 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
+	use EchoIt\JsonApi\Http\Response;
+	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Http\Request;
 	
 	use Illuminate\Auth\TokenGuard as BaseTokenGuard;
 	
 	class TokenGuard extends BaseTokenGuard {
+		
+		const TYPE = "token";
 		
 		private static $realm = "Token";
 		
@@ -42,5 +46,12 @@
 			}
 			
 			return null;
+		}
+		
+		public function generateMetaResponse (Response $response, Authenticatable $user) {
+			$rememberTokenModel = $user->getRememberToken();
+			$response->meta     = [
+				"token" => $rememberTokenModel->token
+			];
 		}
 	}

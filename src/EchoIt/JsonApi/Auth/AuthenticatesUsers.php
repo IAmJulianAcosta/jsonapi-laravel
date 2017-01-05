@@ -4,12 +4,14 @@
 	
 	use EchoIt\JsonApi\Error;
 	use EchoIt\JsonApi\Exception;
+	use EchoIt\JsonApi\Http\Request;
+	use EchoIt\JsonApi\Http\Response;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
+	use Illuminate\Contracts\Auth\Guard;
 	use Illuminate\Contracts\Validation\Validator;
 	use Illuminate\Foundation\Validation\ValidatesRequests;
 	use Illuminate\Http\JsonResponse;
-	use Illuminate\Http\Request;
-	use Illuminate\Http\Response;
+	use Illuminate\Support\Facades\Auth;
 	
 	trait AuthenticatesUsers {
 		use \Illuminate\Foundation\Auth\AuthenticatesUsers;
@@ -70,7 +72,7 @@
 			$attributes = $this->getAttributes($request);
 			$remember   = isset($attributes["remember-me"]) ? !!$attributes["remember-me"] : false;
 			
-			return $this->guard()->attempt(
+			return $this->guard($request)->attempt(
 				$this->credentials($request), $remember
 			);
 		}
@@ -86,8 +88,13 @@
 		 */
 		protected function authenticated(Request $request, $user) {
 			if ($user instanceof Model) {
-				$response["data"] = $user->toArray();
-				return new JsonResponse($response, 200, ['Content-Type' => 'application/vnd.api+json']);
+				$response = new Response($user, Response::HTTP_OK);
+				/** @var Guard $guard */
+				$guard = $this->guard($request);
+				if ($guard instanceof TokenGuard) {
+					$guard->generateMetaResponse($request, $user);
+				}
+				return $response;
 			}
 			else {
 				throw new Exception(
@@ -160,7 +167,7 @@
 		 * @return JsonResponse
 		 */
 		public function logout (Request $request) {
-			$this->guard()->logout();
+			$this->guard($request)->logout();
 			
 			$request->session()->flush();
 			
@@ -195,5 +202,9 @@
 			$attributes = $request->all() ["data"]["attributes"];
 			
 			return $attributes;
+		}
+		
+		public function guard(Request $request = null) {
+			return Auth::guard(is_null($request) === false ? $request->getGuardType() : null);
 		}
 	}

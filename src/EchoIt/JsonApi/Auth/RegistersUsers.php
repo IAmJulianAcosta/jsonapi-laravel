@@ -22,19 +22,21 @@
 		 * Registers a new user
 		 * @param Authenticatable $user
 		 */
-		public function registerUser(Authenticatable $user) {
+		public function registerUser(Request $request, Authenticatable $user) {
 			event(new Registered($user));
 			
-			$this->guard()->login($user, true);
+			$this->guard($request)->login($user, true);
 		}
 		
 		protected function userRegistered(Request $request, Authenticatable $user, Response $response) {
 			/** @var Guard $guard */
-			$guard = $this->guard();
-			if ($guard instanceof TokenGuard === true) {
-				$response->meta = [
-					"token" => $user->getRememberToken ()->token
-				];
+			$guard = $this->guard($request);
+			if ($guard instanceof TokenGuard) {
+				$guard->generateMetaResponse($request, $user);
 			}
+		}
+		
+		public function guard(Request $request) {
+			return Auth::guard($request->getGuardType());
 		}
 	}

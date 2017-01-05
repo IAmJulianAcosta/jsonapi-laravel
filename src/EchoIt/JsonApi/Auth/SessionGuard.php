@@ -15,6 +15,8 @@
 	
 	class SessionGuard extends \Illuminate\Auth\SessionGuard {
 		
+		const TYPE = "session";
+		
 		/**
 		 * @var Cookie
 		 */

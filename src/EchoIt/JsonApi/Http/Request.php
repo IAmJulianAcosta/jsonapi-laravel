@@ -61,6 +61,11 @@ class Request extends BaseRequest {
      */
     protected $pageSize = 50;
 	
+	/**
+	 * @var string Defines the guard type used by this request
+	 */
+    protected $guardType;
+	
 	public function __construct(array $query = array(), array $request = array(), array $attributes = array(), array $cookies = array(), array $files = array(), array $server = array(), $content = null) {
 		parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
 		$this->initializeVariables();
@@ -193,5 +198,19 @@ class Request extends BaseRequest {
 	 */
 	public function setSort($sort) {
 		$this->sort = $sort;
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getGuardType() {
+		return $this->guardType;
+	}
+	
+	/**
+	 * @param string $guardType
+	 */
+	public function setGuardType($guardType) {
+		$this->guardType = $guardType;
 	}
 }
