@@ -8,11 +8,13 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
+	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Http\Request;
 	
 	use Illuminate\Auth\TokenGuard as BaseTokenGuard;
+	use Illuminate\Support\Str;
 	
 	class TokenGuard extends BaseTokenGuard {
 		
@@ -56,7 +58,9 @@
 		}
 		
 		public function attempt (array $credentials = []) {
-			if (is_null($user = $this->validate($credentials)) === false) {
+			/** @var Model $user */
+			$user = $this->validate($credentials);
+			if (is_null($user) === false) {
 				$user->auth_token = Str::random(60);
 				$user->save ();
 				return true;
