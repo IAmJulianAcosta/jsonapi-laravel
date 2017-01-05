@@ -72,9 +72,17 @@
 			$attributes = $this->getAttributes($request);
 			$remember   = isset($attributes["remember-me"]) ? !!$attributes["remember-me"] : false;
 			
-			return $this->guard($request)->attempt(
-				$this->credentials($request), $remember
-			);
+			$guard = $this->guard();
+			if ($guard instanceof TokenGuard) {
+				return $guard->validate(
+					$this->credentials($request), $remember
+				);
+			}
+			elseif ($guard instanceof SessionGuard) {
+				return $guard->attempt(
+					$this->credentials($request), $remember
+				);
+			}
 		}
 		
 		/**
@@ -90,9 +98,9 @@
 			if ($user instanceof Model) {
 				$response = new Response($user, Response::HTTP_OK);
 				/** @var Guard $guard */
-				$guard = $this->guard($request);
+				$guard = $this->guard();
 				if ($guard instanceof TokenGuard) {
-					$guard->generateMetaResponse($request, $user);
+					$guard->generateMetaResponse($response, $user);
 				}
 				return $response;
 			}
@@ -167,7 +175,7 @@
 		 * @return JsonResponse
 		 */
 		public function logout (Request $request) {
-			$this->guard($request)->logout();
+			$this->guard()->logout();
 			
 			$request->session()->flush();
 			
@@ -204,7 +212,10 @@
 			return $attributes;
 		}
 		
-		public function guard(Request $request = null) {
-			return Auth::guard(is_null($request) === false ? $request->getGuardType() : null);
+		public function guard() {
+			$request = $this->request;
+			$guardType = is_null($request) === false ? $request->getGuardType() : null;
+			
+			return Auth::guard($guardType);
 		}
 	}
