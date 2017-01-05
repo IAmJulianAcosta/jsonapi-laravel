@@ -14,6 +14,7 @@
 	use Illuminate\Http\Request;
 	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Auth\Events\Registered;
+	use Illuminate\Support\Facades\Auth;
 	
 	trait RegistersUsers {
 		use \Illuminate\Foundation\Auth\RegistersUsers;
@@ -32,7 +33,7 @@
 			/** @var Guard $guard */
 			$guard = $this->guard($request);
 			if ($guard instanceof TokenGuard) {
-				$guard->generateMetaResponse($request, $user);
+				$guard->generateMetaResponse($response, $user);
 			}
 		}
 		
