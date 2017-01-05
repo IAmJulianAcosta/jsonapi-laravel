@@ -72,17 +72,9 @@
 			$attributes = $this->getAttributes($request);
 			$remember   = isset($attributes["remember-me"]) ? !!$attributes["remember-me"] : false;
 			
-			$guard = $this->guard();
-			if ($guard instanceof TokenGuard) {
-				return $guard->validate(
-					$this->credentials($request), $remember
-				);
-			}
-			elseif ($guard instanceof SessionGuard) {
-				return $guard->attempt(
-					$this->credentials($request), $remember
-				);
-			}
+			return $this->guard()->attempt(
+				$this->credentials($request), $remember
+			);
 		}
 		
 		/**

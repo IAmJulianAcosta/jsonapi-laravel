@@ -54,4 +54,30 @@
 				"token" => $rememberTokenModel->token
 			];
 		}
+		
+		public function attempt (array $credentials = []) {
+			if (is_null($user = $this->validate($credentials)) === false) {
+				$user->auth_token = Str::random(60);
+				$user->save ();
+				return true;
+			}
+			return false;
+		}
+		
+		/**
+		 * @param array $credentials
+		 *
+		 * @return Authenticatable|null
+		 */
+		public function validate(array $credentials = []) {
+			if ($user = $this->provider->retrieveByCredentials($credentials)) {
+				$this->user = $user;
+				
+				return $user;
+			}
+			
+			return null;
+		}
+		
+
 	}
