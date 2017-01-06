@@ -10,6 +10,7 @@
 	
 	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use EchoIt\JsonApi\Http\Response;
+	use EchoIt\JsonApi\TokenAuthenticatable;
 	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Http\Request;
 	
@@ -20,7 +21,7 @@
 		
 		const TYPE = "token";
 		
-		private static $realm = "Token";
+		protected static $realm = "Token";
 		
 		/**
 		 * Get the token for the current request.
@@ -58,10 +59,10 @@
 		}
 		
 		public function attempt (array $credentials = []) {
-			/** @var Model $user */
+			/** @var Model|TokenAuthenticatable $user */
 			$user = $this->validate($credentials);
 			if (is_null($user) === false) {
-				$user->auth_token = Str::random(60);
+				$user->api_token = Str::random(60);
 				$user->save ();
 				return true;
 			}

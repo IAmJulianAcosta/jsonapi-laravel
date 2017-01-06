@@ -83,6 +83,22 @@
 		protected $request;
 		
 		/**
+		 * @return \EchoIt\JsonApi\Http\Request
+		 */
+		public function getRequest() {
+			return $this->request;
+		}
+		
+		/**
+		 * @param \EchoIt\JsonApi\Http\Request $request
+		 */
+		public function setRequest($request) {
+			$this->request = $request;
+		}
+		
+		
+		
+		/**
 		 * Controller constructor.
 		 *
 		 * @param Request $request

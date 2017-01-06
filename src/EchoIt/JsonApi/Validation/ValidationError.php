@@ -137,7 +137,6 @@
 					else {
 						return static::UNIQUE;
 					}
-					break;
 				default:
 					$constantRuleName = s($this->rule)->underscored()->toUpperCase()->__toString();
 					try {

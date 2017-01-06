@@ -6,6 +6,7 @@ use Illuminate\Http\JsonResponse;
  * This class contains the parameters to return in the response to an API request.
  *
  * @property array $included included resources
+ * @property array $meta meta information
  */
 class Response extends JsonResponse {
 	/**

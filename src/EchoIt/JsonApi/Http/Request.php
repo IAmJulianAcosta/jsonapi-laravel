@@ -46,6 +46,11 @@ class Request extends BaseRequest {
      * @var array
      */
     protected $filter;
+	
+	/**
+	 * @var int
+	 */
+    protected $page;
 
     /**
      * Specifies the page number to return results for
@@ -81,7 +86,7 @@ class Request extends BaseRequest {
 	protected function initializeVariables () {
 		$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
 		$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
-		$this->filter     = ($parameter = $this->input('filter')) ? $parameter : [];
+		$this->filter     = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',', $parameter)) : [];
 		$this->page       = $this->input('page') ? $this->input('page') : [];
 		$this->pageSize   = null;
 		$this->pageNumber = null;

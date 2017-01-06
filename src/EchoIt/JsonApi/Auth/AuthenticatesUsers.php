@@ -205,6 +205,7 @@
 		}
 		
 		public function guard() {
+			/** @var Request $request */
 			$request = $this->request;
 			$guardType = is_null($request) === false ? $request->getGuardType() : null;
 			

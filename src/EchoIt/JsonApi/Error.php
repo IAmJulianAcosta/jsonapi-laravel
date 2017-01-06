@@ -68,6 +68,11 @@
 		protected $additionalAttributes;
 		
 		/**
+		 * @var int
+		 */
+		protected $resourceIdentifier;
+		
+		/**
 		 * @return int
 		 */
 		public function getHttpErrorCode() {
