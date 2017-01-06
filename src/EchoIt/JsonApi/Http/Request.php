@@ -87,7 +87,7 @@ class Request extends BaseRequest {
 		$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
 		$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
 		$this->filter     = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',', $parameter)) : [];
-		$this->page       = (int) $this->input('page') ? $this->input('page') : [];
+		$this->page       = (integer) $this->input('page') ? $this->input('page') : [];
 		$this->pageSize   = null;
 		$this->pageNumber = null;
 		
