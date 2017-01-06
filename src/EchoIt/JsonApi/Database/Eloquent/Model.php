@@ -2,6 +2,7 @@
 
 namespace EchoIt\JsonApi\Database\Eloquent;
 
+use EchoIt\JsonApi\Error;
 use EchoIt\JsonApi\Exception;
 use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Validation\ValidationException;
@@ -39,7 +40,7 @@ abstract class Model extends BaseModel {
 	/**
 	 * Return the rules used when the model is updating
 	 */
-	protected abstract function getRulesOnUpdate ();
+	abstract protected function getRulesOnUpdate ();
 
 	/**
 	 * Validates user input with the rules defined in the "$rules" static property
@@ -130,7 +131,7 @@ abstract class Model extends BaseModel {
 	 */
 	public function getResourceType () {
 		// return the resource type if it is not null; class name otherwise
-		if ($this->resourceType) {
+		if (is_null($this->resourceType) === false) {
 			return $this->resourceType;
 		} else {
 			$reflectionClass = new \ReflectionClass($this);
@@ -284,7 +285,7 @@ abstract class Model extends BaseModel {
 	}
 
 	public function getModelURL () {
-		return url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->id));
+		return url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->$primaryKey));
 	}
 
 	/**
@@ -420,7 +421,7 @@ abstract class Model extends BaseModel {
 	 */
 	public function validateArray (Array $values) {
 		if (count ($this->getValidationRules ())) {
-			/** @var Validator $validator */
+			/** @var \EchoIt\JsonApi\Validation\Validator $validator */
 			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
 			if ($validator->fails ()) {
 				throw new ValidationException($validator->validationErrors());
@@ -488,40 +489,61 @@ abstract class Model extends BaseModel {
 									}
 									else {
 										throw new Exception(
-											'Relationship type key not present in the request for an item',
-											static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-											Response::HTTP_BAD_REQUEST);
+											[
+												new Error (
+													'Relationship type key not present in the request for an item',
+													Error::ERROR_INVALID_ATTRS,
+													Response::HTTP_BAD_REQUEST
+												)
+										    ]
+										);
 									}
 								}
 							}
 							else {
 								throw new Exception(
-									'Relationship type key not present in the request',
-									static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-									Response::HTTP_BAD_REQUEST);
+									[
+										new Error (
+											'Relationship type key not in the request', Error::ERROR_INVALID_ATTRS,
+											Response::HTTP_BAD_REQUEST
+										)
+									]
+								);
 							}
 						}
-						else if (is_null ($relationshipData)) {
-							//If the data object is null, do nothing, nothing to associate
-						}
-						else {
+						else if (is_null ($relationshipData) === false) {
 							//If the data object is not array or null (invalid)
 							throw new Exception(
-								'Relationship "data" object must be an array or null',
-								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST);
+								[
+									new Error (
+										'Relationship "data" object must be an array or null', Error::ERROR_INVALID_ATTRS,
+										Response::HTTP_BAD_REQUEST
+									)
+								]
+							);
 						}
 					}
 					else {
 						throw new Exception(
-							'Relationship must have an object with "data" key',
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS, Response::HTTP_BAD_REQUEST);
+							[
+								new Error (
+									'Relationship must have an object with "data" key', Error::ERROR_INVALID_ATTRS,
+									Response::HTTP_BAD_REQUEST
+								)
+							]
+						);
 					}
 				}
 				else {
 					//If the relationship is not an array, return error
 					throw new Exception(
-						'Relationship object is not an array', static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						Response::HTTP_BAD_REQUEST);
+						[
+							new Error (
+								'Relationship object is not an array', Error::ERROR_INVALID_ATTRS,
+								Response::HTTP_BAD_REQUEST
+							)
+						]
+					);
 				}
 			}
 		}
@@ -646,7 +668,7 @@ abstract class Model extends BaseModel {
 	}
 	
 	public static function queryAllModels ($columns = ['*']) {
-		$columns = is_array($columns) ? $columns : func_get_args();
+		is_array($columns) ? $columns : func_get_args();
 		
 		$instance = new static;
 		
