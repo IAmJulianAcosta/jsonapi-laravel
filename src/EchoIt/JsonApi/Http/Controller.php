@@ -454,7 +454,7 @@
 				$model->validateData ($attributes);
 			}
 
-			$model->updateRelationships ($data, $model, false);
+			$model->updateRelationships ($data, $this->modelsNamespace, false);
 
 			// ensure we can get a successful save
 			$this->beforeSaveModel ($request, $model);
