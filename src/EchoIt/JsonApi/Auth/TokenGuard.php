@@ -52,18 +52,20 @@
 		}
 		
 		public function generateMetaResponse (Response $response, Authenticatable $user) {
-			$rememberTokenModel = $user->getRememberToken();
+			$rememberToken = $user->getRememberToken();
 			$response->meta     = [
-				"token" => $rememberTokenModel->token
+				"token" => $rememberToken
 			];
 		}
 		
 		public function attempt (array $credentials = []) {
-			/** @var Model|TokenAuthenticatable $user */
-			$user = $this->validate($credentials);
+			/** @var TokenAuthenticatable $user */
+			$user = $this->validateUser($credentials);
 			if (is_null($user) === false) {
 				$user->api_token = Str::random(60);
-				$user->save ();
+				if ($user instanceof Model === true) {
+					$user->save ();
+				}
 				return true;
 			}
 			return false;
@@ -74,7 +76,7 @@
 		 *
 		 * @return Authenticatable|null
 		 */
-		public function validate(array $credentials = []) {
+		public function validateUser(array $credentials = []) {
 			if ($user = $this->provider->retrieveByCredentials($credentials)) {
 				$this->user = $user;
 				

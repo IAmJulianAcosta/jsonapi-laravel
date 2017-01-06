@@ -131,6 +131,7 @@
 			$rule = $this->rule;
 			switch ($rule) {
 				case "unique":
+					//Returning before break, omitting.
 					if ($this->attribute === 'email') {
 						return static::EXISTING_USER_EMAIL;
 					}
