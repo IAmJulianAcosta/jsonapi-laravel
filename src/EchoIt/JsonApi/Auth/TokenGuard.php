@@ -59,13 +59,11 @@
 		}
 		
 		public function attempt (array $credentials = []) {
-			/** @var TokenAuthenticatable $user */
+			/** @var Model $user */
 			$user = $this->validateUser($credentials);
 			if (is_null($user) === false) {
 				$user->api_token = Str::random(60);
-				if ($user instanceof Model === true) {
-					$user->save ();
-				}
+				$user->save ();
 				return true;
 			}
 			return false;
