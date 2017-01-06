@@ -380,28 +380,7 @@
 			$model->validateData ($attributes);
 
 			$this->beforeSaveNewModel ($request, $model);
-			try {
-				$model->saveOrFail ();
-			}
-			catch (QueryException $exception) {
-				throw new Exception(
-					[
-						new SqlError ('Database error', Error::DATABASE_ERROR,
-							Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
-						)
-					]
-				);
-			}
-			catch (\Exception $exception) {
-				throw new Exception(
-					[
-						new Error ('An unknown error occurred saving the record',
-							Error::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-							static::ERROR_SCOPE
-						)
-					]
-				);
-			}
+			$this->saveModel($model);
 			$this->afterSaveNewModel ($request, $model);
 			
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
@@ -456,18 +435,8 @@
 
 			$model->updateRelationships ($data, $this->modelsNamespace, false);
 
-			// ensure we can get a successful save
 			$this->beforeSaveModel ($request, $model);
-			if (!$model->save ()) {
-				throw new Exception
-				(
-					[
-						new Error ('An unknown error occurred', Error::UNKNOWN_ERROR,
-							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
-						)
-					]
-				);
-			}
+			$this->saveModel($model);
 			$this->afterSaveModel ($request, $model);
 			
 			$this->verifyIfModelChanged ($model, $originalAttributes);
@@ -1047,5 +1016,26 @@
 		 */
 		protected function afterSaveModel (Request $request, Model $model) {
 			
+		}
+		
+		/**
+		 * @param $model
+		 *
+		 * @throws Exception
+		 */
+		protected function saveModel($model) {
+			try {
+				$model->saveOrFail();
+			} catch (QueryException $exception) {
+				throw new Exception([
+						new SqlError ('Database error', Error::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+							$exception, static::ERROR_SCOPE)
+					]);
+			} catch (\Exception $exception) {
+				throw new Exception([
+						new Error ('An unknown error occurred saving the record', Error::UNKNOWN_ERROR,
+							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE)
+					]);
+			}
 		}
 	}
