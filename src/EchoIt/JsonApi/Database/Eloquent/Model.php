@@ -285,7 +285,7 @@ abstract class Model extends BaseModel {
 	}
 
 	public function getModelURL () {
-		return url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->$primaryKey));
+		return url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->{$this->primaryKey}));
 	}
 
 	/**
