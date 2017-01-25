@@ -120,7 +120,7 @@
 		
 		
 		/**
-		 * Fulfill the API request and return a response. This is the entrypoint of controller.
+		 * Fulfills the API request and return a response. This is the entrypoint of controller.
 		 *
 		 * @return Response
 		 * @throws Exception
@@ -183,7 +183,7 @@
 		 * @param $models
 		 * @param $request
 		 *
-		 * @return mixed
+		 * @return Response
 		 */
 		private function generateCacheableResponse ($models, Request $request) {
 			$id = $request->getId();
@@ -206,9 +206,9 @@
 		/**
 		 * Fullfills POST, PATCH and DELETE requests
 		 *
-		 * @param \Illuminate\Http\Request $models
+		 * @param $models
 		 *
-		 * @return \EchoIt\JsonApi\Http\Response
+		 * @return Response
 		 *
 		 */
 		private function generateNonCacheableResponse ($models) {
@@ -262,7 +262,7 @@
 		/**
 		 * @param Request $request
 		 *
-		 * @return ModelCollection|null
+		 * @return Model|Collection|null
 		 */
 		protected function handleGet (Request $request) {
 			$id = $request->getId();
@@ -345,7 +345,7 @@
 		 *
 		 * @return Model
 		 * @throws Exception
-		 * @throws Exception\ValidationException
+		 * @throws ValidationException
 		 */
 		public function handlePost (Request $request) {
 			$this->beforeHandlePost ($request);
@@ -559,10 +559,7 @@
 		
 		/**
 		 * @param Model $model
-		 * @param               $originalAttributes
-		 *
-		 * @return \EchoIt\JsonApi\Database\Eloquent\Model
-		 *
+		 * @param $originalAttributes
 		 */
 		public function verifyIfModelChanged (Model $model, $originalAttributes) {
 			// fetch the current attributes (post save)
@@ -728,10 +725,7 @@
 		/**
 		 * Generates a find query from model name
 		 *
-		 * @param $modelName
-		 * @param $request
-		 *
-		 * @return \Illuminate\Database\Eloquent\Builder|null
+		 * @return Builder|null
 		 */
 		protected function generateSelectQuery() {
 			$modelName = $this->fullModelName;
@@ -785,7 +779,7 @@
 		}
 		
 		/**
-		 * Method that runs after generating the response. Shouldn't be overriden by child classes.
+		 * Method that runs after generating the response. Shouldn't be overridden by child classes.
 		 */
 		protected function afterGenerateResponse (Request $request, $model, Response $response) {
 			switch ($this->requestType) {
@@ -837,6 +831,9 @@
 		
 		/**
 		 * Method that runs after handling a GET request of all resources. Should be implemented by child classes.
+		 *
+		 * @param Request $request
+		 * @param Collection|LengthAwarePaginator $models
 		 */
 		protected function afterHandleGetAll (Request $request, Collection $models) {
 			
