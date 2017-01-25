@@ -97,17 +97,17 @@
 			$this->request = $request;
 		}
 		
-		
-		
 		/**
 		 * Controller constructor.
 		 *
 		 * @param Request $request
-		 * @param         $modelsNamespace
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
 			$this->setResourceName ();
+			if(is_null(static::$exposedRelations)) {
+				throw new \InvalidArgumentException ('Controller does not have defined $exposedRelations property');
+			}
 		}
 		
 		/**
