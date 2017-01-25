@@ -296,6 +296,8 @@
 					$query->where('id', $request->getId());
 					/** @var Model $model */
 					$model = $query->first ();
+					
+					$this->afterModelQueried ($request, $model);
 					if ($model instanceof Model === true) {
 						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
@@ -330,6 +332,9 @@
 					
 					//This method will execute get function inside paginate () or if not pagination present, inside itself.
 					$model = QueryFilter::paginateRequest($request, $query);
+					
+					$this->afterModelsQueried ($request, $model);
+					
 					return $model;
 				}
 			);
@@ -938,6 +943,14 @@
 		 * @param Model   $model
 		 */
 		protected function afterSaveModel (Request $request, Model $model) {
+			
+		}
+		
+		protected function afterModelQueried (Request $request, $model) {
+			
+		}
+		
+		protected function afterModelsQueried (Request $request, $model) {
 			
 		}
 		
