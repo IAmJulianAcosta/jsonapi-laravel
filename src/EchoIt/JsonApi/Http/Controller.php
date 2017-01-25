@@ -25,18 +25,17 @@
 	use function Stringy\create as s;
 	
 	abstract class Controller extends BaseController {
-
 		/**
 		 * Override this const in the extended to distinguish model controllers from each other.
 		 *
 		 * See under default error codes which bits are reserved.
 		 */
 		const ERROR_SCOPE = 0;
-
-		const CONTROLLER_WORD_LENGTH = 10;
 		
-		protected static $namespace;
-		protected static $exposedRelations;
+		/**
+		 * Used in reflection to generate resource name
+		 */
+		const CONTROLLER_WORD_LENGTH = 10;
 		
 		/**
 		 * @var integer request type. Is set before fulfilling each kind of request.
@@ -50,17 +49,22 @@
 		const DELETE  = 4;
 		
 		/**
-		 * @var Model Class name used by this controller including namespace
+		 * @var array Default exposed relations by controller
 		 */
-		protected $fullModelName;
+		static protected $exposedRelations;
 
 		/**
 		 * @var integer Amount time that response should be cached
 		 */
 		static protected $cacheTime = 60;
-
+		
 		/**
-		 * @var Model Resource name in lowercase
+		 * @var string Resource class name including namespace
+		 */
+		protected $fullModelName;
+		
+		/**
+		 * @var string esource class name without namespace
 		 */
 		protected $shortModelName;
 
@@ -69,6 +73,9 @@
 		 */
 		protected $resourceName;
 		
+		/**
+		 * @var string Models namespace, required for reflection.
+		 */
 		protected $modelsNamespace;
 		
 		/**
@@ -79,23 +86,9 @@
 		protected $supportedMethods = ["get", "post", "put", "patch", "delete"];
 		
 		/**
-		 * @var Request
+		 * @var Request HTTP Request from user.
 		 */
 		protected $request;
-		
-		/**
-		 * @return \EchoIt\JsonApi\Http\Request
-		 */
-		public function getRequest() {
-			return $this->request;
-		}
-		
-		/**
-		 * @param \EchoIt\JsonApi\Http\Request $request
-		 */
-		public function setRequest($request) {
-			$this->request = $request;
-		}
 		
 		/**
 		 * Controller constructor.
@@ -104,8 +97,8 @@
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
-			$this->setResourceName ();
-			if(is_null(static::$exposedRelations)) {
+			$this->setResourceNameFromClassName ();
+			if(is_null(static::$exposedRelations) === true) {
 				throw new \InvalidArgumentException ('Controller does not have defined $exposedRelations property');
 			}
 		}
@@ -117,7 +110,6 @@
 			$this->modelsNamespace = $modelsNamespace;
 			$this->generateModelName ();
 		}
-		
 		
 		/**
 		 * Fulfills the API request and return a response. This is the entrypoint of controller.
@@ -136,17 +128,6 @@
 							Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE
 						)
 				    ]
-				);
-			}
-
-			//Validates if this resource could be updated/deleted/created by all users.
-			if ($httpMethod !== 'GET' && $this->allowsModifyingByAllUsers () === false) {
-				throw new Exception(
-					[
-						new Error ('This user cannot modify this resource', Error::UNAUTHORIZED,
-							Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
-						)
-					]
 				);
 			}
 			
@@ -175,88 +156,15 @@
 		}
 		
 		/**
-		 * Fullfills GET requests
+		 * Check whether a method is supported for a model.
 		 *
-		 * @param $models
-		 *
-		 * @return Response
+		 * @param  string $method HTTP method
+		 * @return boolean
 		 */
-		private function generateCacheableResponse ($models) {
-			$id = $this->request->getId();
-			if (empty($id)) {
-				$key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
-			}
-			else {
-				$key = CacheManager::getResponseCacheForSingleResource($id,
-					StringUtils::dasherizedResourceName($this->resourceName));
-			}
-
-			return Cache::remember (
-				$key, static::$cacheTime,
-				function () use ($models) {
-					return $this->generateResponse($models);
-				}
-			);
+		public function supportsMethod($method) {
+			return in_array(s($method)->toLowerCase (), $this->supportedMethods);
 		}
 		
-		/**
-		 * Fullfills POST, PATCH and DELETE requests
-		 *
-		 * @param $models
-		 *
-		 * @return Response
-		 *
-		 */
-		private function generateNonCacheableResponse ($models) {
-			return $this->generateResponse($models, false);
-		}
-		
-		/**
-		 * @param $models
-		 * @param $loadRelations
-		 * @return Response
-		 */
-		private function generateResponse ($models, $loadRelations = true) {
-			$links = null;
-			$included = null;
-			if ($models instanceof LengthAwarePaginator) {
-				$paginator = $models;
-				$modelsCollection = new Collection($paginator->items ());
-				$links = $this->getPaginationLinks ($paginator);
-			}
-			else if ($models instanceof Collection) {
-				$modelsCollection = $models;
-			}
-			else if ($models instanceof Model) {
-				$modelsCollection = new Collection([$models]);
-			}
-			else {
-				return new Response([], static::successfulHttpStatusCode ($this->request->getMethod()));
-			}
-			
-			if ($loadRelations) {
-				$this->loadRelatedModels($modelsCollection);
-			}
-			
-			$response = new Response($modelsCollection, static::successfulHttpStatusCode ($this->request->getMethod()));
-			$response->links = $links;
-			$response->included = ModelsUtils::getIncludedModels ($modelsCollection);;
-
-			return $response;
-		}
-		
-		/**
-		 * Load related models before generating response
-		 *
-		 * @param $models
-		 */
-		private function loadRelatedModels(Collection $models) {
-			/** @var Model $model */
-			foreach ($models as $model) {
-				$model->loadRelatedModels($this->exposedRelationsFromRequest());
-			}
-		}
-
 		/**
 		 * @return Model|Collection
 		 */
@@ -354,7 +262,7 @@
 		 * @throws Exception
 		 * @throws ValidationException
 		 */
-		public function handlePost () {
+		protected function handlePost () {
 			$this->beforeHandlePost ();
 			$this->requestType = static::POST;
 			
@@ -400,7 +308,7 @@
 		 * @return Model|null
 		 * @throws Exception
 		 */
-		public function handlePatch () {
+		protected function handlePatch () {
 			$this->beforeHandlePatch ();
 			$this->requestType = static::PATCH;
 			
@@ -440,7 +348,7 @@
 			$this->saveModel($model);
 			$this->afterSaveModel ($model);
 			
-			$this->verifyIfModelChanged ($model, $originalAttributes);
+			$model->verifyIfModelChanged ($originalAttributes);
 
 			if ($model->isChanged()) {
 				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $id, $model);
@@ -451,7 +359,7 @@
 			return $model;
 		}
 
-		public function handlePut () {
+		protected function handlePut () {
 			return $this->handlePatch ();
 		}
 
@@ -461,7 +369,7 @@
 		 * @return \EchoIt\JsonApi\Database\Eloquent\Model
 		 * @throws \EchoIt\JsonApi\Exception
 		 */
-		public function handleDelete () {
+		protected function handleDelete () {
 			$this->beforeHandleDelete ();
 			$this->requestType = static::DELETE;
 			
@@ -549,35 +457,112 @@
 		}
 		
 		/**
-		 * @param Model $model
-		 * @param $originalAttributes
+		 * @param $model
+		 *
+		 * @throws Exception
 		 */
-		public function verifyIfModelChanged (Model $model, $originalAttributes) {
-			// fetch the current attributes (post save)
-			$newAttributes = $model->getAttributes ();
-			
-			// loop through the new attributes, and ensure they are identical
-			// to the original ones. if not, then we need to return the model
-			foreach ($newAttributes as $attribute => $value) {
-				if (array_key_exists ($attribute, $originalAttributes) === false ||
-					$value !== $originalAttributes[$attribute]
-				) {
-					$model->markChanged ();
-					break;
-				}
+		protected function saveModel(Model $model) {
+			try {
+				$model->saveOrFail();
+			} catch (QueryException $exception) {
+				throw new Exception(
+					[
+						new SqlError ('Database error', Error::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+							$exception, static::ERROR_SCOPE)
+					]
+				);
+			} catch (\Exception $exception) {
+				throw new Exception(
+					[
+						new Error ('An unknown error occurred saving the record', Error::UNKNOWN_ERROR,
+							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE)
+					]
+				);
 			}
 		}
-
+		
 		/**
-		 * Check whether a method is supported for a model.
+		 * Fullfills GET requests
 		 *
-		 * @param  string $method HTTP method
-		 * @return boolean
+		 * @param $models
+		 *
+		 * @return Response
 		 */
-		public function supportsMethod($method) {
-			return in_array(s($method)->toLowerCase (), $this->supportedMethods);
+		private function generateCacheableResponse ($models) {
+			$id = $this->request->getId();
+			if (empty($id)) {
+				$key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
+			}
+			else {
+				$key = CacheManager::getResponseCacheForSingleResource($id,
+					StringUtils::dasherizedResourceName($this->resourceName));
+			}
+			
+			return Cache::remember (
+				$key, static::$cacheTime,
+				function () use ($models) {
+					return $this->generateResponse($models);
+				}
+			);
 		}
-
+		
+		/**
+		 * Fullfills POST, PATCH and DELETE requests
+		 *
+		 * @param $models
+		 *
+		 * @return Response
+		 *
+		 */
+		private function generateNonCacheableResponse ($models) {
+			return $this->generateResponse($models, false);
+		}
+		
+		/**
+		 * @param $models
+		 * @param $loadRelations
+		 * @return Response
+		 */
+		private function generateResponse ($models, $loadRelations = true) {
+			$links = null;
+			$included = null;
+			if ($models instanceof LengthAwarePaginator) {
+				$paginator = $models;
+				$modelsCollection = new Collection($paginator->items ());
+				$links = $this->getPaginationLinks ($paginator);
+			}
+			else if ($models instanceof Collection) {
+				$modelsCollection = $models;
+			}
+			else if ($models instanceof Model) {
+				$modelsCollection = new Collection([$models]);
+			}
+			else {
+				return new Response([], static::successfulHttpStatusCode ($this->request->getMethod()));
+			}
+			
+			if ($loadRelations) {
+				$this->loadRelatedModels($modelsCollection);
+			}
+			
+			$response = new Response($modelsCollection, static::successfulHttpStatusCode ($this->request->getMethod()));
+			$response->links = $links;
+			$response->included = ModelsUtils::getIncludedModels ($modelsCollection);;
+			
+			return $response;
+		}
+		
+		/**
+		 * Load related models before generating response
+		 *
+		 * @param $models
+		 */
+		private function loadRelatedModels(Collection $models) {
+			/** @var Model $model */
+			foreach ($models as $model) {
+				$model->loadRelatedModels($this->exposedRelationsFromRequest());
+			}
+		}
 		
 		/**
 		 * Returns which requested resources are available to include.
@@ -590,15 +575,6 @@
 				return [];
 			}
 			return explode(",", $include);
-		}
-
-		/**
-		 * Returns which of the requested resources are not available to include.
-		 *
-		 * @return array
-		 */
-		protected function unknownRelationsFromRequest() {
-			return array_diff($this->request->getInclude(), static::$exposedRelations);
 		}
 
 		/**
@@ -642,6 +618,15 @@
 			}
 
 			return $errors;
+		}
+		
+		/**
+		 * Returns which of the requested resources are not available to include.
+		 *
+		 * @return array
+		 */
+		protected function unknownRelationsFromRequest() {
+			return array_diff($this->request->getInclude(), static::$exposedRelations);
 		}
 
 		/**
@@ -687,24 +672,7 @@
 			$this->shortModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true, true);
 			$this->fullModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}
-		
-		/**
-		 * Generates resource name from class name
-		 */
-		private function setResourceName () {
-			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
-			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
-			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
-		}
-		
-		/**
-		 * @return boolean
-		 */
-		protected function allowsModifyingByAllUsers () {
-			$modelName = $this->fullModelName;
-			return $modelName::allowsModifyingByAllUsers ();
-		}
-		
+
 		/**
 		 * Generates a find query from model name
 		 *
@@ -731,7 +699,6 @@
 		 * @return void
 		 */
 		protected abstract function applyFilters (&$query);
-		
 		
 		/**
 		 * Method that runs before fullfilling a request. Should be implemented by child classes.
@@ -937,27 +904,26 @@
 		}
 		
 		/**
-		 * @param $model
-		 *
-		 * @throws Exception
+		 * @return \EchoIt\JsonApi\Http\Request
 		 */
-		protected function saveModel(Model $model) {
-			try {
-				$model->saveOrFail();
-			} catch (QueryException $exception) {
-				throw new Exception(
-					[
-						new SqlError ('Database error', Error::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-							$exception, static::ERROR_SCOPE)
-					]
-				);
-			} catch (\Exception $exception) {
-				throw new Exception(
-					[
-						new Error ('An unknown error occurred saving the record', Error::UNKNOWN_ERROR,
-							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE)
-					]
-				);
-			}
+		public function getRequest() {
+			return $this->request;
 		}
+		
+		/**
+		 * @param \EchoIt\JsonApi\Http\Request $request
+		 */
+		public function setRequest($request) {
+			$this->request = $request;
+		}
+		
+		/**
+		 * Generates resource name from class name
+		 */
+		private function setResourceNameFromClassName () {
+			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
+			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
+			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
+		}
+		
 	}
