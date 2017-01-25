@@ -417,9 +417,9 @@ abstract class Model extends BaseModel {
 	/**
 	 * @param array $values
 	 *
-	 * @throws Exception\ValidationException
+	 * @throws ValidationException
 	 */
-	public function validateArray (Array $values) {
+	public function validateArray (array $values) {
 		if (count ($this->getValidationRules ())) {
 			/** @var \EchoIt\JsonApi\Validation\Validator $validator */
 			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
@@ -433,7 +433,7 @@ abstract class Model extends BaseModel {
 	 * Return model validation rules
 	 * Models should overload this to provide their validation rules
 	 *
-	 * @return Array validation rules
+	 * @return array validation rules
 	 */
 	public function getValidationRules () {
 		return $this->rules;
@@ -611,7 +611,7 @@ abstract class Model extends BaseModel {
 	 *
 	 * @param  array                 $values passed array of values
 	 *
-	 * @throws Exception\ValidationException          Exception thrown when validation fails
+	 * @throws ValidationException          Exception thrown when validation fails
 	 *
 	 * @return Bool                          true if validation successful
 	 */

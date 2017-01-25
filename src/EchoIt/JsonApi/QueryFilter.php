@@ -36,7 +36,7 @@
 		 * Filters the request by [filter] parameters in request
 		 *
 		 * @param Request $request
-		 * @param         $tableName
+		 * @param         $query
 		 */
 		public static function filterRequest(Request $request, &$query) {
 			/*
