@@ -47,55 +47,68 @@
 		/**
 		 * Iterate through result set to fetch the requested resources to include.
 		 *
-		 * @param Model $models
+		 * @param $models
 		 *
 		 * @return array
 		 */
 		public static function getIncludedModels($models) {
-			$modelsCollection = new Collection();
-			$models           = $models instanceof Collection ? $models : [$models];
+			$includedModels = new Collection();
+			if ($models instanceof Collection === false) {
+				if (is_array($models)) {
+					$models = new Collection($models);
+				}
+				else {
+					$models = new Collection([$models]);
+				}
+			}
 			
 			/** @var Model $model */
 			foreach ($models as $model) {
 				$exposedRelations = $model->exposedRelations();
 				
 				foreach ($exposedRelations as $relationName) {
-					$value = static::getModelsForRelation($model, $relationName);
+					$modelsForRelation = static::getModelsForRelation($model, $relationName);
 					
-					if (is_null($value)) {
+					if (is_null($modelsForRelation)) {
 						continue;
 					}
 					
 					//Each one of the models relations
-					/* @var \EchoIt\JsonApi\Database\Eloquent\Model $obj */
-					foreach ($value as $obj) {
-						// Check whether the object is already included in the response on it's ID
-						$duplicate = false;
-						$items     = $modelsCollection->where($obj->getPrimaryKey(), $obj->getKey());
-						
-						if (count($items) > 0) {
-							foreach ($items as $item) {
-								/** @var $item Model */
-								if ($item->getResourceType() === $obj->getResourceType()) {
-									$duplicate = true;
-									break;
+					foreach ($modelsForRelation as $modelForRelation) {
+						if ($modelForRelation instanceof Model === true) {
+							// Check whether the object is already included in the response on it's ID
+							$duplicate  = false;
+							$key = $modelForRelation->getKey();
+							$primaryKey = $modelForRelation->getPrimaryKey();
+							$items      = $includedModels->where($primaryKey, $key);
+							
+							if (count($items) > 0) {
+								foreach ($items as $item) {
+									/** @var $item Model */
+									if ($item->getResourceType() === $modelForRelation->getResourceType()) {
+										$duplicate = true;
+										break;
+									}
+								}
+								if ($duplicate) {
+									continue;
 								}
 							}
-							if ($duplicate) {
-								continue;
-							}
+							
+							//add type property
+							$attributes = $modelForRelation->getAttributes();
+							
+							$modelForRelation->setRawAttributes($attributes);
+							
+							$includedModels->push($modelForRelation);
 						}
-						
-						//add type property
-						$attributes = $obj->getAttributes();
-						
-						$obj->setRawAttributes($attributes);
-						
-						$modelsCollection->push($obj);
+						else {
+							throw new \InvalidArgumentException("Model " . get_class($modelForRelation) . " is not a JSON API model");
+						}
 					}
 				}
 			}
 			
-			return $modelsCollection->toArray();
+			return $includedModels->toArray();
 		}
 	}
