@@ -203,9 +203,7 @@ abstract class Model extends BaseModel {
 	/**
 	 * Convert the relations of model to array
 	 *
-	 * @param $arrayableRelations
-	 * @param $relations
-	 * @return mixed
+	 * @return array
 	 */
 	public function relationsToArray () {
 		$relations = [];
@@ -243,30 +241,39 @@ abstract class Model extends BaseModel {
 				$collection = $value;
 				
 				//Get resource type from first item
-				$resourceType = $collection->get (0)->getResourceType ();
-				
-				//Generate index of array to add
-				$index = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
-				
-				//The relation to add is an array with a data key that is itself an array
-				$relation = $relations[$index] = [];
-				$relationData = $relation['data'] = [];
-				
-				//Iterate the collection and add to $relationData
-				$collection->each (
-					function (Model $model) use (&$relationData, $resourceType) {
-						array_push ($relationData, $this->generateRelationArrayInformation($model, $resourceType));
-					}
-				);
+				$firstItem    = $collection->get(0);
+				if ($firstItem instanceof Model) {
+					$resourceType = $firstItem->getResourceType ();
+					
+					//Generate index of array to add
+					$index = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
+					
+					//The relation to add is an array with a data key that is itself an array
+					$relationData = [];
+					
+					//Iterate the collection and add to $relationData
+					$collection->each (
+						function (Model $model) use (&$relationData, $resourceType) {
+							$relationArrayInformation = $this->generateRelationArrayInformation($model, $resourceType);
+							array_push ($relationData, $relationArrayInformation);
+						}
+					);
+					$relation = [
+						'data' => $relationData
+					];
+					$relations[$index] = $relation;
+				}
+				else {
+					throw new \InvalidArgumentException("Model " . get_class($firstItem) . " is not a JSON API model");
+				}
 			}
 
 			// remove models / collections that we loaded from a method
 			if (in_array ($relation, $this->relationsFromMethod)) {
 				unset($this->$relation);
 			}
-			
-			return $relations;
 		}
+		return $relations;
 	}
 	
 	/**
