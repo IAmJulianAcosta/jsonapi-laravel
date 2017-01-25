@@ -43,11 +43,11 @@
 		 */
 		protected $requestType;
 		
-		const GET = 0;
+		const GET     = 0;
 		const GET_ALL = 1;
-		const POST = 2;
-		const PATCH = 3;
-		const DELETE = 4;
+		const POST    = 2;
+		const PATCH   = 3;
+		const DELETE  = 4;
 		
 		/**
 		 * @var Model Class name used by this controller including namespace
