@@ -584,24 +584,39 @@ abstract class Model extends BaseModel {
 				}
 				else {
 					throw new Exception(
-						"Relationship $relationshipName is not invalid",
-						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						Response::HTTP_BAD_REQUEST);
+						[
+							new Error (
+								"Relationship $relationshipName is not invalid",
+								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+								Response::HTTP_BAD_REQUEST
+							)
+						]
+					);
 				}
 			}
 			else {
 				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
 				throw new Exception(
-					"Model $formattedType with id $relationshipId not found in database",
-					static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-					Response::HTTP_BAD_REQUEST);
+					[
+						new Error(
+							"Model $formattedType with id $relationshipId not found in database",
+							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+							Response::HTTP_BAD_REQUEST
+						)
+					]
+				);
 			}
 		}
 		else {
 			throw new Exception(
-				'Relationship id key not present in the request',
-				static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-				Response::HTTP_BAD_REQUEST);
+				[
+					new Error(
+						'Relationship id key not present in the request',
+						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
+						Response::HTTP_BAD_REQUEST
+					)
+				]
+			);
 		}
 	}
 	
