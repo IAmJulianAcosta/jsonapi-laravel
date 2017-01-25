@@ -246,6 +246,18 @@
 
 			return $response;
 		}
+		
+		/**
+		 * Load related models before generating response
+		 *
+		 * @param $models
+		 */
+		private function loadRelatedModels(Collection $models) {
+			/** @var Model $model */
+			foreach ($models as $model) {
+				$model->loadRelatedModels($this->exposedRelationsFromRequest());
+			}
+		}
 
 		/**
 		 * @return Model|Collection
