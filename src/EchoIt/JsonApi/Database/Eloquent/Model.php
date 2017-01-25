@@ -4,6 +4,7 @@ namespace EchoIt\JsonApi\Database\Eloquent;
 
 use EchoIt\JsonApi\Error;
 use EchoIt\JsonApi\Exception;
+use EchoIt\JsonApi\Http\Request;
 use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Validation\ValidationException;
 use EchoIt\JsonApi\Cache\CacheManager;
@@ -695,6 +696,26 @@ abstract class Model extends BaseModel {
 		$instance = new static;
 		
 		return $instance->newQuery();
+	}
+	
+	public static function validateUserGetSinglePermissions (Request $request, $user, $id) {
+		
+	}
+	
+	public static function validateUserGetAllPermissions (Request $request, $user) {
+		
+	}
+	
+	public function validateUserCreatePermissions (Request $request, $user) {
+		
+	}
+	
+	public function validateUserUpdatePermissions (Request $request, $user) {
+		
+	}
+	
+	public function validateUserDeletePermissions (Request $request, $user) {
+		
 	}
 	
 }

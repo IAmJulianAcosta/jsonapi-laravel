@@ -284,6 +284,8 @@
 			$this->beforeHandleGet($request);
 			$this->requestType = static::GET;
 			
+			forward_static_call_array ([$this->fullModelName, 'validateUserGetSinglePermissions'], [$request, \Auth::user(), $id]);
+			
 			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
 			
 			$model     = Cache::remember(
@@ -313,6 +315,8 @@
 		protected function handleGetAll (Request $request) {
 			$this->beforeHandleGetAll ($request);
 			$this->requestType = static::GET_ALL;
+			
+			forward_static_call_array ([$this->fullModelName, 'validateUserGetAllPermissions'], [$request, \Auth::user()]);
 			
 			$key = CacheManager::getQueryCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			$models = Cache::remember (
@@ -363,11 +367,13 @@
 				    ]
 				);
 			}
+			
+			$model->validateUserCreatePermissions ($request, Auth::user ());
+			$model->validateData($attributes);
+			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
-
-			$model->validateData ($attributes);
-
+			
 			$this->beforeSaveNewModel ($request, $model);
 			$this->saveModel($model);
 			$this->afterSaveNewModel ($request, $model);
@@ -410,7 +416,7 @@
 				);
 			}
 			
-			$this->verifyUserPermission($request, $model);
+			$model->validateUserUpdatePermissions ($request, Auth::user ());
 			
 			$originalAttributes = $model->getOriginal ();
 
@@ -467,8 +473,8 @@
 			
 			/** @var Model $model */
 			$model = $modelName::find ($request->getId());
-
-			$this->verifyUserPermission($request, $model);
+			
+			$model->validateUserDeletePermissions ($request, Auth::user ());
 			
 			if (is_null ($model)) {
 				return null;
