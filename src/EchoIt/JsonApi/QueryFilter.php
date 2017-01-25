@@ -16,6 +16,23 @@
 		protected static $methodsThatReceiveAnArray = ["whereBetween", "whereNotBetween", "whereIn", "whereNotIn"];
 		
 		/**
+		 * @param Request $request
+		 * @param Builder $query
+		 *
+		 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection|static[]
+		 */
+		public static function paginateRequest (Request $request, Builder &$query) {
+			if (empty($request->getPage()) === false) {
+				$paginator = $query->paginate ($request->getPageSize(), ['*'],
+					sprintf('page[size]=%d&page[number]', $request->getPageSize()), $request->getPageNumber());
+				return $paginator;
+			}
+			else {
+				return $query->get ();
+			}
+		}
+		
+		/**
 		 * Function to handle sorting requests.
 		 */
 		public static function sortRequest(Request $request, Builder &$query) {

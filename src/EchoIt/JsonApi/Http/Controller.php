@@ -217,46 +217,33 @@
 		/**
 		 * @param $models
 		 * @param $loadRelations
-		 * @return JsonResponse
+		 * @return Response
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
-			if ($models instanceof Response) {
-				$response = $models;
+			$links = null;
+			$included = null;
+			if ($models instanceof LengthAwarePaginator) {
+				$paginator = $models;
+				$modelsCollection = new Collection($paginator->items ());
+				$links = $this->getPaginationLinks ($paginator);
 			}
-			elseif ($models instanceof LengthAwarePaginator) {
-				$items = new Collection($models->items ());
-				foreach ($items as $model) {
-					if ($loadRelations) {
-						$model->loadRelatedModels ($this->exposedRelationsFromRequest($model));
-					}
-				}
-				$response = new Response($items, static::successfulHttpStatusCode ($this->request->getMethod()));
-				$response->links = $this->getPaginationLinks ($models);
-				$response->included = $this->getIncludedModels ($items);
-				//Use error system
-				$response->errors = $this->getNonBreakingErrors ();
+			else if ($models instanceof Collection) {
+				$modelsCollection = $models;
+			}
+			else if ($models instanceof Model) {
+				$modelsCollection = new Collection([$models]);
 			}
 			else {
-				if ($models instanceof Collection) {
-					/** @var Model $model */
-					foreach ($models as $model) {
-						if ($loadRelations) {
-							$model->loadRelatedModels ($this->exposedRelationsFromRequest());
-						}
-					}
-				}
-				else if ($models instanceof Model){
-					$model = $models;
-					if ($loadRelations) {
-						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
-					}
-				}
-
-				$response = new Response($models, static::successfulHttpStatusCode ($this->request->getMethod(), $models));
-
-				$response->included = ModelsUtils::getIncludedModels($models);
-				$response->errors = $this->getNonBreakingErrors ();
+				return new Response([], static::successfulHttpStatusCode ($this->request->getMethod()));
 			}
+			
+			if ($loadRelations) {
+				$this->loadRelatedModels($modelsCollection);
+			}
+			
+			$response = new Response($modelsCollection, static::successfulHttpStatusCode ($this->request->getMethod()));
+			$response->links = $links;
+			$response->included = ModelsUtils::getIncludedModels ($modelsCollection);;
 
 			return $response;
 		}
@@ -336,7 +323,9 @@
 					QueryFilter::filterRequest($request, $query);
 					QueryFilter::sortRequest($request, $query);
 					$this->applyFilters ($request, $query);
-					$model = $query->get ();
+					
+					//This method will execute get function inside paginate () or if not pagination present, inside itself.
+					$model = QueryFilter::paginateRequest($request, $query);
 					return $model;
 				}
 			);
@@ -701,67 +690,6 @@
 			// Code shouldn't reach this point, but if it does we assume that the
 			// client has made a bad request.
 			return Response::HTTP_BAD_REQUEST;
-		}
-		
-		/**
-		 * This method returns the value from given array and key, and will create a
-		 * new Collection instance on the key if it doesn't already exist
-		 *
-		 * @param  array &$array
-		 * @param  string $key
-		 * @return \Illuminate\Database\Eloquent\Collection
-		 */
-		protected static function getCollectionOrCreate(&$array, $key) {
-			if (array_key_exists($key, $array)) {
-				return $array[$key];
-			}
-			return ($array[$key] = new Collection);
-		}
-
-		/**
-		 * The return value of this method will be used as the key to store the
-		 * linked or included model from a relationship. Per default it will return the plural
-		 * version of the relation name.
-		 * Override this method to map a relation name to a different key.
-		 *
-		 * @param  string $relationName
-		 * @return string
-		 */
-		protected static function getModelNameForRelation($relationName) {
-			return \str_plural($relationName);
-		}
-		
-		/**
-		 * Function to handle pagination requests.
-		 *
-		 * @param  \EchoIt\JsonApi\Request                 $request
-		 * @param  \EchoIt\JsonApi\Database\Eloquent\Model $model
-		 * @param integer                                  $total the total number of records
-		 *
-		 * @return \Illuminate\Pagination\LengthAwarePaginator
-		 */
-		protected function handlePaginationRequest(Request $request, Model $model, $total = null) {
-			$page = $request->getPageNumber();
-			$perPage = $request->getPageSize();
-			if (!$total) {
-				$total = $model->count();
-			}
-			$results = $model->forPage($page, $perPage)->get(array('*'));
-			$paginator = new LengthAwarePaginator($results, $total, $perPage, $page, [
-				'path' => Paginator::resolveCurrentPath(),
-				'pageName' => 'page[number]'
-			]);
-			$paginator->appends('page[size]', $perPage);
-			if (!empty($request->getFilter())) {
-				foreach ($request->getFilter() as $key=>$value) {
-					$paginator->appends($key, $value);
-				}
-			}
-			if (!empty($request->getSort())) {
-				$paginator->appends('sort', implode(',', $request->getSort()));
-			}
-
-			return $paginator;
 		}
 		
 		/**

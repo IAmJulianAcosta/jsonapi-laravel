@@ -48,7 +48,7 @@ class Request extends BaseRequest {
     protected $filter;
 	
 	/**
-	 * @var int
+	 * @var array
 	 */
     protected $page;
 
@@ -87,14 +87,14 @@ class Request extends BaseRequest {
 		$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
 		$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
 		$this->filter     = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',', $parameter)) : [];
-		$this->page       = (integer) $this->input('page') ? $this->input('page') : [];
+		$this->page       = $page = $this->input('page') ? $this->input('page') : [];
 		$this->pageSize   = null;
 		$this->pageNumber = null;
 		
-		if (isset ($this->page) === true && empty($this->page) === false) {
-			if (is_array($this->page) === true && empty($this->page['size']) === false && empty($this->page['number']) === false) {
-				$this->pageSize   = $this->page['size'];
-				$this->pageNumber = $this->page['number'];
+		if (empty($page) === false) {
+			if (is_array($page) === true && empty($page['size']) === false && empty($page['number']) === false) {
+				$this->pageSize   = (integer) $page['size'];
+				$this->pageNumber = (integer) $page['number'];
 			}
 			else {
 				throw new Exception
@@ -217,5 +217,19 @@ class Request extends BaseRequest {
 	 */
 	public function setGuardType($guardType) {
 		$this->guardType = $guardType;
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getPage() {
+		return $this->page;
+	}
+	
+	/**
+	 * @param array $page
+	 */
+	public function setPage($page) {
+		$this->page = $page;
 	}
 }
