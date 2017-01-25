@@ -126,11 +126,10 @@
 		 * @throws Exception
 		 */
 		public function fulfillRequest () {
-			$request = $this->request;
-			$this->beforeFulfillRequest($request);
-			$httpMethod = $request->getMethod ();
+			$this->beforeFulfillRequest();
+			$httpMethod = $this->request->getMethod ();
 
-			if (!$this->supportsMethod ($httpMethod)) {
+			if ($this->supportsMethod ($httpMethod) === false) {
 				throw new Exception(
 					[
 						new Error ('Method not allowed', Error::HTTP_METHOD_NOT_ALLOWED,
@@ -152,9 +151,9 @@
 			}
 			
 			//Executes the request
-			$this->beforeHandleRequest($request);
-			$model = $this->handleRequest ($request);
-			$this->afterHandleRequest($request, $model);
+			$this->beforeHandleRequest();
+			$model = $this->handleRequest ();
+			$this->afterHandleRequest($model);
 
 			if (is_null ($model)) {
 				throw new Exception(
@@ -164,14 +163,14 @@
 				);
 			}
 
-			$this->beforeGenerateResponse($request, $model);
+			$this->beforeGenerateResponse($model);
 			if ($httpMethod === 'GET') {
-				$response = $this->generateCacheableResponse ($model, $request);
+				$response = $this->generateCacheableResponse ($model);
 			}
 			else {
 				$response = $this->generateNonCacheableResponse ($model);
 			}
-			$this->afterGenerateResponse($request, $model, $response);
+			$this->afterGenerateResponse($model, $response);
 			return $response;
 		}
 		
@@ -179,12 +178,11 @@
 		 * Fullfills GET requests
 		 *
 		 * @param $models
-		 * @param $request
 		 *
 		 * @return Response
 		 */
-		private function generateCacheableResponse ($models, Request $request) {
-			$id = $request->getId();
+		private function generateCacheableResponse ($models) {
+			$id = $this->request->getId();
 			if (empty($id)) {
 				$key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			}
@@ -262,114 +260,107 @@
 		/**
 		 * @return Model|Collection
 		 */
-		private function handleRequest (Request $request) {
-			$methodName = ClassUtils::methodHandlerName($request->getMethod());
-			$models = $this->{$methodName}($request);
+		private function handleRequest () {
+			$methodName = ClassUtils::methodHandlerName($this->request->getMethod());
+			$models = $this->{$methodName}();
 
 			return $models;
 		}
 		
 		/**
-		 * @param Request $request
-		 *
 		 * @return Model|Collection|null
 		 */
-		protected function handleGet (Request $request) {
-			$id = $request->getId();
+		protected function handleGet () {
+			$id = $this->request->getId();
 			if (empty($id)) {
-				$models = $this->handleGetAll ($request);
+				$models = $this->handleGetAll ();
 				return $models;
 			}
 			else {
-				return $this->handleGetSingle($request, $id);
+				return $this->handleGetSingle($id);
 			}
 		}
 		
 		/**
-		 * @param Request $request
 		 * @param         $id
 		 *
 		 * @return mixed
 		 */
-		protected function handleGetSingle(Request $request, $id) {
-			$this->beforeHandleGet($request);
+		protected function handleGetSingle ($id) {
+			$this->beforeHandleGet();
 			$this->requestType = static::GET;
 			
-			forward_static_call_array ([$this->fullModelName, 'validateUserGetSinglePermissions'], [$request, \Auth::user(), $id]);
+			forward_static_call_array ([$this->fullModelName, 'validateUserGetSinglePermissions'], [$this->request, \Auth::user(), $id]);
 			
 			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
 			
 			$model = Cache::remember(
 				$key,
 				static::$cacheTime,
-				function () use ($request) {
+				function () {
 					$query = $this->generateSelectQuery ();
 					
-					$query->where('id', $request->getId());
+					$query->where('id', $this->request->getId());
 					/** @var Model $model */
 					$model = $query->first ();
 					
-					$this->afterModelQueried ($request, $model);
+					$this->afterModelQueried ($model);
 					if ($model instanceof Model === true) {
 						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
 					return $model;
 				}
 			);
-			$this->afterHandleGet ($request, $model);
+			$this->afterHandleGet ($model);
 
 			return $model;
 		}
 
 		/**
-		 * @param Request $request
-		 *
 		 * @return Collection
 		 */
-		protected function handleGetAll (Request $request) {
-			$this->beforeHandleGetAll ($request);
+		protected function handleGetAll () {
+			$this->beforeHandleGetAll ();
 			$this->requestType = static::GET_ALL;
 			
-			forward_static_call_array ([$this->fullModelName, 'validateUserGetAllPermissions'], [$request, \Auth::user()]);
+			forward_static_call_array ([$this->fullModelName, 'validateUserGetAllPermissions'], [$this->request, \Auth::user()]);
 			
 			$key = CacheManager::getQueryCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			$models = Cache::remember (
 				$key, static::$cacheTime,
-				function () use ($request) {
+				function () {
 					$query = $this->generateSelectQuery ();
 					
-					QueryFilter::filterRequest($request, $query);
-					QueryFilter::sortRequest($request, $query);
-					$this->applyFilters ($request, $query);
+					QueryFilter::filterRequest($this->request, $query);
+					QueryFilter::sortRequest($this->request, $query);
+					$this->applyFilters ($query);
 					
 					//This method will execute get function inside paginate () or if not pagination present, inside itself.
-					$model = QueryFilter::paginateRequest($request, $query);
+					$model = QueryFilter::paginateRequest($this->request, $query);
 					
-					$this->afterModelsQueried ($request, $model);
+					$this->afterModelsQueried ($model);
 					
 					return $model;
 				}
 			);
-			$this->afterHandleGetAll ($request, $models);
+			$this->afterHandleGetAll ($models);
 			return $models;
 		}
 
 		/**
 		 * Handle POST requests
 		 *
-		 * @param Request $request
-		 *
 		 * @return Model
 		 * @throws Exception
 		 * @throws ValidationException
 		 */
-		public function handlePost (Request $request) {
-			$this->beforeHandlePost ($request);
+		public function handlePost () {
+			$this->beforeHandlePost ();
 			$this->requestType = static::POST;
 			
 			$modelName = $this->fullModelName;
-			$data = $this->parseRequestContent ($request->getContent());
-			$this->normalizeAttributes ($data ["attributes"]);
+			$data = $this->parseRequestContent ();
+			StringUtils::normalizeAttributes($data ["attributes"]);
 			
 			$attributes = $data ["attributes"];
 			
@@ -385,20 +376,20 @@
 				);
 			}
 			
-			$model->validateUserCreatePermissions ($request, Auth::user ());
+			$model->validateUserCreatePermissions ($this->request, Auth::user ());
 			$model->validateData($attributes);
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			
-			$this->beforeSaveNewModel ($request, $model);
+			$this->beforeSaveNewModel ($model);
 			$this->saveModel($model);
-			$this->afterSaveNewModel ($request, $model);
+			$this->afterSaveNewModel ($model);
 			
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
-			$this->afterHandlePost ($request, $model);
+			$this->afterHandlePost ($model);
 
 			return $model;
 		}
@@ -406,16 +397,14 @@
 		/**
 		 * Handle PATCH requests
 		 *
-		 * @param Request $request
-		 *
 		 * @return Model|null
 		 * @throws Exception
 		 */
-		public function handlePatch (Request $request) {
-			$this->beforeHandlePatch ($request);
+		public function handlePatch () {
+			$this->beforeHandlePatch ();
 			$this->requestType = static::PATCH;
 			
-			$data = $this->parseRequestContent ($request->getContent(), false);
+			$data = $this->parseRequestContent (false);
 			$id = $data["id"];
 
 			$modelName = $this->fullModelName;
@@ -433,12 +422,12 @@
 				);
 			}
 			
-			$model->validateUserUpdatePermissions ($request, Auth::user ());
+			$model->validateUserUpdatePermissions ($this->request, Auth::user ());
 			
 			$originalAttributes = $model->getOriginal ();
 
 			if (array_key_exists ("attributes", $data)) {
-				$this->normalizeAttributes ($data ["attributes"]);
+				StringUtils::normalizeAttributes($data ["attributes"]);
 				$attributes = $data ["attributes"];
 				
 				$model->fill ($attributes);
@@ -447,9 +436,9 @@
 
 			$model->updateRelationships ($data, $this->modelsNamespace, false);
 
-			$this->beforeSaveModel ($request, $model);
+			$this->beforeSaveModel ($model);
 			$this->saveModel($model);
-			$this->afterSaveModel ($request, $model);
+			$this->afterSaveModel ($model);
 			
 			$this->verifyIfModelChanged ($model, $originalAttributes);
 
@@ -457,28 +446,26 @@
 				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $id, $model);
 			}
 			
-			$this->afterHandlePatch ($request, $model);
+			$this->afterHandlePatch ($model);
 			
 			return $model;
 		}
 
-		public function handlePut (Request $request) {
-			return $this->handlePatch ($request);
+		public function handlePut () {
+			return $this->handlePatch ();
 		}
 
 		/**
 		 * Handle DELETE requests
 		 *
-		 * @param  \EchoIt\JsonApi\Request $request
-		 *
 		 * @return \EchoIt\JsonApi\Database\Eloquent\Model
 		 * @throws \EchoIt\JsonApi\Exception
 		 */
-		public function handleDelete (Request $request) {
-			$this->beforeHandleDelete ($request);
+		public function handleDelete () {
+			$this->beforeHandleDelete ();
 			$this->requestType = static::DELETE;
 			
-			if (empty($request->getId())) {
+			if (empty($this->request->getId())) {
 				throw new Exception (
 					[
 						new Error ('No ID provided', Error::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE)
@@ -489,9 +476,9 @@
 			$modelName = $this->fullModelName;
 			
 			/** @var Model $model */
-			$model = $modelName::find ($request->getId());
+			$model = $modelName::find ($this->request->getId());
 			
-			$model->validateUserDeletePermissions ($request, Auth::user ());
+			$model->validateUserDeletePermissions ($this->request, Auth::user ());
 			
 			if (is_null ($model)) {
 				return null;
@@ -499,21 +486,8 @@
 			
 			$model->delete ();
 			
-			$this->afterHandleDelete ($request, $model);
+			$this->afterHandleDelete ($model);
 			return $model;
-		}
-
-		/**
-		 * @param array $attributes
-		 * @return array
-		 */
-		private function normalizeAttributes (array &$attributes) {
-			foreach ($attributes as $key => $value) {
-				if (is_string ($key)) {
-					unset ($attributes[$key]);
-					$attributes[ s( $key )->underscored()->__toString() ] = $value;
-				}
-			}
 		}
 		
 		/**
@@ -526,7 +500,8 @@
 		 * @throws \EchoIt\JsonApi\Exception
 		 * @internal param string $type the type the content is expected to be.
 		 */
-		protected function parseRequestContent ($content, $newRecord = true) {
+		protected function parseRequestContent ($newRecord = true) {
+			$content = $this->request->getContent();
 			$content = json_decode ($content, true);
 
 			if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
@@ -755,56 +730,56 @@
 		 *
 		 * @return void
 		 */
-		protected abstract function applyFilters ($request, &$query);
+		protected abstract function applyFilters (&$query);
 		
 		
 		/**
 		 * Method that runs before fullfilling a request. Should be implemented by child classes.
 		 */
-		protected function beforeFulfillRequest (Request $request) {
+		protected function beforeFulfillRequest () {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleRequest (Request $request) {
+		protected function beforeHandleRequest () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a request. Should be implemented by child classes.
 		 */
-		protected function afterHandleRequest (Request $request, $models) {
+		protected function afterHandleRequest ($models) {
 			
 		}
 		
 		/**
 		 * Method that runs before generating the response. Should be implemented by child classes.
 		 */
-		protected function beforeGenerateResponse (Request $request, $models) {
+		protected function beforeGenerateResponse ($models) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating the response. Shouldn't be overridden by child classes.
 		 */
-		protected function afterGenerateResponse (Request $request, $model, Response $response) {
+		protected function afterGenerateResponse ($model, Response $response) {
 			switch ($this->requestType) {
 				case static::GET;
-					$this->afterGenerateGetResponse ($request, $model, $response);
+					$this->afterGenerateGetResponse ($model, $response);
 					break;
 				case static::GET_ALL;
-					$this->afterGenerateGetAllResponse($request, $model, $response);
+					$this->afterGenerateGetAllResponse($model, $response);
 					break;
 				case static::POST;
-					$this->afterGeneratePostResponse($request, $model, $response);
+					$this->afterGeneratePostResponse($model, $response);
 					break;
 				case static::PATCH;
-					$this->afterGeneratePatchResponse($request, $model, $response);
+					$this->afterGeneratePatchResponse($model, $response);
 					break;
 				case static::DELETE;
-					$this->afterGenerateDeleteResponse($request, $model, $response);
+					$this->afterGenerateDeleteResponse($model, $response);
 					break;
 			}
 		}
@@ -812,38 +787,37 @@
 		/**
 		 * Method that runs before handling a GET request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleGet (Request $request) {
+		protected function beforeHandleGet () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a GET request. Should be implemented by child classes.
 		 */
-		protected function afterHandleGet (Request $request, Model $model) {
+		protected function afterHandleGet (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response. Should be implemented by child classes.
 		 */
-		protected function afterGenerateGetResponse (Request $request, $model, Response $response) {
+		protected function afterGenerateGetResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a GET request of all resources. Should be implemented by child classes.
 		 */
-		protected function beforeHandleGetAll (Request $request) {
+		protected function beforeHandleGetAll () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a GET request of all resources. Should be implemented by child classes.
 		 *
-		 * @param Request $request
 		 * @param Collection|LengthAwarePaginator $models
 		 */
-		protected function afterHandleGetAll (Request $request, $models) {
+		protected function afterHandleGetAll ($models) {
 			
 		}
 		
@@ -851,118 +825,114 @@
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGenerateGetAllResponse (Request $request, $model, Response $response) {
+		protected function afterGenerateGetAllResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a POST request. Should be implemented by child classes.
 		 */
-		protected function beforeHandlePost (Request $request) {
+		protected function beforeHandlePost () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a POST request. Should be implemented by child classes.
 		 */
-		protected function afterHandlePost (Request $request, Model $model) {
+		protected function afterHandlePost (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePostResponse (Request $request, $model, Response $response) {
+		protected function afterGeneratePostResponse (Model $model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a PATCH request. Should be implemented by child classes.
 		 */
-		protected function beforeHandlePatch (Request $request) {
+		protected function beforeHandlePatch () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a PATCH request. Should be implemented by child classes.
 		 */
-		protected function afterHandlePatch (Request $request, Model $model) {
+		protected function afterHandlePatch (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePatchResponse (Request $request, $model, Response $response) {
+		protected function afterGeneratePatchResponse (Model $model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a DELETE request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleDelete (Request $request) {
+		protected function beforeHandleDelete () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a DELETE request. Should be implemented by child classes.
 		 */
-		protected function afterHandleDelete (Request $request, Model $model) {
+		protected function afterHandleDelete (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGenerateDeleteResponse (Request $request, $model, Response $response) {
+		protected function afterGenerateDeleteResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before saving a new model. Should be implemented by child classes.
 		 *
-		 * @param Request $request
 		 * @param Model   $model
 		 */
-		protected function beforeSaveNewModel (Request $request, Model $model) {
+		protected function beforeSaveNewModel (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after saving a new model. Should be implemented by child classes.
 		 *
-		 * @param Request $request
 		 * @param Model   $model
 		 */
-		protected function afterSaveNewModel (Request $request, Model $model) {
+		protected function afterSaveNewModel (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs before updating a model. Should be implemented by child classes.
 		 *
-		 * @param Request $request
 		 * @param Model   $model
 		 */
-		protected function beforeSaveModel (Request $request, Model $model) {
+		protected function beforeSaveModel (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after updating a model. Should be implemented by child classes.
 		 *
-		 * @param Request $request
 		 * @param Model   $model
 		 */
-		protected function afterSaveModel (Request $request, Model $model) {
+		protected function afterSaveModel (Model $model) {
 			
 		}
 		
-		protected function afterModelQueried (Request $request, $model) {
+		protected function afterModelQueried ($model) {
 			
 		}
 		
-		protected function afterModelsQueried (Request $request, $model) {
+		protected function afterModelsQueried ( $model) {
 			
 		}
 		
