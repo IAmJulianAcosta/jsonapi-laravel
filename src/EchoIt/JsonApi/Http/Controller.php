@@ -959,19 +959,23 @@
 		 *
 		 * @throws Exception
 		 */
-		protected function saveModel($model) {
+		protected function saveModel(Model $model) {
 			try {
 				$model->saveOrFail();
 			} catch (QueryException $exception) {
-				throw new Exception([
+				throw new Exception(
+					[
 						new SqlError ('Database error', Error::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
 							$exception, static::ERROR_SCOPE)
-					]);
+					]
+				);
 			} catch (\Exception $exception) {
-				throw new Exception([
+				throw new Exception(
+					[
 						new Error ('An unknown error occurred saving the record', Error::UNKNOWN_ERROR,
 							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE)
-					]);
+					]
+				);
 			}
 		}
 	}
