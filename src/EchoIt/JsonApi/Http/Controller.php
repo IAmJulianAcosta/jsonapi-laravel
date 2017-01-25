@@ -169,9 +169,7 @@
 				$response = $this->generateCacheableResponse ($model, $request);
 			}
 			else {
-				if ($model instanceof Model) {
-					$response = $this->generateNonCacheableResponse ($model);
-				}
+				$response = $this->generateNonCacheableResponse ($model);
 			}
 			$this->afterGenerateResponse($request, $model, $response);
 			return $response;
@@ -198,7 +196,7 @@
 			return Cache::remember (
 				$key, static::$cacheTime,
 				function () use ($models) {
-					return $this->generateResponse($models, false);
+					return $this->generateResponse($models);
 				}
 			);
 		}
@@ -212,7 +210,7 @@
 		 *
 		 */
 		private function generateNonCacheableResponse ($models) {
-			return $this->generateResponse($models);
+			return $this->generateResponse($models, false);
 		}
 		
 		/**
@@ -289,15 +287,16 @@
 			
 			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
 			
-			$model     = Cache::remember(
+			$model = Cache::remember(
 				$key,
 				static::$cacheTime,
 				function () use ($request) {
 					$query = $this->generateSelectQuery ();
 					
 					$query->where('id', $request->getId());
+					/** @var Model $model */
 					$model = $query->first ();
-					if ($model instanceof Model) {
+					if ($model instanceof Model === true) {
 						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
 					}
 					return $model;
@@ -359,7 +358,7 @@
 			
 			/** @var Model $model */
 			$model = new $modelName($attributes);
-			if (is_null($model) === true) {
+			if (empty($model) === true) {
 				throw new Exception(
 					[
 						new Error ('An unknown error occurred', Error::UNKNOWN_ERROR,
@@ -576,14 +575,6 @@
 				}
 			}
 		}
-		
-		/**
-		 * @param Request $request
-		 * @param         $model
-		 *
-		 * @throws Exception
-		 */
-		abstract protected function verifyUserPermission( Request $request, $model );
 
 		/**
 		 * Check whether a method is supported for a model.
@@ -774,7 +765,7 @@
 		/**
 		 * Method that runs before generating the response. Should be implemented by child classes.
 		 */
-		protected function beforeGenerateResponse (Request $request) {
+		protected function beforeGenerateResponse (Request $request, $models) {
 			
 		}
 		
@@ -835,7 +826,7 @@
 		 * @param Request $request
 		 * @param Collection|LengthAwarePaginator $models
 		 */
-		protected function afterHandleGetAll (Request $request, Collection $models) {
+		protected function afterHandleGetAll (Request $request, $models) {
 			
 		}
 		
