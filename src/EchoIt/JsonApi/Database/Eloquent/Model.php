@@ -652,14 +652,14 @@ abstract class Model extends BaseModel {
 			$relationArray = explode(".", $relation);
 			
 			//Pass the array to loadModels
-			$this->loadModel($relationArray);
+			$this->loadRelatedModel($relationArray);
 		}
 	}
 	
 	/**
 	 * @param array $relations
 	 */
-	private function loadModel ($relations) {
+	protected function loadRelatedModel ($relations) {
 		//Get the first relation to load
 		$relation = array_shift($relations);
 		
@@ -677,7 +677,7 @@ abstract class Model extends BaseModel {
 		if (empty($relations) === false) {
 			/** @var Model $nestedModel */
 			$nestedModel = $this->{$relationToLoad};
-			$nestedModel->loadModel($relations);
+			$nestedModel->loadRelatedModel($relations);
 		}
 		
 	}
