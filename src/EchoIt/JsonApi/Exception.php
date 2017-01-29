@@ -1,6 +1,10 @@
 <?php namespace EchoIt\JsonApi;
 
+use EchoIt\JsonApi\Data\ErrorObject;
+use EchoIt\JsonApi\Data\MetaObject;
+use EchoIt\JsonApi\Http\Controller;
 use EchoIt\JsonApi\Http\ErrorResponse;
+use Illuminate\Support\Collection;
 
 /**
  * JsonApi\Exception represents an Exception that can be thrown where a JSON response may be expected.
@@ -9,7 +13,7 @@ use EchoIt\JsonApi\Http\ErrorResponse;
  */
 class Exception extends \Exception {
 	/**
-	 * @var array
+	 * @var Collection
 	 */
 	protected $errors;
 	
@@ -36,32 +40,55 @@ class Exception extends \Exception {
 	/**
 	 * Exception constructor.
 	 *
-	 * @param array $errors
+	 * @param Collection $errors
 	 */
-    public function __construct(array $errors) {
-	    $this->multipleErrors = count($errors) > 1;
+    public function __construct(Collection $errors) {
+	    $this->multipleErrors = $errors->count() > 1;
 	    if ($this->multipleErrors === true) {
-		    $this->httpErrorCode = ErrorResponse::HTTP_BAD_REQUEST;
-		    $this->errorCode      = Error::MULTIPLE_ERRORS;
+		    $this->httpErrorCode  = ErrorResponse::HTTP_BAD_REQUEST;
+		    $this->errorCode      = ErrorObject::MULTIPLE_ERRORS;
 		    $this->errorMessage   = "Bad request";
 	    }
 	    else {
-		    /** @var Error $error */
-		    $error                = $errors [0];
-		    $this->httpErrorCode  = $error->getHttpErrorCode();
-		    $this->errorCode      = $error->getErrorCode();
-		    $this->errorMessage   = $error->getMessage();
+		    /** @var ErrorObject $error */
+		    $error                = $errors->get(0);
+		    $this->httpErrorCode  = $error->getStatus();
+		    $this->errorCode      = $error->getCode();
+		    $this->errorMessage   = $error->getDetail();
 	    }
 	    $this->errors = $errors;
 	    parent::__construct($this->errorMessage, $this->errorCode );
     }
-
-    /**
+	
+	/**
+	 * @param            $title
+	 * @param            $code
+	 * @param            $status
+	 * @param int        $resourceIdentifier
+	 *
+	 * @param            $detail
+	 * @param MetaObject $meta
+	 *
+	 * @throws Exception
+	 */
+	public static function throwSingleException($title, $code, $status, $resourceIdentifier = Controller::ERROR_SCOPE,
+		$detail = "", MetaObject $meta = null
+	) {
+		throw new static(
+			new Collection(
+				[
+					new ErrorObject ($title, $code, $status, $resourceIdentifier, $detail, $meta)
+				]
+			)
+		);
+	}
+	
+	/**
      * This method returns a HTTP response representation of the Exception
      *
      * @return \EchoIt\JsonApi\Http\ErrorResponse
      */
     public function response() {
-        return new ErrorResponse($this->errors, $this->httpErrorCode);
+	    return new ErrorResponse($this->errors, $this->httpErrorCode);
     }
 }

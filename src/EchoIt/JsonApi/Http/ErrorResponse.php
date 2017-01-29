@@ -1,48 +1,23 @@
-<?php namespace EchoIt\JsonApi\Http;
-
-use EchoIt\JsonApi\Error;
-use Illuminate\Http\JsonResponse;
-
-/**
- * ErrorResponse represents a HTTP error response with a JSON API compliant payload.
- *
- * @author Julián Acosta <iam@julianacosta.me>
- */
-class ErrorResponse extends JsonResponse {
-	/**
-	 * ErrorResponse constructor.
-	 *
-	 * @param array $errors
-	 * @param int   $httpStatusCode
-	 */
-    public function __construct(array $errors, $httpStatusCode = self::HTTP_BAD_REQUEST) {
-	    $data = [ 'errors' => [] ];
+<?php
+	namespace EchoIt\JsonApi\Http;
 	
-	    /** @var Error $error */
-	    foreach ($errors as $error) {
-		    $data['errors'][] = $this->generateErrorObject($error);
-	    }
-	    
-	    parent::__construct ($data, $httpStatusCode);
-    }
+	use EchoIt\JsonApi\Data\TopLevelObject;
+	use Illuminate\Support\Collection;
 	
 	/**
-	 * @param $error
+	 * ErrorResponse represents a HTTP error response with a JSON API compliant payload.
 	 *
-	 * @return array
+	 * @author Julián Acosta <iam@julianacosta.me>
 	 */
-	protected function generateErrorObject(Error $error) {
-		return array_merge(
-			[
-				'id'     => (string) microtime(),
-			    'code'   => (string) $error->getErrorCode(),
-			    'title'  => (string) $error->getTitle(),
-			    'detail' => (string) $error->getMessage(),
-			    'status' => (string) $error->getHttpErrorCode(),
-			],
-			[
-				'meta' => $error->getAdditionalAttributes()
-			]
-		);
+	class ErrorResponse extends Response {
+		/**
+		 * ErrorResponse constructor.
+		 *
+		 * @param Collection $errors
+		 * @param int   $httpErrorCode
+		 */
+		public function __construct(Collection $errors, $httpErrorCode = self::HTTP_BAD_REQUEST) {
+			parent::__construct(new TopLevelObject(null, $errors), $httpErrorCode);
+		}
+		
 	}
-}

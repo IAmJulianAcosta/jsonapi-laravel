@@ -8,9 +8,12 @@
 	
 	namespace EchoIt\JsonApi;
 	
+	use EchoIt\JsonApi\Data\ErrorObject;
+	use EchoIt\JsonApi\Data\MetaObject;
 	use Illuminate\Database\QueryException;
+	use Illuminate\Support\Collection;
 	
-	class SqlError extends Error {
+	class SqlError extends ErrorObject {
 		
 		/** @var QueryException */
 		protected $exception;
@@ -19,18 +22,22 @@
 			parent::__construct($title, $errorCode, $httpErrorCode, $resourceIdentifier);
 			$this->exception = $exception;
 			if (config("app.debug") === true) {
-				$this->setMessage($exception->getMessage());
-				$this->setAdditionalAttributes($this->generateAdditionalAttributes());
+				$this->setDetail($exception->getMessage());
+				$this->setMeta($this->generateAdditionalAttributes());
 			}
 		}
 		
 		protected function generateAdditionalAttributes() {
-			return [
-				"sql"      => $this->exception->getSql(),
-				"bindings" => $this->exception->getBindings(),
-				"file"     => $this->exception->getFile(),
-				"line"     => $this->exception->getLine(),
-				"sqlCode"  => $this->exception->getCode(),
-			];
+			return new MetaObject(
+					new Collection(
+						[
+							"sql"      => $this->exception->getSql(),
+							"bindings" => $this->exception->getBindings(),
+							"file"     => $this->exception->getFile(),
+							"line"     => $this->exception->getLine(),
+							"sqlCode"  => $this->exception->getCode(),
+						]
+					)
+			);
 		}
 	}

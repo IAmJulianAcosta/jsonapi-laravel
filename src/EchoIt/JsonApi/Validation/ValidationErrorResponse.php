@@ -1,8 +1,7 @@
 <?php namespace EchoIt\JsonApi\Validation;
 
-use EchoIt\JsonApi\Error;
 use EchoIt\JsonApi\Http\ErrorResponse;
-use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 /**
  * ValidationErrorResponse represents a HTTP error response containing multiple errors with a JSON API compliant payload.
@@ -13,35 +12,11 @@ class ValidationErrorResponse extends ErrorResponse {
 	/**
 	 * ValidationErrorResponse constructor.
 	 *
-	 * @param array $errors
+	 * @param Collection $errors
 	 * @param int   $httpStatusCode
 	 */
-    public function __construct(array $errors, $httpStatusCode = Response::HTTP_BAD_REQUEST) {
-        parent::__construct ($errors, $httpStatusCode);
-    }
-	
-	/**
-	 * @param Error $error
-	 *
-	 * @return array
-	 * @throws \Exception
-	 */
-	protected function generateErrorObject(Error $error) {
-		if ($error instanceof ValidationError) {
-			return [
-				'id'        => microtime(),
-				'code'      => (string)$error->getErrorCode(),
-				'title'     => (string)$error->getTitle(),
-				'detail'    => (string)$error->getMessage(),
-				'status'    => (string)$error->getHttpErrorCode(),
-				'links'     => [
-					'about' => 'https://laravel.com/docs/5.3/validation#available-validation-rules'
-				],
-				'parameter' => $error->getAttribute()
-			];
-		}
-		else {
-			throw new \Exception('$error must be a ValidationError');
-		}
+	public function __construct(Collection $errors, $httpStatusCode = self::HTTP_BAD_REQUEST) {
+		parent::__construct($errors, $httpStatusCode);
 	}
+	
 }

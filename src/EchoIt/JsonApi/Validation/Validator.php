@@ -8,8 +8,18 @@
 	
 	namespace EchoIt\JsonApi\Validation;
 	
+	use Illuminate\Support\Collection;
+	use Symfony\Component\Translation\TranslatorInterface;
+	
 	class Validator extends \Illuminate\Validation\Validator {
-		protected $validationErrors = [];
+		protected $validationErrors;
+		
+		public function __construct(TranslatorInterface $translator, array $data, array $rules, array $messages,
+			array $customAttributes = []
+		) {
+			parent::__construct($translator, $data, $rules, $messages, $customAttributes);
+			$this->validationErrors = new Collection();
+		}
 		
 		public function validationErrors () {
 			return $this->validationErrors;
@@ -22,6 +32,6 @@
 			
 			$this->messages->add($attribute, $message);
 			
-			$this->validationErrors [] = new ValidationError($attribute, $rule, $message);
+			$this->validationErrors->push (new ValidationError($attribute, $rule, $message));
 		}
 	}

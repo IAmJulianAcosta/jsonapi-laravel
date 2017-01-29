@@ -2,15 +2,19 @@
 
 	namespace EchoIt\JsonApi\Auth;
 	
-	use EchoIt\JsonApi\Error;
+	use EchoIt\JsonApi\Data\ErrorObject;
+	use EchoIt\JsonApi\Data\MetaObject;
+	use EchoIt\JsonApi\Data\ResourceObject;
+	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Http\Request;
 	use EchoIt\JsonApi\Http\Response;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
+	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Contracts\Auth\Guard;
 	use Illuminate\Contracts\Validation\Validator;
 	use Illuminate\Foundation\Validation\ValidatesRequests;
-	use Illuminate\Http\JsonResponse;
+	use Illuminate\Support\Collection;
 	use Illuminate\Support\Facades\Auth;
 	
 	trait AuthenticatesUsers {
@@ -46,11 +50,8 @@
 			
 			$this->sendFailedLoginResponse($request);
 			
-			throw new Exception(
-				[
-					new Error("An unknown error ocurred during login", Error::UNKNOWN_ERROR,
-						Response::HTTP_INTERNAL_SERVER_ERROR)
-				]
+			Exception::throwSingleException("An unknown error ocurred during login", ErrorObject::UNKNOWN_ERROR,
+						Response::HTTP_INTERNAL_SERVER_ERROR
 			);
 		}
 		
@@ -83,25 +84,24 @@
 		 * @param Request $request
 		 * @param         $user
 		 *
-		 * @return JsonResponse
+		 * @return Response
 		 * @throws Exception
 		 */
 		protected function authenticated(Request $request, $user) {
 			if ($user instanceof Model) {
-				$response = new Response($user, Response::HTTP_OK);
+				$topLevelObject = new TopLevelObject(new ResourceObject($user));
 				/** @var Guard $guard */
 				$guard = $this->guard();
-				if ($guard instanceof TokenGuard) {
-					$guard->generateMetaResponse($response, $user);
+				if ($guard instanceof TokenGuard && $user instanceof Authenticatable) {
+					$guard->addTokenToResponse($topLevelObject, $user);
 				}
-				return $response;
+				
+				return new Response($topLevelObject, Response::HTTP_OK);
 			}
 			else {
-				throw new Exception(
-					[
-						new Error ('User passed is not a valid Model object', Error::SERVER_GENERIC_ERROR,
-							Response::HTTP_BAD_REQUEST)
-					]
+				Exception::throwSingleException(
+					'User passed is not a valid Model object', ErrorObject::SERVER_GENERIC_ERROR,
+					Response::HTTP_BAD_REQUEST
 				);
 			}
 		}
@@ -116,11 +116,9 @@
 		 */
 		protected function credentials(Request $request) {
 			if ($request->isJson() === false) {
-				throw new Exception(
-					[
-						new Error ('Request must have a JSON API media type (application/vnd.api+json)',
-							Error::MALFORMED_REQUEST, Response::HTTP_BAD_REQUEST)
-					]
+				Exception::throwSingleException(
+					'Request must have a JSON API media type (application/vnd.api+json)',
+							ErrorObject::MALFORMED_REQUEST, Response::HTTP_BAD_REQUEST
 				);
 			}
 			$attributes = $this->getAttributes($request);
@@ -139,10 +137,8 @@
 		 * @throws Exception
 		 */
 		protected function sendLockoutResponse (Request $request) {
-			throw new Exception(
-				[
-					new Error ('Too many failed attempts', Error::LOCKOUT, Response::HTTP_FORBIDDEN)
-				]
+			Exception::throwSingleException(
+				'Too many failed attempts', ErrorObject::LOCKOUT, Response::HTTP_FORBIDDEN
 			);
 		}
 		
@@ -154,17 +150,15 @@
 		 * @throws Exception
 		 */
 		protected function sendFailedLoginResponse (Request $request) {
-			throw new Exception(
-				[
-					new Error ('Invalid credentials', Error::INVALID_CREDENTIALS, Response::HTTP_UNAUTHORIZED)
-				]
+			Exception::throwSingleException('Invalid credentials', ErrorObject::INVALID_CREDENTIALS,
+				Response::HTTP_UNAUTHORIZED
 			);
 		}
 		
 		/**
 		 * @param Request $request
 		 *
-		 * @return JsonResponse
+		 * @return Response
 		 */
 		public function logout (Request $request) {
 			$this->guard()->logout();
@@ -179,16 +173,18 @@
 		/**
 		 * @param Request $request
 		 *
-		 * @return JsonResponse
+		 * @return Response
 		 */
 		protected function sendLogoutResponse(Request $request) {
-			return new JsonResponse(
-				[
-					'meta' => [
-						'message' => 'You have been logged out.'
-					]
-				],
-				200,
+			return new Response(
+				new TopLevelObject(
+					null,
+					null,
+					new MetaObject(
+						new Collection(['message' => 'You have been logged out.'])
+					)
+				),
+				Response::HTTP_OK,
 				['Content-Type' => 'application/vnd.api+json']
 			);
 		}

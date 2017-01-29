@@ -1,6 +1,7 @@
 <?php
 	namespace EchoIt\JsonApi\Http;
 	
+	use EchoIt\JsonApi\Data\TopLevelObject;
 	use Illuminate\Http\JsonResponse;
 	
 	/**
@@ -34,49 +35,36 @@
 		protected $httpStatusCode;
 		
 		/**
+		 * @var TopLevelObject
+		 */
+		protected $topLevelObject;
+		
+		/**
 		 * Response constructor.
 		 *
-		 * @param mixed|null $jsonApiData
-		 * @param int        $httpStatusCode
-		 * @param array      $headers
-		 * @param int        $options
+		 * @param TopLevelObject $topLevelObject
+		 * @param int            $httpStatusCode
+		 * @param array          $headers
+		 * @param int            $options
 		 */
-		public function __construct($jsonApiData, $httpStatusCode = 200, $headers = [], $options = 0) {
-			$this->jsonApiData    = $jsonApiData;
+		public function __construct(TopLevelObject $topLevelObject, $httpStatusCode = 200, $headers = [], $options = 0) {
+			$this->topLevelObject    = $topLevelObject;
 			$this->httpStatusCode = $httpStatusCode;
-			parent::__construct($this->generateData(), $this->httpStatusCode,
+			parent::__construct($topLevelObject, $this->httpStatusCode,
 				array_merge(['Content-Type' => 'application/vnd.api+json'], $headers), $options);
 		}
 		
 		/**
-		 * Used to set or overwrite a parameter.
-		 *
-		 * @param string $key
-		 * @param mixed  $value
+		 * @return TopLevelObject
 		 */
-		public function __set($key, $value) {
-			if ($key === 'data' || $key === 'jsonApiData') {
-				$this->{$key} = $value;
-			} else {
-				$this->responseData[$key] = $value;
-			}
-			$this->setData($this->generateData());
+		public function getTopLevelObject() {
+			return $this->topLevelObject;
 		}
 		
 		/**
-		 * Adds a parameter to response "data" key.
-		 *
-		 * @param $key
-		 * @param $value
+		 * @param TopLevelObject $topLevelObject
 		 */
-		public function addToJsonApiData($key, $value) {
-			$this->jsonApiData[$key] = $value;
-		}
-		
-		/**
-		 * @return array
-		 */
-		protected function generateData() {
-			return array_merge(['data' => $this->jsonApiData], array_filter($this->responseData));
+		public function setTopLevelObject($topLevelObject) {
+			$this->topLevelObject = $topLevelObject;
 		}
 	}

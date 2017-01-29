@@ -10,6 +10,7 @@
 	
 	use EchoIt\JsonApi\Http\Request;
 	use Illuminate\Database\Eloquent\Builder;
+	use Illuminate\Support\Collection;
 	
 	class QueryFilter {
 		
@@ -19,16 +20,35 @@
 		 * @param Request $request
 		 * @param Builder $query
 		 *
+		 * @return array
+		 */
+		public static function filterFields (Request $request) {
+			$fields = $request->getFields();
+			if (empty ($fields) === false && $fields instanceof Collection) {
+				$fieldsForRequestedModel = $fields->get('users');
+				if (is_array($fieldsForRequestedModel)) {
+				    $fieldsForRequestedModel = array_merge($fieldsForRequestedModel, ['id']);
+					return $fieldsForRequestedModel;
+				}
+			}
+			return ['*'];
+		}
+		
+		/**
+		 * @param Request $request
+		 * @param Builder $query
+		 *
 		 * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection|static[]
 		 */
 		public static function paginateRequest (Request $request, Builder &$query) {
+			$columns = static::filterFields ($request);
 			if (empty($request->getPage()) === false) {
-				$paginator = $query->paginate ($request->getPageSize(), ['*'],
+				$paginator = $query->paginate ($request->getPageSize(), $columns,
 					sprintf('page[size]=%d&page[number]', $request->getPageSize()), $request->getPageNumber());
 				return $paginator;
 			}
 			else {
-				return $query->get ();
+				return $query->get ($columns);
 			}
 		}
 		

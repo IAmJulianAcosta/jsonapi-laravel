@@ -2,76 +2,48 @@
 
 namespace EchoIt\JsonApi\Database\Eloquent;
 
-use EchoIt\JsonApi\Error;
+use EchoIt\JsonApi\Data\ErrorObject;
 use EchoIt\JsonApi\Exception;
 use EchoIt\JsonApi\Http\Request;
 use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Validation\ValidationException;
-use EchoIt\JsonApi\Cache\CacheManager;
 use Illuminate\Validation\Validator;
 use Illuminate\Support\Pluralizer;
-use Illuminate\Support\Collection;
 use Illuminate\Database\Eloquent\Model as BaseModel;
-use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Carbon\Carbon;
-use Cache;
 use Illuminate\Support\Facades\Validator as ValidatorFacade;
-
 use function Stringy\create as s;
 
 abstract class Model extends BaseModel {
-
-	static protected $allowsModifyingByAllUsers;
-
+	
 	/**
-	 * Validation rules
+	 * Validation rules when creating a new model
 	 *
 	 * @var array
 	 */
-	protected $rules = [];
+	static protected $validationRulesOnCreate = [];
+	
+	/**
+	 * Validation rules when updating a new model
+	 *
+	 * @var array
+	 */
+	static protected $validationRulesOnUpdate = [];
 	
 	/**
 	 * @var integer Amount time that response should be cached
 	 */
-	static protected $cacheTime = 60;
+	static protected $cacheTime = 0;
 	
 	/**
-	 * Return the rules used when the model is updating
-	 */
-	abstract protected function getRulesOnUpdate ();
-
-	/**
-	 * Validates user input with the rules defined in the "$rules" static property
+	 * Represents the
 	 *
-	 * @param array $rules
-	 *
-	 * @return bool
+	 * @var array
 	 */
-	public function validate ($rules = array()) {
-		if (empty ($rules)) {
-			$rules = $this->rules;
-		}
-		$validator = Validator::make ($this->attributes, $rules, $this->getValidationMessages ());
-
-		if ($validator->passes ()) {
-			return true;
-		}
-
-		$this->validationErrors = $validator->messages ();
-
-		return false;
-	}
-	
-	/**
-	 * @return bool
-	 * Validates user input when updating model
-	 */
-	public function validateOnUpdate () {
-		return $this->validate ($this->getRulesOnUpdate ());
-	}
+	protected $foreignKeys = [];
 
 	/**
 	 * Validation error messages
@@ -79,276 +51,14 @@ abstract class Model extends BaseModel {
 	 * @var object
 	 */
 	protected $validationErrors;
-
-	/**
-	 * Returns validation errors if any
-	 *
-	 * @return object
-	 */
-	public function getValidationErrors () {
-		return $this->validationErrors;
-	}
-
-	/**
-	 * Validation messages
-	 *
-	 * @var array
-	 */
-	protected $validationMessages = array();
-
-	/**
-	 * Function that returns validation messages of this Class and parent Class merged
-	 *
-	 * @return array
-	 */
-	public function getValidationMessages () {
-		return $this->validationMessages;
-	}
-
-	/**
-	 * Friendly name of the model
-	 *
-	 * @var string
-	 */
-	public static $showName = "";
-
-	/**
-	 * Friendly name of the model (plural)
-	 *
-	 * @var string
-	 */
-	public static $showNamePlural = "";
-
-	/**
-	 * Genre: Male = true
-	 *
-	 * @var bool
-	 */
-	public static $genre = true;
-
-	/**
-	 *
-	 * @return mixed
-	 */
-	public function getResourceType () {
-		// return the resource type if it is not null; class name otherwise
-		if (is_null($this->resourceType) === false) {
-			return $this->resourceType;
-		} else {
-			$reflectionClass = new \ReflectionClass($this);
-
-			return s ($reflectionClass->getShortName ())->dasherize ()->__toString ();
-		}
-	}
-
-	/**
-	 * Convert this model to an array, caching it before return
-	 *
-	 * @return array
-	 */
-	public function toArray () {
-		if ($this->isChanged () === true) {
-			return $this->convertToJsonApiArray ();
-		}
-		else {
-			if (empty($this->getRelations ())) {
-				$key = CacheManager::getArrayCacheKeyForSingleResourceWithoutRelations($this->getResourceType(), $this->getKey());
-			} else {
-				$key = CacheManager::getArrayCacheKeyForSingleResource($this->getResourceType(), $this->getKey());
-			}
-			return Cache::remember (
-				$key, static::$cacheTime,
-				function () {
-					return $this->convertToJsonApiArray ();
-				}
-			);
-		}
-	}
-
-	/**
-	 * Convert this model to an array with the JSON Api structure
-	 *
-	 * @return array
-	 */
-	private function convertToJsonApiArray () {
-
-		//add type parameter
-		$model_attributes = $this->attributesToArray ();
-		$dasherized_model_attributes = [];
-
-		foreach ($model_attributes as $key => $attribute) {
-			$dasherized_model_attributes [$this->dasherizeKey($key)] = $attribute;
-		}
-
-		unset($dasherized_model_attributes[$this->primaryKey]);
-
-		$attributes = [
-			'id'         => $this->getKey (),
-			'type'       => $this->getResourceType (),
-			'attributes' => $dasherized_model_attributes,
-			'links'      => [
-				'self' => $this->getModelURL ()
-			]
-		];
-		
-		$relations = $this->relationsToArray ();
-		if (count ($relations) === 0) {
-			return $attributes;
-		}
-
-		$relationships = ['relationships' => $relations];
-
-		return array_merge ($attributes, $relationships);
-	}
-
-	/**
-	 * Convert the relations of model to array
-	 *
-	 * @return array
-	 */
-	public function relationsToArray () {
-		$relations = [];
-		
-		// fetch the relations that can be represented as an array
-		$arrayableRelations = $this->getArrayableRelations ();
-		
-		foreach ($arrayableRelations as $relation => $value) {
-			//If relation is hidden, don't add
-			if (in_array ($relation, $this->hidden)) {
-				continue;
-			}
-			//If is Pivot, don't add
-			else if ($value instanceof Pivot) {
-				continue;
-			}
-			//If is Model
-			else if ($value instanceof Model) {
-				//Rename $value
-				$model = $value;
-				
-				//Get resource type
-				$resourceType = $model->getResourceType ();
-				
-				//Generate index of array to add
-				$index = s($resourceType)->dasherize()->__toString();
-				
-				$relations[$index] = [
-					'data' => $this->generateRelationArrayInformation($model, $resourceType)
-				];
-			}
-			//If is Collection and has items
-			elseif ($value instanceof Collection && $value->count () > 0) {
-				//Rename value
-				$collection = $value;
-				
-				//Get resource type from first item
-				$firstItem    = $collection->get(0);
-				if ($firstItem instanceof Model) {
-					$resourceType = $firstItem->getResourceType ();
-					
-					//Generate index of array to add
-					$index = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
-					
-					//The relation to add is an array with a data key that is itself an array
-					$relationData = [];
-					
-					//Iterate the collection and add to $relationData
-					$collection->each (
-						function (Model $model) use (&$relationData, $resourceType) {
-							$relationArrayInformation = $this->generateRelationArrayInformation($model, $resourceType);
-							array_push ($relationData, $relationArrayInformation);
-						}
-					);
-					$relation = [
-						'data' => $relationData
-					];
-					$relations[$index] = $relation;
-				}
-				else {
-					throw new \InvalidArgumentException("Model " . get_class($firstItem) . " is not a JSON API model");
-				}
-			}
-
-			// remove models / collections that we loaded from a method
-			if (in_array ($relation, $this->relationsFromMethod)) {
-				unset($this->$relation);
-			}
-		}
-		return $relations;
-	}
 	
-	/**
-	 * Generates the array required to generate an array representation of a model to use as included model
-	 *
-	 * @param Model $model
-	 * @param       $resourceType
-	 *
-	 * @return array
-	 */
-	private function generateRelationArrayInformation(Model $model, $resourceType) {
-		return [
-			'id'   => s($model->getKey())->dasherize()->__toString(),
-			'type' => Pluralizer::plural($resourceType)
-		];
-	}
-
-	public function getModelURL () {
-		return url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->{$this->primaryKey}));
-	}
-
-	/**
-	 * Generates model class name Default output: Path\To\Model\ModelName
-	 *
-	 * @param string $modelName The name of the model
-	 * @param bool $isPlural If is needed to convert this to singular
-	 * @param bool $short Should return short name (without namespace)
-	 * @param bool $toLowerCase Should return lowered case model name
-	 * @param bool $capitalizeFirst
-	 *
-	 * @return string Class name of related resource
-	 */
-	public static function getModelClassName ($modelName, $namespace, $isPlural = true, $short = false, $toLowerCase = false,
-	                                          $capitalizeFirst = true) {
-		if ($isPlural) {
-			$modelName = Pluralizer::singular ($modelName);
-		}
-
-		$className = "";
-		if (!$short) {
-			$className .= $namespace . '\\';
-		}
-		$className .= $toLowerCase ? strtolower ($modelName) : ucfirst ($modelName);
-		$className = $capitalizeFirst ? s ($className)->upperCamelize ()->__toString () : s ($className)->camelize ()->__toString ();
-
-		return $className;
-	}
-	
-	public function getCreatedAtAttribute ($date) {
-		return $this->getFormattedTimestamp ($date);
-	}
-
-	public function getUpdatedAtAttribute ($date) {
-		return $this->getFormattedTimestamp ($date);
-	}
-
-	private function getFormattedTimestamp ($date) {
-		if (is_null($date) === false) {
-			return Carbon::createFromFormat("Y-m-d H:i:s", $date)->format('c');
-		}
-		return null;
-	}
-	
-	public static function allowsModifyingByAllUsers () {
-		return static::$allowsModifyingByAllUsers;
-	}
-
-
 	/**
 	 * Let's guard these fields per default
 	 *
 	 * @var array
 	 */
 	protected $guarded = ['id', 'created_at', 'updated_at'];
+	
 	/**
 	 * Has this model been changed inother ways than those
 	 * specified by the request
@@ -358,109 +68,57 @@ abstract class Model extends BaseModel {
 	 * @var  boolean
 	 */
 	protected $changed = false;
+	
 	/**
 	 * The resource type. If null, when the model is rendered,
 	 * the table name will be used
 	 *
-	 * @var  null|string
+	 * @var  string
 	 */
-	protected $resourceType = null;
+	protected $resourceType;
+	
 	/**
-	 * Expose the resource relations links by default when viewing a
-	 * resource
+	 * Defines the exposed relations that are visible if no specific relations are requested.
+	 * Also works as visible relations, if is not present in this array, won't be returned, even if requested.
 	 *
 	 * @var  array
 	 */
-	protected $defaultExposedRelations = [];
+	public static $defaultExposedRelations = [];
+	
+	/**
+	 * Relations that will be returned by this model.
+	 *
+	 * @var array
+	 */
 	protected $exposedRelations = [];
 	
 	/**
-	 * An array of relation names of relations who
-	 * simply return a collection, and not a Relation instance
-	 *
-	 * @var  array
+	 * @var string
 	 */
-	protected $relationsFromMethod = [];
-
-	/**
-	 * Get the model's exposed relations
-	 *
-	 * @return  Array
-	 */
-	public function exposedRelations () {
-		if (empty($this->exposedRelations)) {
-			return $this->defaultExposedRelations;
-		}
-		return $this->exposedRelations;
-	}
-
-	/**
-	 * Get the model's relations that are from methods
-	 *
-	 * @return  Array
-	 */
-	public function relationsFromMethod () {
-		return $this->relationsFromMethod;
-	}
-
-	/**
-	 * mark this model as changed
-	 *
-	 * @param   bool $changed
-	 * @return  void
-	 */
-	public function markChanged ($changed = true) {
-		$this->changed = (bool) $changed;
-	}
-
-	/**
-	 * has this model been changed
-	 *
-	 * @return  bool
-	 */
-	public function isChanged () {
-		return $this->changed;
+	protected $modelURL;
+	
+	public static function createAndValidate (array $attributes = []) {
+		static::validateAttributes($attributes, true);
+		return new static($attributes);
 	}
 	
 	/**
-	 * @param array $values
+	 * @param array $attributes
 	 *
 	 * @throws ValidationException
 	 */
-	public function validateArray (array $values) {
-		if (count ($this->getValidationRules ())) {
-			/** @var \EchoIt\JsonApi\Validation\Validator $validator */
-			$validator = ValidatorFacade::make ($values, $this->getValidationRules ());
-			if ($validator->fails ()) {
-				throw new ValidationException($validator->validationErrors());
-			}
+	public static function validateAttributes (array $attributes, $creatingModel = false) {
+		if ($creatingModel === true) {
+			$validationRules = static::$validationRulesOnCreate;
 		}
-	}
-
-	/**
-	 * Return model validation rules
-	 * Models should overload this to provide their validation rules
-	 *
-	 * @return array validation rules
-	 */
-	public function getValidationRules () {
-		return $this->rules;
-	}
-	
-	/**
-	 * @param $key
-	 *
-	 * @return string
-	 */
-	protected function dasherizeKey ($key) {
-		return s($key)->dasherize()->__toString();
-	}
-	
-	/**
-	 * @return string
-	 */
-	public function getPrimaryKey () {
-		return $this->primaryKey;
+		else {
+			$validationRules = static::$validationRulesOnUpdate;
+		}
+		/** @var \EchoIt\JsonApi\Validation\Validator $validator */
+		$validator       = ValidatorFacade::make($attributes, $validationRules);
+		if ($validator->fails() === true) {
+			throw new ValidationException($validator->validationErrors());
+		}
 	}
 	
 	/**
@@ -496,61 +154,40 @@ abstract class Model extends BaseModel {
 										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
 									}
 									else {
-										throw new Exception(
-											[
-												new Error (
-													'Relationship type key not present in the request for an item',
-													Error::ERROR_INVALID_ATTRS,
-													Response::HTTP_BAD_REQUEST
-												)
-										    ]
+										Exception::throwSingleException(
+											'Relationship type key not present in the request for an item',
+											ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
 										);
 									}
 								}
 							}
 							else {
-								throw new Exception(
-									[
-										new Error (
-											'Relationship type key not in the request', Error::ERROR_INVALID_ATTRS,
-											Response::HTTP_BAD_REQUEST
-										)
-									]
+								Exception::throwSingleException(
+									'Relationship type key not in the request', ErrorObject::INVALID_ATTRIBUTES,
+									Response::HTTP_BAD_REQUEST
 								);
 							}
 						}
 						else if (is_null ($relationshipData) === false) {
 							//If the data object is not array or null (invalid)
-							throw new Exception(
-								[
-									new Error (
-										'Relationship "data" object must be an array or null', Error::ERROR_INVALID_ATTRS,
-										Response::HTTP_BAD_REQUEST
-									)
-								]
+							Exception::throwSingleException(
+								'Relationship "data" object must be an array or null', ErrorObject::INVALID_ATTRIBUTES,
+								Response::HTTP_BAD_REQUEST
 							);
 						}
 					}
 					else {
-						throw new Exception(
-							[
-								new Error (
-									'Relationship must have an object with "data" key', Error::ERROR_INVALID_ATTRS,
-									Response::HTTP_BAD_REQUEST
-								)
-							]
+						Exception::throwSingleException(
+							'Relationship must have an object with "data" key', ErrorObject::INVALID_ATTRIBUTES,
+							Response::HTTP_BAD_REQUEST
 						);
 					}
 				}
 				else {
 					//If the relationship is not an array, return error
-					throw new Exception(
-						[
-							new Error (
-								'Relationship object is not an array', Error::ERROR_INVALID_ATTRS,
+					Exception::throwSingleException(
+						'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES,
 								Response::HTTP_BAD_REQUEST
-							)
-						]
 					);
 				}
 			}
@@ -567,12 +204,13 @@ abstract class Model extends BaseModel {
 	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace) {
 		//If we have a type of the relationship data
 		$type                  = $relationshipData['type'];
-		$relationshipModelName = Model::getModelClassName ($type, $modelsNamespace);
-		$relationshipName      = s ($relationshipName)->camelize ()->__toString ();
+		$relationshipModelName = Model::getModelClassName($type, $modelsNamespace);
+		$relationshipName      = s($relationshipName)->camelize()->__toString();
+		
 		//If we have an id of the relationship data
 		if (array_key_exists ('id', $relationshipData)) {
+			$relationshipId	   = $relationshipData['id'];
 			/** @var $relationshipModelName Model */
-			$relationshipId       = $relationshipData['id'];
 			$newRelationshipModel = $relationshipModelName::find ($relationshipId);
 			
 			if ($newRelationshipModel) {
@@ -591,68 +229,43 @@ abstract class Model extends BaseModel {
 					}
 				}
 				else {
-					throw new Exception(
-						[
-							new Error (
-								"Relationship $relationshipName is not invalid",
-								static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-								Response::HTTP_BAD_REQUEST
-							)
-						]
+					Exception::throwSingleException(
+						"Relationship $relationshipName is not invalid", ErrorObject::INVALID_ATTRIBUTES,
+						Response::HTTP_BAD_REQUEST
 					);
 				}
 			}
 			else {
 				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
-				throw new Exception(
-					[
-						new Error(
-							"Model $formattedType with id $relationshipId not found in database",
-							static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-							Response::HTTP_BAD_REQUEST
-						)
-					]
+				Exception::throwSingleException(
+					"Model $formattedType with id $relationshipId not found in database", ErrorObject::INVALID_ATTRIBUTES,
+					Response::HTTP_BAD_REQUEST
 				);
 			}
 		}
 		else {
-			throw new Exception(
-				[
-					new Error(
-						'Relationship id key not present in the request',
-						static::ERROR_SCOPE | static::ERROR_INVALID_ATTRS,
-						Response::HTTP_BAD_REQUEST
-					)
-				]
+			Exception::throwSingleException(
+				'Relationship id key not present in the request', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
 			);
 		}
 	}
 	
-	/**
-	 * Validates passed data against a model
-	 * Validation performed safely and only if model provides rules
-	 *
-	 * @param  array                 $values passed array of values
-	 *
-	 * @throws ValidationException          Exception thrown when validation fails
-	 *
-	 * @return Bool                          true if validation successful
+	/*
+	 * ========================================
+	 *			   RELATIONS
+	 * ========================================
 	 */
-	public function validateData(array $values) {
-		$this->validateArray($values);
-	}
-	
 	/**
 	 * Load model relations
 	 *
 	 * @param array $requestedRelations
 	 */
 	public function loadRelatedModels($requestedRelations = []) {
-		if (empty($requestedRelations)) {
-			$this->exposedRelations = $this->defaultExposedRelations;
+		if (empty($requestedRelations) === true) {
+			$this->exposedRelations = static::$defaultExposedRelations;
 		}
 		else {
-			$this->exposedRelations = array_intersect($requestedRelations, $this->exposedRelations);
+			$this->exposedRelations = array_intersect($requestedRelations, static::$defaultExposedRelations);
 		}
 		/** @var string $relation */
 		foreach ($this->exposedRelations as $relation) {
@@ -672,13 +285,6 @@ abstract class Model extends BaseModel {
 		$relation = array_shift($relations);
 		
 		//Now load it
-		
-		// if this relation is loaded via a method, then call said method
-		if (in_array($relation, $this->relationsFromMethod)) {
-			$this->$relation = $this->$relation();
-			return;
-		}
-		
 		$this->load($relation);
 		
 		// If relations is not empty, load recursively
@@ -687,17 +293,93 @@ abstract class Model extends BaseModel {
 			$nestedModel = $this->{$relationToLoad};
 			$nestedModel->loadRelatedModel($relations);
 		}
-		
 	}
 	
-	public static function queryAllModels ($columns = ['*']) {
-		is_array($columns) ? $columns : func_get_args();
+	/**
+	 *
+	 */
+	public function filterForeignKeys () {
+		$attributesToArray = $this->getArrayableAttributes();
+		//We suppose that every attribute that ends in '_id' is a foreign key, but if convention is not
+		//followed, an array with foreign keys can be used to store them
+		foreach ($attributesToArray as $attributeKey => $attribute) {
+			if (ends_with($attributeKey, '_id') === true) {
+				$this->addForeignKey($attributeKey);
+			}
+		}
+	}
+	
+	/**
+	 * @param $originalAttributes
+	 */
+	public function verifyIfModelChanged ($originalAttributes) {
+		// fetch the current attributes (post save)
+		$newAttributes = $this->getAttributes ();
 		
+		// loop through the new attributes, and ensure they are identical
+		foreach ($newAttributes as $attribute => $value) {
+			if (array_key_exists ($attribute, $originalAttributes) === false || $value !== $originalAttributes[$attribute]) {
+				$this->markChanged ();
+				break;
+			}
+		}
+	}
+	
+	/**
+	 * mark this model as changed
+	 *
+	 * @param   bool $changed
+	 * @return  void
+	 */
+	public function markChanged ($changed = true) {
+		$this->changed = (bool) $changed;
+	}
+	
+	/**
+	 * has this model been changed
+	 *
+	 * @return  bool
+	 */
+	public function isChanged () {
+		return $this->changed;
+	}
+	
+	public static function generateSelectQuery (array $relations = []) {
 		$instance = new static;
 		
-		return $instance->newQuery();
+		if (empty($relations) === true) {
+			return $instance->newQuery();
+		}
+		else {
+			return static::with(array_merge($relations, static::$defaultExposedRelations));
+		}
 	}
 	
+	/*
+	 * ========================================
+	 *		  ACCESSORS AND MUTATORS
+	 * ========================================
+	 */
+	public function getCreatedAtAttribute ($date) {
+		return $this->getFormattedTimestamp ($date);
+	}
+	
+	public function getUpdatedAtAttribute ($date) {
+		return $this->getFormattedTimestamp ($date);
+	}
+	
+	private function getFormattedTimestamp ($date) {
+		if (is_null($date) === false) {
+			return Carbon::createFromFormat("Y-m-d H:i:s", $date)->format('c');
+		}
+		return null;
+	}
+	
+	/*
+	 * ========================================
+	 *		  PERMISSION VALIDATIONS
+	 * ========================================
+	 */
 	public static function validateUserGetSinglePermissions (Request $request, $user, $id) {
 		
 	}
@@ -718,4 +400,97 @@ abstract class Model extends BaseModel {
 		
 	}
 	
+	/*
+	 * ========================================
+	 *		   GETTERS AND SETTERS
+	 * ========================================
+	 */
+	/**
+	 * @return array
+	 */
+	public function getHidden() {
+		return array_merge(parent::getHidden(), $this->getForeignKeys());
+	}
+	
+	/**
+	 * @return array
+	 */
+	public function getForeignKeys() {
+		return $this->foreignKeys;
+	}
+	
+	/**
+	 * @param array $foreignKeys
+	 */
+	public function setForeignKeys($foreignKeys) {
+		$this->foreignKeys = $foreignKeys;
+	}
+	
+	public function addForeignKey ($foreignKey) {
+		array_push($this->foreignKeys, $foreignKey);
+	}
+	
+	/**
+	 * Return model validation rules
+	 * Models should overload this to provide their validation rules
+	 *
+	 * @return array validation rules
+	 */
+	public function getValidationRules () {
+		return $this->validationRulesOnCreate;
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getPrimaryKey () {
+		return $this->primaryKey;
+	}
+	
+	
+	/**
+	 * Returns validation errors if any
+	 *
+	 * @return object
+	 */
+	public function getValidationErrors () {
+		return $this->validationErrors;
+	}
+	
+	/**
+	 * Gets model's exposed relations. If not defined, will return $defaultExposedRelations
+	 *
+	 * @return array
+	 */
+	public function getExposedRelations () {
+		if (empty($this->exposedRelations) === true) {
+			return static::$defaultExposedRelations;
+		}
+		return $this->exposedRelations;
+	}
+	
+	/**
+	 * Returns the resource type if it is not null; class name otherwise
+	 * @return string
+	 */
+	public function getResourceType () {
+		if (empty($this->resourceType) === false) {
+			return $this->resourceType;
+		}
+		else {
+			$reflectionClass = new \ReflectionClass($this);
+			
+			return $this->resourceType = s($reflectionClass->getShortName ())->dasherize ()->__toString ();
+		}
+	}
+	
+	/**
+	 * @return string
+	 */
+	public function getModelURL () {
+		if (empty ($this->modelURL) === true) {
+			return $this->modelURL = url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->{$this->getPrimaryKey()}));
+		}
+		return $this->modelURL;
+	}
 }

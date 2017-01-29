@@ -1,9 +1,9 @@
 <?php
 	namespace EchoIt\JsonApi\Http;
 	
-	use EchoIt\JsonApi\Error;
 	use EchoIt\JsonApi\Exception;
 	use Illuminate\Http\Request as BaseRequest;
+	use Illuminate\Support\Collection;
 	
 	/**
 	 * A class used to represented a client request to the API.
@@ -33,6 +33,13 @@
 		 * @var array
 		 */
 		protected $include;
+		
+		/**
+		 * Contains an array of fields to load
+		 *
+		 * @var Collection
+		 */
+		protected $fields;
 		
 		/**
 		 * Contains an array of column names to sort on
@@ -73,35 +80,33 @@
 		 */
 		protected $guardType;
 		
-		public function __construct(
-			array $query = array (),
-			array $request = array (),
-			array $attributes = array (),
-			array $cookies = array (),
-			array $files = array (),
-			array $server = array (),
-			$content = null
+		public function __construct(array $query = [], array $request = [], array $attributes = [], array $cookies = [],
+			array $files = [], array $server = [], $content = null
 		) {
 			parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
-			$this->initializeVariables();
 		}
 		
-		public function duplicate(
-			array $query = null,
-			array $request = null,
-			array $attributes = null,
-			array $cookies = null,
-			array $files = null,
-			array $server = null
+		public function duplicate(array $query = null, array $request = null, array $attributes = null,
+			array $cookies = null, array $files = null, array $server = null
 		) {
 			/** @var Request $duplicated */
 			$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files),
 				$server);
 			$duplicated->initializeVariables();
-			
 			return $duplicated;
 		}
 		
+		public function getContentTypeMediaTypes () {
+			//Get the content type header
+			$contentTypeHeader = $this->headers->get('CONTENT_TYPE');
+			//Convert to array
+			$contentTypeHeader = explode (';', $contentTypeHeader);
+			//Remove first element
+			array_shift($contentTypeHeader);
+			
+			return $contentTypeHeader;
+		}
+
 		protected function initializeVariables() {
 			$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
 			$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
@@ -110,18 +115,40 @@
 			$this->page       = $page = $this->input('page') ? $this->input('page') : [];
 			$this->pageSize   = null;
 			$this->pageNumber = null;
+			$this->getFieldsParametersFromRequest();
 			
 			if (empty($page) === false) {
 				if (is_array($page) === true && empty($page['size']) === false && empty($page['number']) === false) {
 					$this->pageSize   = (integer)$page['size'];
 					$this->pageNumber = (integer)$page['number'];
 				} else {
-					throw new Exception
-					([
-						new Error ('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST)
-					]);
+					Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
 				}
 			}
+		}
+		
+		protected function getFieldsParametersFromRequest () {
+			$this->fields = new Collection();
+			foreach ($this->input('fields') as $model => $fields) {
+				$this->fields->put($model, array_filter(explode(',', $fields)));
+			}
+		}
+		
+		protected static function initializeFormats()
+		{
+			static::$formats = array(
+				'html' => array('text/html', 'application/xhtml+xml'),
+				'txt' => array('text/plain'),
+				'js' => array('application/javascript', 'application/x-javascript', 'text/javascript'),
+				'css' => array('text/css'),
+				'json' => array('application/json', 'application/x-json'),
+				'xml' => array('text/xml', 'application/xml', 'application/x-xml'),
+				'rdf' => array('application/rdf+xml'),
+				'atom' => array('application/atom+xml'),
+				'rss' => array('application/rss+xml'),
+				'form' => array('application/x-www-form-urlencoded'),
+				'jsonapi' => array('application/vnd.api+json')
+			);
 		}
 		
 		/**
@@ -248,5 +275,19 @@
 		 */
 		public function setPage($page) {
 			$this->page = $page;
+		}
+		
+		/**
+		 * @return Collection
+		 */
+		public function getFields() {
+			return $this->fields;
+		}
+		
+		/**
+		 * @param Collection $fields
+		 */
+		public function setFields($fields) {
+			$this->fields = $fields;
 		}
 	}

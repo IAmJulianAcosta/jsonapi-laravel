@@ -8,13 +8,14 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
+	use EchoIt\JsonApi\Data\MetaObject;
+	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
-	use EchoIt\JsonApi\Http\Response;
-	use EchoIt\JsonApi\TokenAuthenticatable;
 	use Illuminate\Contracts\Auth\Authenticatable;
 	use Illuminate\Http\Request;
 	
 	use Illuminate\Auth\TokenGuard as BaseTokenGuard;
+	use Illuminate\Support\Collection;
 	use Illuminate\Support\Str;
 	
 	class TokenGuard extends BaseTokenGuard {
@@ -51,11 +52,9 @@
 			return null;
 		}
 		
-		public function generateMetaResponse (Response $response, Authenticatable $user) {
+		public function addTokenToResponse (TopLevelObject $topLevelObject, Authenticatable $user) {
 			$rememberToken = $user->getRememberToken();
-			$response->meta     = [
-				"token" => $rememberToken
-			];
+			$topLevelObject->setMeta(new MetaObject(new Collection(["token" => $rememberToken])));
 		}
 		
 		public function attempt (array $credentials = []) {

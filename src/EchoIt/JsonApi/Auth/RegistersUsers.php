@@ -8,8 +8,8 @@
 	
 	namespace EchoIt\JsonApi\Auth;
 	
+	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Http\Response;
-	use Illuminate\Auth\TokenGuard;
 	use Illuminate\Contracts\Auth\Guard;
 	use Illuminate\Http\Request;
 	use Illuminate\Contracts\Auth\Authenticatable;
@@ -29,11 +29,12 @@
 			$this->guard($request)->login($user, true);
 		}
 		
-		protected function userRegistered(Request $request, Authenticatable $user, Response $response) {
+		protected function userRegistered(Request $request, Authenticatable $user, TopLevelObject $topLevelObject) {
 			/** @var Guard $guard */
 			$guard = $this->guard($request);
-			if ($guard instanceof TokenGuard) {
-				$guard->generateMetaResponse($response, $user);
+			if ($guard instanceof TokenGuard === true) {
+				/** @var TokenGuard $guard */
+				$guard->addTokenToResponse($topLevelObject, $user);
 			}
 		}
 		

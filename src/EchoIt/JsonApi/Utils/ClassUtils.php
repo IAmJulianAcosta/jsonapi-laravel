@@ -54,4 +54,32 @@
 			return 'handle' . ucfirst(strtolower($method));
 		}
 		
+		/**
+		 * Generates model class name Default output: Path\To\Model\ModelName
+		 *
+		 * @param string $modelName The name of the model
+		 * @param bool $isPlural If is needed to convert this to singular
+		 * @param bool $short Should return short name (without namespace)
+		 * @param bool $toLowerCase Should return lowered case model name
+		 * @param bool $capitalizeFirst
+		 *
+		 * @return string Class name of related resource
+		 */
+		public static function getModelClassName (
+			$modelName, $namespace, $isPlural = true, $short = false, $toLowerCase = false, $capitalizeFirst = true
+		) {
+			if ($isPlural) {
+				$modelName = Pluralizer::singular ($modelName);
+			}
+			
+			$className = "";
+			if ($short === false) {
+				$className .= $namespace . '\\';
+			}
+			$className .= $toLowerCase ? strtolower ($modelName) : ucfirst ($modelName);
+			$className = $capitalizeFirst ? s ($className)->upperCamelize ()->__toString () : s ($className)->camelize ()->__toString ();
+			
+			return $className;
+		}
+		
 	}

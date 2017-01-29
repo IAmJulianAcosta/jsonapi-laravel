@@ -2,8 +2,12 @@
 
 	namespace EchoIt\JsonApi\Http;
 	
+	use EchoIt\JsonApi\Data\LinkObject;
+	use EchoIt\JsonApi\Data\LinksObject;
+	use EchoIt\JsonApi\Data\ResourceObject;
+	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
-	use EchoIt\JsonApi\Error;
+	use EchoIt\JsonApi\Data\ErrorObject;
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Cache\CacheManager;
 	use EchoIt\JsonApi\Http\Response;
@@ -15,6 +19,7 @@
 	use EchoIt\JsonApi\Utils\StringUtils;
 	use EchoIt\JsonApi\Validation\ValidationException;
 	use Illuminate\Database\Eloquent\Builder;
+	use Illuminate\Database\Eloquent\ModelNotFoundException;
 	use Illuminate\Database\QueryException;
 	use Illuminate\Routing\Controller as BaseController;
 	use Illuminate\Support\Collection;
@@ -48,11 +53,6 @@
 		const PATCH   = 3;
 		const DELETE  = 4;
 		
-		/**
-		 * @var array Default exposed relations by controller
-		 */
-		static protected $exposedRelations;
-
 		/**
 		 * @var integer Amount time that response should be cached
 		 */
@@ -97,9 +97,31 @@
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
+			$this->checkRequestContentType ();
+			$this->checkRequestAccept ();
 			$this->setResourceNameFromClassName ();
-			if(is_null(static::$exposedRelations) === true) {
-				throw new \InvalidArgumentException ('Controller does not have defined $exposedRelations property');
+		}
+		
+		public function checkRequestContentType () {
+			if ($this->request->getContentType() === "jsonapi") {
+				$mediaTypes = $this->request->getContentTypeMediaTypes();
+				
+				if (empty($mediaTypes) === false) {
+					Exception::throwSingleException("Content-Type header can't have media type parameters",
+						0, Response::HTTP_NOT_ACCEPTABLE);
+				}
+			}
+		}
+		
+		public function checkRequestAccept () {
+			$acceptHeaders = $this->request->header("accept");
+			if (empty($acceptHeaders) === false) {
+				$acceptHeaders = explode (';', $acceptHeaders);
+				if (count($acceptHeaders) > 0 && $acceptHeaders [0] === "application/vnd.api+json" &&
+				    count($acceptHeaders) > 1) {
+					Exception::throwSingleException("Accept type can't have media type parameters",
+						0, Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+				}
 			}
 		}
 		
@@ -122,12 +144,9 @@
 			$httpMethod = $this->request->getMethod ();
 
 			if ($this->supportsMethod ($httpMethod) === false) {
-				throw new Exception(
-					[
-						new Error ('Method not allowed', Error::HTTP_METHOD_NOT_ALLOWED,
-							Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE
-						)
-				    ]
+				Exception::throwSingleException (
+					'Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED, Response::HTTP_METHOD_NOT_ALLOWED,
+					static::ERROR_SCOPE
 				);
 			}
 			
@@ -137,10 +156,8 @@
 			$this->afterHandleRequest($model);
 
 			if (is_null ($model)) {
-				throw new Exception(
-					[
-						new Error ('Unknown ID', Error::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE)
-				    ]
+				Exception::throwSingleException(
+					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
 				);
 			}
 
@@ -213,9 +230,7 @@
 					$model = $query->first ();
 					
 					$this->afterModelQueried ($model);
-					if ($model instanceof Model === true) {
-						$model->loadRelatedModels ($this->exposedRelationsFromRequest());
-					}
+
 					return $model;
 				}
 			);
@@ -243,8 +258,20 @@
 					QueryFilter::sortRequest($this->request, $query);
 					$this->applyFilters ($query);
 					
-					//This method will execute get function inside paginate () or if not pagination present, inside itself.
-					$model = QueryFilter::paginateRequest($this->request, $query);
+					try {
+						//This method will execute get function inside paginate () or if not pagination present, inside itself.
+						$model = QueryFilter::paginateRequest($this->request, $query);
+					}
+					catch (QueryException $exception) {
+						throw new Exception(
+							new Collection(
+								new SqlError ('Database error', ErrorObject::DATABASE_ERROR,
+									Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
+								)
+							)
+						);
+						
+					}
 					
 					$this->afterModelsQueried ($model);
 					
@@ -270,22 +297,23 @@
 			$data = $this->parseRequestContent ();
 			StringUtils::normalizeAttributes($data ["attributes"]);
 			
+			if (empty($data["id"]) === false) {
+				Exception::throwSingleException("Creating a resource with a client generated ID is unsupported",
+					ErrorObject::MALFORMED_REQUEST, Response::HTTP_FORBIDDEN, static::ERROR_SCOPE);
+			}
+			
 			$attributes = $data ["attributes"];
 			
 			/** @var Model $model */
-			$model = new $modelName($attributes);
+			$model = forward_static_call_array ([$modelName, 'createAndValidate'], [$attributes]);
 			if (empty($model) === true) {
-				throw new Exception(
-					[
-						new Error ('An unknown error occurred', Error::UNKNOWN_ERROR,
-							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
-						)
-				    ]
+				Exception::throwSingleException(
+					'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+					static::ERROR_SCOPE
 				);
 			}
 			
 			$model->validateUserCreatePermissions ($this->request, Auth::user ());
-			$model->validateData($attributes);
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
 			$model->updateRelationships ($data, $this->modelsNamespace, true);
@@ -316,19 +344,8 @@
 			$id = $data["id"];
 
 			$modelName = $this->fullModelName;
-			/** @var \EchoIt\JsonApi\Database\Eloquent\Model $model */
-			$model = $modelName::find ($id);
 			
-			if (is_null ($model) === true) {
-				throw new Exception
-				(
-					[
-						new Error ('Record not found in Database', Error::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND,
-							static::ERROR_SCOPE
-						)
-					]
-				);
-			}
+			$model = $this->tryToFindModel($modelName);
 			
 			$model->validateUserUpdatePermissions ($this->request, Auth::user ());
 			
@@ -338,8 +355,8 @@
 				StringUtils::normalizeAttributes($data ["attributes"]);
 				$attributes = $data ["attributes"];
 				
+				forward_static_call_array ([$modelName, 'validateAttributes'], [$attributes]);
 				$model->fill ($attributes);
-				$model->validateData ($attributes);
 			}
 
 			$model->updateRelationships ($data, $this->modelsNamespace, false);
@@ -358,7 +375,11 @@
 			
 			return $model;
 		}
-
+		
+		/**
+		 * Handle PATCH requests
+		 * @return Model|null
+		 */
 		protected function handlePut () {
 			return $this->handlePatch ();
 		}
@@ -374,17 +395,14 @@
 			$this->requestType = static::DELETE;
 			
 			if (empty($this->request->getId())) {
-				throw new Exception (
-					[
-						new Error ('No ID provided', Error::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE)
-					]
+				Exception::throwSingleException(
+					'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 				);
 			}
 			
 			$modelName = $this->fullModelName;
 			
-			/** @var Model $model */
-			$model = $modelName::find ($this->request->getId());
+			$model = $this->tryToFindModel($modelName);
 			
 			$model->validateUserDeletePermissions ($this->request, Auth::user ());
 			
@@ -399,9 +417,31 @@
 		}
 		
 		/**
+		 * @param $modelName
+		 *
+		 * @return Model
+		 * @throws Exception
+		 */
+		protected function tryToFindModel($modelName) {
+			try {
+				/** @var Model $model */
+				$id    = $this->request->getId();
+				$model = $modelName::findOrFail($id);
+				
+				return $model;
+			} catch (ModelNotFoundException $e) {
+				$title = 'Record not found in Database';
+				$code  = ErrorObject::UNKNOWN_ERROR;
+				$status = Response::HTTP_NOT_FOUND;
+				$resourceIdentifier = static::ERROR_SCOPE;
+				Exception::throwSingleException($title, $code, $status, $resourceIdentifier);
+			}
+		}
+		
+		
+		/**
 		 * Parses content from request into an array of values.
 		 *
-		 * @param  string $content
 		 * @param bool    $newRecord
 		 *
 		 * @return array
@@ -413,41 +453,29 @@
 			$content = json_decode ($content, true);
 
 			if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
-				throw new Exception(
-					[
-						new Error ('Payload either contains misformed JSON or missing "data" parameter.',
-							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-						)
-					]
+				Exception::throwSingleException(
+					'Payload either contains misformed JSON or missing "data" parameter.',
+					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 				);
 			}
 			$data = $content['data'];
 			
 			if (array_key_exists ("type", $data) === false) {
-				throw new Exception(
-					[
-						new Error ('"type" parameter not set in request.',
-							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-						)
-					]
+				Exception::throwSingleException(
+					'"type" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST,
+					static::ERROR_SCOPE
 				);
 			}
 			if ($data['type'] !== $type = Pluralizer::plural (s ($this->resourceName)->dasherize ()->__toString ())) {
-				throw new Exception(
-					[
-						new Error ('"type" parameter is not valid. Expecting ' . $type,
-							Error::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT, static::ERROR_SCOPE
-						)
-					]
+				Exception::throwSingleException(
+					sprintf('"type" parameter is not valid. Expecting %s, %s given', $type, $data['type']),
+					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT, static::ERROR_SCOPE
 				);
 			}
 			if ($newRecord === false && isset($data['id']) === false) {
-				throw new Exception(
-					[
-						new Error ('"id" parameter not set in request.',
-							Error::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-						)
-					]
+				Exception::throwSingleException (
+					'"id" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST,
+					static::ERROR_SCOPE
 				);
 			}
 			
@@ -466,17 +494,15 @@
 				$model->saveOrFail();
 			} catch (QueryException $exception) {
 				throw new Exception(
-					[
-						new SqlError ('Database error', Error::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+					new Collection(
+						new SqlError ('Database error', ErrorObject::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
 							$exception, static::ERROR_SCOPE)
-					]
+					)
 				);
 			} catch (\Exception $exception) {
-				throw new Exception(
-					[
-						new Error ('An unknown error occurred saving the record', Error::UNKNOWN_ERROR,
-							Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE)
-					]
+				Exception::throwSingleException(
+					'An unknown error occurred saving the record', ErrorObject::UNKNOWN_ERROR,
+					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
 				);
 			}
 		}
@@ -525,11 +551,18 @@
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
 			$links = null;
-			$included = null;
+			$modelsCollection = new Collection();
+			$links = new LinksObject(
+				new Collection(
+					[
+						new LinkObject("self", $this->request->fullUrl())
+					]
+				)
+			);
 			if ($models instanceof LengthAwarePaginator) {
 				$paginator = $models;
 				$modelsCollection = new Collection($paginator->items ());
-				$links = $this->getPaginationLinks ($paginator);
+				$links = $links->addLinks($this->getPaginationLinks($paginator));
 			}
 			else if ($models instanceof Collection) {
 				$modelsCollection = $models;
@@ -538,16 +571,32 @@
 				$modelsCollection = new Collection([$models]);
 			}
 			else {
-				return new Response([], static::successfulHttpStatusCode ($this->request->getMethod()));
+				Exception::throwSingleException("Unknown error generating response", 0,
+					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE);
 			}
 			
 			if ($loadRelations) {
 				$this->loadRelatedModels($modelsCollection);
 			}
 			
-			$response = new Response($modelsCollection, static::successfulHttpStatusCode ($this->request->getMethod()));
-			$response->links = $links;
-			$response->included = ModelsUtils::getIncludedModels ($modelsCollection);;
+			$included = ModelsUtils::getIncludedModels ($modelsCollection, $this->request);
+			
+			//If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
+			if ($models instanceof Model) {
+				$resourceObject = new ResourceObject($models);
+			}
+			else {
+				$resourceObject = $modelsCollection->map(
+					function (Model $model) {
+						return new ResourceObject($model);
+					}
+				);
+			}
+			
+			$topLevelObject = new TopLevelObject($resourceObject, null, null, $included, $links);
+			
+			$response = new Response($topLevelObject,
+				static::successfulHttpStatusCode ($this->request->getMethod(), $topLevelObject, $models));
 			
 			return $response;
 		}
@@ -560,101 +609,63 @@
 		private function loadRelatedModels(Collection $models) {
 			/** @var Model $model */
 			foreach ($models as $model) {
-				$model->loadRelatedModels($this->exposedRelationsFromRequest());
+				$model->loadRelatedModels($this->request->getInclude());
 			}
-		}
-		
-		/**
-		 * Returns which requested resources are available to include.
-		 *
-		 * @return array
-		 */
-		protected function exposedRelationsFromRequest() {
-			$include = $this->request->input('include');
-			if (is_null($include)) {
-				return [];
-			}
-			return explode(",", $include);
 		}
 
 		/**
 		 * Return pagination links as array
 		 * @param LengthAwarePaginator $paginator
-		 * @return array
+		 * @return Collection
 		 */
 		protected function getPaginationLinks(LengthAwarePaginator $paginator) {
-			$links = [];
-
-			$links['self'] = urldecode($paginator->url($paginator->currentPage()));
-			$links['first'] = urldecode($paginator->url(1));
-			$links['last'] = urldecode($paginator->url($paginator->lastPage()));
-
-			$links['prev'] = urldecode($paginator->url($paginator->currentPage() - 1));
-			if ($links['prev'] === $links['self'] || $links['prev'] === '') {
-				$links['prev'] = null;
+			$links = new Collection();
+			
+			$selfLink = urldecode($paginator->url($paginator->currentPage()));
+			$firstLink = urldecode($paginator->url(1));
+			$lastLink = urldecode($paginator->url($paginator->lastPage()));
+			$previousLink = urldecode($paginator->url($paginator->currentPage() - 1));
+			$nextLink = urldecode($paginator->nextPageUrl());
+			
+			$links->push(new LinkObject("first", $firstLink));
+			$links->push(new LinkObject("last", $lastLink));
+			
+			if ($previousLink !== $selfLink && $previousLink !== '') {
+				$links->push(new LinkObject("previous", $previousLink));
 			}
-			$links['next'] = urldecode($paginator->nextPageUrl());
-			if ($links['next'] === $links['self'] || $links['next'] === '') {
-				$links['next'] = null;
+			if ($nextLink !== $selfLink || $nextLink !== '') {
+				$links->push(new LinkObject("next", $nextLink));
 			}
 			return $links;
 		}
-
-		/**
-		 * Return errors which did not prevent the API from returning a result set.
-		 *
-		 * @return array
-		 */
-		protected function getNonBreakingErrors() {
-			$errors = [];
-
-			$unknownRelations = $this->unknownRelationsFromRequest();
-			if (count($unknownRelations) > 0) {
-				$errors[] = [
-					'code' => Error::UNKNOWN_LINKED_RESOURCES,
-					'title' => 'Unknown included resource requested',
-					'description' => 'These included resources are not available: ' . implode(', ', $unknownRelations)
-				];
-			}
-
-			return $errors;
-		}
 		
-		/**
-		 * Returns which of the requested resources are not available to include.
-		 *
-		 * @return array
-		 */
-		protected function unknownRelationsFromRequest() {
-			return array_diff($this->request->getInclude(), static::$exposedRelations);
-		}
-
 		/**
 		 * A method for getting the proper HTTP status code for a successful request
 		 *
 		 * @param  string $method "PUT", "POST", "DELETE" or "GET"
-		 * @param  Model|null $model The model that a PUT request was executed against
+		 * @param  Model|Collection|LengthAwarePaginator|null $model The model that a PUT request was executed against
 		 * @return int
 		 */
-		public static function successfulHttpStatusCode($method, $model = null) {
+		public static function successfulHttpStatusCode($method, TopLevelObject $topLevelObject, $model = null) {
 			// if we did a put request, we need to ensure that the model wasn't
 			// changed in other ways than those specified by the request
 			//     Ref: http://jsonapi.org/format/#crud-updating-responses-200
-			if (($method === 'PATCH' || $method === 'PUT') && $model instanceof Model) {
-				// check if the model has been changed
-				if ($model->isChanged()) {
-					// return our response as if there was a GET request
-					$method = 'GET';
-				}
-			}
 
 			switch ($method) {
 				case 'POST':
 					return Response::HTTP_CREATED;
 				case 'PATCH':
 				case 'PUT':
+					if ($model instanceof Model && $model->isChanged()) {
+						return Response::HTTP_OK;
+					}
 				case 'DELETE':
-					return Response::HTTP_NO_CONTENT;
+					if (empty($topLevelObject->getMeta()) === true) {
+						return Response::HTTP_NO_CONTENT;
+					}
+					else {
+						return Response::HTTP_OK;
+					}
 				case 'GET':
 					return Response::HTTP_OK;
 			}
@@ -669,8 +680,8 @@
 		 */
 		private function generateModelName () {
 			$shortName = $this->resourceName;
-			$this->shortModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true, true);
-			$this->fullModelName = Model::getModelClassName ($shortName, $this->modelsNamespace, true);
+			$this->shortModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true, true);
+			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}
 
 		/**
@@ -680,15 +691,7 @@
 		 */
 		protected function generateSelectQuery() {
 			$modelName = $this->fullModelName;
-			//If this model has any relation, eager load
-			if (count (static::$exposedRelations) > 0) {
-				//Call static function with
-				return forward_static_call_array ([$modelName, 'with'], static::$exposedRelations);
-			}
-			//If this model doesn't have any relations, generate a new empty query
-			else {
-				return forward_static_call_array ([$modelName, 'queryAllModels'], []);
-			}
+			return forward_static_call_array ([$modelName, 'generateSelectQuery'], [$this->request->getInclude()]);
 		}
 		
 		/**
@@ -760,8 +763,10 @@
 		
 		/**
 		 * Method that runs after handling a GET request. Should be implemented by child classes.
+		 *
+		 * @param Model|null
 		 */
-		protected function afterHandleGet (Model $model) {
+		protected function afterHandleGet ($model) {
 			
 		}
 		
@@ -811,10 +816,12 @@
 		}
 		
 		/**
-		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+		 * Method that runs after generating a POST response. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePostResponse (Model $model, Response $response) {
-			
+		protected function afterGeneratePostResponse ($model, Response $response) {
+			if ($model instanceof Model) {
+				$response->header('Location', $model->getModelURL());
+			}
 		}
 		
 		/**
@@ -827,14 +834,14 @@
 		/**
 		 * Method that runs after handling a PATCH request. Should be implemented by child classes.
 		 */
-		protected function afterHandlePatch (Model $model) {
+		protected function afterHandlePatch ($model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePatchResponse (Model $model, Response $response) {
+		protected function afterGeneratePatchResponse ($model, Response $response) {
 			
 		}
 		
@@ -848,7 +855,7 @@
 		/**
 		 * Method that runs after handling a DELETE request. Should be implemented by child classes.
 		 */
-		protected function afterHandleDelete (Model $model) {
+		protected function afterHandleDelete ($model) {
 			
 		}
 		

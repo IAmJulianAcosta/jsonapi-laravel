@@ -7,11 +7,11 @@
 	 */
 	
 	namespace EchoIt\JsonApi\Validation;
-	use EchoIt\JsonApi\Error;
-	use Illuminate\Http\Response;
+	use EchoIt\JsonApi\Data\ErrorObject;
+	use EchoIt\JsonApi\Http\Response;
 	use function Stringy\create as s;
 	
-	class ValidationError extends Error {
+	class ValidationError extends ErrorObject {
 		
 		//Validation errors
 		const ACCEPTED = 0;
@@ -123,7 +123,7 @@
 			}
 		}
 		
-		public function generateErrorCodeInThisLevel () {
+		public function generateErrorCodeOnThisLevel () {
 			return $this->generateValidationErrorCode() * 100^static::ERROR_LEVEL;
 		}
 		
