@@ -9,6 +9,7 @@ use EchoIt\JsonApi\Http\Response;
 use EchoIt\JsonApi\Utils\ClassUtils;
 use EchoIt\JsonApi\Utils\StringUtils;
 use EchoIt\JsonApi\Validation\ValidationException;
+use EchoIt\JsonApi\Validation\Validator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Model as BaseModel;
@@ -50,10 +51,9 @@ abstract class Model extends BaseModel {
 	/**
 	 * Validation error messages
 	 *
-	 * @var object
+	 * @var Validator
 	 */
-	//TODO delete?
-	protected $validationErrors;
+	protected $validator;
 	
 	/**
 	 * Let's guard these fields per default
@@ -132,7 +132,10 @@ abstract class Model extends BaseModel {
 	}
 	
 	public static function createAndValidate (array $attributes = []) {
-		static::validateAttributes($attributes, true);
+		$validator = static::validateAttributes($attributes, true);
+		if ($validator->fails() === true) {
+			throw new ValidationException($validator->validationErrors());
+		}
 		return new static($attributes);
 	}
 	
@@ -150,9 +153,12 @@ abstract class Model extends BaseModel {
 		}
 		/** @var \EchoIt\JsonApi\Validation\Validator $validator */
 		$validator       = ValidatorFacade::make($attributes, $validationRules);
-		if ($validator->fails() === true) {
-			throw new ValidationException($validator->validationErrors());
-		}
+		
+		return $validator;
+	}
+	
+	public function validate ($creatingModel = false) {
+		$this->validator = static::validateAttributes($this->attributes, $creatingModel);
 	}
 	
 	/**
@@ -282,7 +288,7 @@ abstract class Model extends BaseModel {
 	
 	/*
 	 * ========================================
-	 *			   RELATIONS
+	 *			     RELATIONS
 	 * ========================================
 	 */
 	/**
