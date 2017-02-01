@@ -13,7 +13,7 @@
 	use EchoIt\JsonApi\Http\Response;
 	use EchoIt\JsonApi\Utils\StringUtils;
 	
-	class AttributesObject extends JSONAPIDataObject {
+	class AttributesObject extends ResponseObject {
 		/**
 		 * @var Model $model
 		 */

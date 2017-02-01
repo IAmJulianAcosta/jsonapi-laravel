@@ -11,7 +11,7 @@
 	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Support\Collection;
 	
-	class TopLevelObject extends JSONAPIDataObject {
+	class TopLevelObject extends ResponseObject {
 		
 		/**
 		 * @var Collection|TopLevelObject

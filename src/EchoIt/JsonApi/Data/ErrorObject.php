@@ -11,7 +11,7 @@
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Http\Response;
 	
-	class ErrorObject extends JSONAPIDataObject {
+	class ErrorObject extends ResponseObject {
 		const MULTIPLE_ERRORS                    = 0;
 		const UNAUTHORIZED_ACCESS_TOKEN_PROVIDED = 1;
 		const MALFORMED_ACCESS_TOKEN_PROVIDED    = 2;

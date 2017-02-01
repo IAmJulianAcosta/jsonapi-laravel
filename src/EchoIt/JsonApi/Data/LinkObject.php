@@ -11,7 +11,7 @@
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Http\Response;
 	
-	class LinkObject extends JSONAPIDataObject {
+	class LinkObject extends ResponseObject {
 		
 		/**
 		 * @var string

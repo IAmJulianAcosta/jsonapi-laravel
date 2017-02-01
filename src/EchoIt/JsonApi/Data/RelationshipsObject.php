@@ -15,7 +15,7 @@
 	use Illuminate\Database\Eloquent\Relations\Pivot;
 	use Illuminate\Support\Pluralizer;
 	
-	class RelationshipsObject extends JSONAPIDataObject {
+	class RelationshipsObject extends ResponseObject {
 		/**
 		 * @var LinksObject
 		 */

@@ -12,7 +12,7 @@
 	use EchoIt\JsonApi\Exception;
 	use EchoIt\JsonApi\Http\Response;
 	
-	class ResourceIdentifierObject extends JSONAPIDataObject {
+	class ResourceIdentifierObject extends ResponseObject {
 		/**
 		 * @var Model $model
 		 */

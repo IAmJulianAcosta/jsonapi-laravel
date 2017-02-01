@@ -12,7 +12,7 @@
 	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Support\Collection;
 	
-	class MetaObject extends JSONAPIDataObject {
+	class MetaObject extends ResponseObject {
 		
 		/**
 		 * @var Collection

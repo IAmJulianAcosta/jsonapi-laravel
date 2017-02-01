@@ -12,7 +12,7 @@
 	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Support\Collection;
 	
-	class LinksObject extends JSONAPIDataObject {
+	class LinksObject extends ResponseObject {
 		
 		/**
 		 * @var Collection
