@@ -27,6 +27,7 @@
 	use Illuminate\Support\Facades\Auth;
 	use Illuminate\Support\Facades\Cache;
 	use Illuminate\Pagination\LengthAwarePaginator;
+	use function Stringy\create as s;
 	
 	abstract class Controller extends BaseController {
 		/**
