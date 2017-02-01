@@ -4,6 +4,7 @@
 	
 	use EchoIt\JsonApi\Data\LinkObject;
 	use EchoIt\JsonApi\Data\LinksObject;
+	use EchoIt\JsonApi\Data\RequestObject;
 	use EchoIt\JsonApi\Data\ResourceObject;
 	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
@@ -25,9 +26,7 @@
 	use Illuminate\Support\Collection;
 	use Illuminate\Support\Facades\Auth;
 	use Illuminate\Support\Facades\Cache;
-	use Illuminate\Support\Pluralizer;
 	use Illuminate\Pagination\LengthAwarePaginator;
-	use function Stringy\create as s;
 	
 	abstract class Controller extends BaseController {
 		/**
@@ -91,37 +90,27 @@
 		protected $request;
 		
 		/**
+		 * @var RequestObject
+		 */
+		protected $requestJsonApi;
+		
+		/**
 		 * Controller constructor.
 		 *
 		 * @param Request $request
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
-			$this->checkRequestContentType ();
-			$this->checkRequestAccept ();
-			$this->setResourceNameFromClassName ();
-		}
-		
-		public function checkRequestContentType () {
-			if ($this->request->getContentType() === "jsonapi") {
-				$mediaTypes = $this->request->getContentTypeMediaTypes();
-				
-				if (empty($mediaTypes) === false) {
-					Exception::throwSingleException("Content-Type header can't have media type parameters",
-						0, Response::HTTP_NOT_ACCEPTABLE);
-				}
-			}
-		}
-		
-		public function checkRequestAccept () {
-			$acceptHeaders = $this->request->header("accept");
-			if (empty($acceptHeaders) === false) {
-				$acceptHeaders = explode (';', $acceptHeaders);
-				if (count($acceptHeaders) > 0 && $acceptHeaders [0] === "application/vnd.api+json" &&
-				    count($acceptHeaders) > 1) {
-					Exception::throwSingleException("Accept type can't have media type parameters",
-						0, Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
-				}
+			$request->checkRequestContentType();
+			$request->checkRequestAccept();
+			$this->setResourceNameFromClassName();
+			$request->extractData();
+			if ($request->shouldHaveContent() === true) {
+				$requestJsonApi = $this->requestJsonApi = $request->getJsonApiContent();
+				$dataType       = StringUtils::dasherizedResourceName($this->resourceName);
+				$requestJsonApi->setDataType($dataType);
+				$requestJsonApi->validateRequiredParameters();
+				$requestJsonApi->extractData();
 			}
 		}
 		
@@ -131,6 +120,23 @@
 		public function setModelsNamespace($modelsNamespace) {
 			$this->modelsNamespace = $modelsNamespace;
 			$this->generateModelName ();
+			$this->checkModelInheritance();
+			forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
+		}
+		
+		/**
+		 * Generates model names from controller name class
+		 */
+		protected function generateModelName () {
+			$shortName = $this->resourceName;
+			$this->shortModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true, true);
+			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
+		}
+		
+		protected function checkModelInheritance () {
+			if (is_subclass_of($this->fullModelName, Model::class) === false) {
+				Model::throwInheritanceException($this->fullModelName);
+			}
 		}
 		
 		/**
@@ -185,7 +191,7 @@
 		/**
 		 * @return Model|Collection
 		 */
-		private function handleRequest () {
+		protected function handleRequest () {
 			$methodName = ClassUtils::methodHandlerName($this->request->getMethod());
 			$models = $this->{$methodName}();
 
@@ -197,6 +203,7 @@
 		 */
 		protected function handleGet () {
 			$id = $this->request->getId();
+			
 			if (empty($id)) {
 				$models = $this->handleGetAll ();
 				return $models;
@@ -255,7 +262,7 @@
 					$query = $this->generateSelectQuery ();
 					
 					QueryFilter::filterRequest($this->request, $query);
-					QueryFilter::sortRequest($this->request, $query);
+					QueryFilter::sortRequest($this->request, $query, $this->fullModelName);
 					$this->applyFilters ($query);
 					
 					try {
@@ -294,15 +301,16 @@
 			$this->requestType = static::POST;
 			
 			$modelName = $this->fullModelName;
-			$data = $this->parseRequestContent ();
-			StringUtils::normalizeAttributes($data ["attributes"]);
 			
-			if (empty($data["id"]) === false) {
-				Exception::throwSingleException("Creating a resource with a client generated ID is unsupported",
-					ErrorObject::MALFORMED_REQUEST, Response::HTTP_FORBIDDEN, static::ERROR_SCOPE);
+			if (empty($this->requestJsonApi->getId ()) === false) {
+				Exception::throwSingleException(
+					"Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
+					Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
+				);
 			}
 			
-			$attributes = $data ["attributes"];
+			StringUtils::normalizeAttributes($this->requestJsonApi->getAttributes ());
+			$attributes = $this->requestJsonApi->getAttributes ();
 			
 			/** @var Model $model */
 			$model = forward_static_call_array ([$modelName, 'createAndValidate'], [$attributes]);
@@ -316,13 +324,13 @@
 			$model->validateUserCreatePermissions ($this->request, Auth::user ());
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
-			$model->updateRelationships ($data, $this->modelsNamespace, true);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
 			
 			$this->beforeSaveNewModel ($model);
 			$this->saveModel($model);
 			$this->afterSaveNewModel ($model);
 			
-			$model->updateRelationships ($data, $this->modelsNamespace, true);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
 			$this->afterHandlePost ($model);
@@ -340,9 +348,6 @@
 			$this->beforeHandlePatch ();
 			$this->requestType = static::PATCH;
 			
-			$data = $this->parseRequestContent (false);
-			$id = $data["id"];
-
 			$modelName = $this->fullModelName;
 			
 			$model = $this->tryToFindModel($modelName);
@@ -350,16 +355,16 @@
 			$model->validateUserUpdatePermissions ($this->request, Auth::user ());
 			
 			$originalAttributes = $model->getOriginal ();
-
-			if (array_key_exists ("attributes", $data)) {
-				StringUtils::normalizeAttributes($data ["attributes"]);
-				$attributes = $data ["attributes"];
+			
+			$attributes = $this->requestJsonApi->getAttributes();
+			if (empty ($attributes) === false) {
+				StringUtils::normalizeAttributes($attributes);
 				
 				forward_static_call_array ([$modelName, 'validateAttributes'], [$attributes]);
 				$model->fill ($attributes);
 			}
 
-			$model->updateRelationships ($data, $this->modelsNamespace, false);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, false);
 
 			$this->beforeSaveModel ($model);
 			$this->saveModel($model);
@@ -368,7 +373,9 @@
 			$model->verifyIfModelChanged ($originalAttributes);
 
 			if ($model->isChanged()) {
-				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $id, $model);
+				CacheManager::clearCache (
+					StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model)
+				;
 			}
 			
 			$this->afterHandlePatch ($model);
@@ -436,52 +443,6 @@
 				$resourceIdentifier = static::ERROR_SCOPE;
 				Exception::throwSingleException($title, $code, $status, $resourceIdentifier);
 			}
-		}
-		
-		
-		/**
-		 * Parses content from request into an array of values.
-		 *
-		 * @param bool    $newRecord
-		 *
-		 * @return array
-		 * @throws \EchoIt\JsonApi\Exception
-		 * @internal param string $type the type the content is expected to be.
-		 */
-		protected function parseRequestContent ($newRecord = true) {
-			$content = $this->request->getContent();
-			$content = json_decode ($content, true);
-
-			if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
-				Exception::throwSingleException(
-					'Payload either contains misformed JSON or missing "data" parameter.',
-					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-				);
-			}
-			$data = $content['data'];
-			
-			if (array_key_exists ("type", $data) === false) {
-				Exception::throwSingleException(
-					'"type" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST,
-					static::ERROR_SCOPE
-				);
-			}
-			if ($data['type'] !== $type = Pluralizer::plural (s ($this->resourceName)->dasherize ()->__toString ())) {
-				Exception::throwSingleException(
-					sprintf('"type" parameter is not valid. Expecting %s, %s given', $type, $data['type']),
-					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT, static::ERROR_SCOPE
-				);
-			}
-			if ($newRecord === false && isset($data['id']) === false) {
-				Exception::throwSingleException (
-					'"id" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST,
-					static::ERROR_SCOPE
-				);
-			}
-			
-			unset ($content ['type']);
-			
-			return $data;
 		}
 		
 		/**
@@ -673,15 +634,6 @@
 			// Code shouldn't reach this point, but if it does we assume that the
 			// client has made a bad request.
 			return Response::HTTP_BAD_REQUEST;
-		}
-		
-		/**
-		 * Generates model names from controller name class
-		 */
-		private function generateModelName () {
-			$shortName = $this->resourceName;
-			$this->shortModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true, true);
-			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}
 
 		/**
@@ -932,5 +884,4 @@
 			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
-		
 	}

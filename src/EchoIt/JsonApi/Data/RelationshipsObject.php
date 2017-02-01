@@ -14,7 +14,6 @@
 	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Database\Eloquent\Relations\Pivot;
 	use Illuminate\Support\Pluralizer;
-	use function Stringy\create as s;
 	
 	class RelationshipsObject extends JSONAPIDataObject {
 		/**
@@ -45,7 +44,7 @@
 			$this->setParameters();
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if (empty($this->links) === true) {
 				if (empty ($this->model) === true && empty ($this->meta) === true) {
 					Exception::throwSingleException(
@@ -112,7 +111,7 @@
 						$relations[$index] = $relationName;
 					}
 					else {
-						throw new \InvalidArgumentException("Model " . get_class($firstItem) . " is not a JSON API model");
+						Model::throwInheritanceException(get_class($firstItem));
 					}
 				}
 				//If is Model
@@ -158,7 +157,7 @@
 		 */
 		private function generateRelationArrayInformation(Model $model, $resourceType) {
 			return [
-				'id'   => s($model->getKey())->dasherize()->__toString(),
+				'id'   => $model->getKey(),
 				'type' => Pluralizer::plural($resourceType)
 			];
 		}

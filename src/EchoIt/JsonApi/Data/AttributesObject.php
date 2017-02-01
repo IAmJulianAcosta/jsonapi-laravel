@@ -28,7 +28,7 @@
 			$this->setModel($model);
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if (isset ($this->attributes [$this->model->getPrimaryKey()])) {
 				Exception::throwSingleException("Attributes must not have ID key",
 					ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
@@ -41,16 +41,16 @@
 		protected function setParameters() {
 			$model = $this->model;
 			//add type parameter
-			$model_attributes            = $model->attributesToArray();
-			$dasherized_model_attributes = [];
+			$model_attributes          = $model->attributesToArray();
+			$dasherizedModelAttributes = [];
 			
 			foreach ($model_attributes as $key => $attribute) {
-				$dasherized_model_attributes [StringUtils::dasherizeKey($key)] = $attribute;
+				$dasherizedModelAttributes [StringUtils::genreateMemberName($key)] = $attribute;
 			}
 			
-			unset($dasherized_model_attributes[$model->getPrimaryKey()]);
+			unset($dasherizedModelAttributes[$model->getPrimaryKey()]);
 			
-			$this->attributes = $dasherized_model_attributes;
+			$this->attributes = $dasherizedModelAttributes;
 		}
 		
 		public function jsonSerialize () {

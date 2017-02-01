@@ -82,6 +82,5 @@
 		 */
 		public abstract function isEmpty ();
 		
-		protected abstract function validateRequiredParameters ();
-		
+		public abstract function validateRequiredParameters ();
 	}

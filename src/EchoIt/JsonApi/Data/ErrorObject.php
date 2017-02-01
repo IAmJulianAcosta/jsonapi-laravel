@@ -101,7 +101,7 @@
 			$this->meta               = $meta;
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if (empty ($this->key) === true) {
 				Exception::throwSingleException("Title must be present on errors object",
 					ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);

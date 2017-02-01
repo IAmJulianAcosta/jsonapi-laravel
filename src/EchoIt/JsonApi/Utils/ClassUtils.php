@@ -23,7 +23,7 @@
 		 * @return string Class name of related resource
 		 */
 		public static function getControllerFullClassName ($controllerShortName, $namespace, $isPlural = true, $short = false) {
-			$controllerShortName = s ($controllerShortName)->camelize()->__toString();
+			$controllerShortName = s($controllerShortName)->camelize()->__toString();
 			
 			if ($isPlural) {
 				$controllerShortName = Pluralizer::singular ($controllerShortName);
@@ -77,7 +77,7 @@
 				$className .= $namespace . '\\';
 			}
 			$className .= $toLowerCase ? strtolower ($modelName) : ucfirst ($modelName);
-			$className = $capitalizeFirst ? s ($className)->upperCamelize ()->__toString () : s ($className)->camelize ()->__toString ();
+			$className = $capitalizeFirst ? s($className)->upperCamelize ()->__toString () : s($className)->camelize ()->__toString ();
 			
 			return $className;
 		}

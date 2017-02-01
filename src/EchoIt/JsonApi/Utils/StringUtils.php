@@ -38,8 +38,21 @@
 		 *
 		 * @return string
 		 */
-		public static function dasherizeKey ($key) {
-			return s($key)->dasherize()->__toString();
+		public static function genreateMemberName ($key) {
+			$key = s($key)->replace('@', '')->slugify()->dasherize()->slugify();
+			
+			return $key->__toString();
+		}
+		
+		/**
+		 * By default laravel uses camelCase as relationship names, but we're using hyphens by default in API
+		 *
+		 * @param $relationshipName
+		 *
+		 * @return string
+		 */
+		public static function camelizeRelationshipName ($relationshipName) {
+			return s($relationshipName)->camelize()->__toString();
 		}
 		
 	}

@@ -51,7 +51,7 @@
 			$this->validateRequiredParameters();
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if (empty ($this->key) === true) {
 				Exception::throwSingleException("Key must be present on link object",
 					ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);

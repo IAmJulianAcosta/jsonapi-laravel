@@ -1,6 +1,7 @@
 <?php
 	namespace EchoIt\JsonApi\Http;
 	
+	use EchoIt\JsonApi\Data\RequestObject;
 	use EchoIt\JsonApi\Exception;
 	use Illuminate\Http\Request as BaseRequest;
 	use Illuminate\Support\Collection;
@@ -80,6 +81,11 @@
 		 */
 		protected $guardType;
 		
+		/**
+		 * @var RequestObject
+		 */
+		protected $jsonApiContent;
+		
 		public function __construct(array $query = [], array $request = [], array $attributes = [], array $cookies = [],
 			array $files = [], array $server = [], $content = null
 		) {
@@ -134,8 +140,7 @@
 			}
 		}
 		
-		protected static function initializeFormats()
-		{
+		protected static function initializeFormats() {
 			static::$formats = array(
 				'html' => array('text/html', 'application/xhtml+xml'),
 				'txt' => array('text/plain'),
@@ -149,6 +154,66 @@
 				'form' => array('application/x-www-form-urlencoded'),
 				'jsonapi' => array('application/vnd.api+json')
 			);
+		}
+		
+		public function checkRequestContentType () {
+			if ($this->getContentType() === "jsonapi" || true) {
+				$mediaTypes = $this->getContentTypeMediaTypes();
+				
+				if (empty($mediaTypes) === false) {
+					Exception::throwSingleException(
+						"Content-Type header can't have media type parameters", 0, Response::HTTP_NOT_ACCEPTABLE
+					);
+				}
+			}
+			else {
+				Exception::throwSingleException(
+					"Content-Type header must be application/vnd.api+json", 0, Response::HTTP_NOT_ACCEPTABLE
+				);
+			}
+		}
+		
+		public function checkRequestAccept () {
+			$acceptHeaders = $this->header("accept");
+			if (empty($acceptHeaders) === false) {
+				$acceptHeaders = explode (';', $acceptHeaders);
+				if (count($acceptHeaders) > 0 && $acceptHeaders [0] === "application/vnd.api+json" &&
+				    count($acceptHeaders) > 1) {
+					Exception::throwSingleException("Accept type can't have media type parameters",
+						0, Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
+				}
+			}
+		}
+		
+		/**
+		 * Parses content from request into an array of values.
+		 *
+		 * @throws \EchoIt\JsonApi\Exception
+		 */
+		public function extractData () {
+			if ($this->shouldHaveContent() === true) {
+				$content = json_decode($this->getContent(), true);
+				
+				$this->jsonApiContent = new RequestObject($content, $this);
+			}
+		}
+		
+		/**
+		 * @return RequestObject
+		 */
+		public function getJsonApiContent() {
+			return $this->jsonApiContent;
+		}
+		
+		/**
+		 * @param RequestObject $jsonApiContent
+		 */
+		public function setJsonApiContent($jsonApiContent) {
+			$this->jsonApiContent = $jsonApiContent;
+		}
+		
+		public function getData () {
+			return $this->jsonApiContent->getData ();
 		}
 		
 		/**
@@ -289,5 +354,12 @@
 		 */
 		public function setFields($fields) {
 			$this->fields = $fields;
+		}
+		
+		/**
+		 * @return bool
+		 */
+		public function shouldHaveContent() {
+			return $this->getMethod() === "PATCH" || $this->getMethod() === "PUT" || $this->getMethod() === "POST";
 		}
 	}

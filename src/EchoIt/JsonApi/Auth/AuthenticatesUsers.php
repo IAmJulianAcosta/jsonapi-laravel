@@ -7,7 +7,7 @@
 	use EchoIt\JsonApi\Data\ResourceObject;
 	use EchoIt\JsonApi\Data\TopLevelObject;
 	use EchoIt\JsonApi\Exception;
-	use EchoIt\JsonApi\Http\Request;
+	use Illuminate\Http\Request;
 	use EchoIt\JsonApi\Http\Response;
 	use EchoIt\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Contracts\Auth\Authenticatable;
@@ -50,8 +50,9 @@
 			
 			$this->sendFailedLoginResponse($request);
 			
-			Exception::throwSingleException("An unknown error ocurred during login", ErrorObject::UNKNOWN_ERROR,
-						Response::HTTP_INTERNAL_SERVER_ERROR
+			Exception::throwSingleException(
+				"An unknown error ocurred during login", ErrorObject::UNKNOWN_ERROR,
+				Response::HTTP_INTERNAL_SERVER_ERROR
 			);
 		}
 		
@@ -115,12 +116,6 @@
 		 * @throws Exception
 		 */
 		protected function credentials(Request $request) {
-			if ($request->isJson() === false) {
-				Exception::throwSingleException(
-					'Request must have a JSON API media type (application/vnd.api+json)',
-							ErrorObject::MALFORMED_REQUEST, Response::HTTP_BAD_REQUEST
-				);
-			}
 			$attributes = $this->getAttributes($request);
 			
 			return [
@@ -201,7 +196,7 @@
 		}
 		
 		public function guard() {
-			/** @var Request $request */
+			/** @var \EchoIt\JsonApi\Http\Request $request */
 			$request = $this->request;
 			$guardType = is_null($request) === false ? $request->getGuardType() : null;
 			

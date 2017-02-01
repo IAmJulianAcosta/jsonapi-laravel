@@ -6,8 +6,10 @@ use EchoIt\JsonApi\Data\ErrorObject;
 use EchoIt\JsonApi\Exception;
 use EchoIt\JsonApi\Http\Request;
 use EchoIt\JsonApi\Http\Response;
+use EchoIt\JsonApi\Utils\ClassUtils;
+use EchoIt\JsonApi\Utils\StringUtils;
 use EchoIt\JsonApi\Validation\ValidationException;
-use Illuminate\Validation\Validator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,14 +26,14 @@ abstract class Model extends BaseModel {
 	 *
 	 * @var array
 	 */
-	static protected $validationRulesOnCreate = [];
+	static protected $validationRulesOnCreate;
 	
 	/**
 	 * Validation rules when updating a new model
 	 *
 	 * @var array
 	 */
-	static protected $validationRulesOnUpdate = [];
+	static protected $validationRulesOnUpdate;
 	
 	/**
 	 * @var integer Amount time that response should be cached
@@ -50,6 +52,7 @@ abstract class Model extends BaseModel {
 	 *
 	 * @var object
 	 */
+	//TODO delete?
 	protected $validationErrors;
 	
 	/**
@@ -58,6 +61,13 @@ abstract class Model extends BaseModel {
 	 * @var array
 	 */
 	protected $guarded = ['id', 'created_at', 'updated_at'];
+	
+	/**
+	 * Array that contains columns that doesn't support sort operation on database
+	 *
+	 * @var array
+	 */
+	protected static $nonSortableColumns;
 	
 	/**
 	 * Has this model been changed inother ways than those
@@ -83,7 +93,7 @@ abstract class Model extends BaseModel {
 	 *
 	 * @var  array
 	 */
-	public static $defaultExposedRelations = [];
+	public static $defaultExposedRelations;
 	
 	/**
 	 * Relations that will be returned by this model.
@@ -96,6 +106,30 @@ abstract class Model extends BaseModel {
 	 * @var string
 	 */
 	protected $modelURL;
+	
+	public static $requiredClassProperties = [
+		'defaultExposedRelations',
+		'validationRulesOnUpdate',
+		'validationRulesOnCreate',
+	    'nonSortableColumns'
+	];
+	
+	public function __construct(array $attributes = []) {
+		parent::__construct($attributes);
+	}
+	
+	/**
+	 * This function check if all configuration variables are set for this model
+	 */
+	public static function checkRequiredClassProperties () {
+		foreach (static::$requiredClassProperties as $property) {
+			$className = get_class(new static ());
+			$propertyIsSet = isset ($className::$$property) === false;
+			if ($propertyIsSet) {
+				throw new \LogicException("Static property $property must be defined on $className model");
+			}
+		}
+	}
 	
 	public static function createAndValidate (array $attributes = []) {
 		static::validateAttributes($attributes, true);
@@ -129,11 +163,8 @@ abstract class Model extends BaseModel {
 	 *
 	 * @throws Exception
 	 */
-	public function updateRelationships ($data, $modelsNamespace, $creating = false) {
-		if (array_key_exists ("relationships", $data)) {
-			//If we have a relationship object in the payload
-			$relationships = $data ["relationships"];
-			
+	public function updateRelationships ($relationships, $modelsNamespace, $creating = false) {
+		if (empty($relationships) === false) {
 			//Iterate all the relationships object
 			foreach ($relationships as $relationshipName => $relationship) {
 				if (is_array ($relationship)) {
@@ -186,8 +217,7 @@ abstract class Model extends BaseModel {
 				else {
 					//If the relationship is not an array, return error
 					Exception::throwSingleException(
-						'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES,
-								Response::HTTP_BAD_REQUEST
+						'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
 					);
 				}
 			}
@@ -204,11 +234,11 @@ abstract class Model extends BaseModel {
 	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace) {
 		//If we have a type of the relationship data
 		$type                  = $relationshipData['type'];
-		$relationshipModelName = Model::getModelClassName($type, $modelsNamespace);
-		$relationshipName      = s($relationshipName)->camelize()->__toString();
+		$relationshipModelName = ClassUtils::getModelClassName($type, $modelsNamespace);
+		$relationshipName      = StringUtils::camelizeRelationshipName($relationshipName);
 		
 		//If we have an id of the relationship data
-		if (array_key_exists ('id', $relationshipData)) {
+		if (array_key_exists ('id', $relationshipData) === true) {
 			$relationshipId	   = $relationshipData['id'];
 			/** @var $relationshipModelName Model */
 			$newRelationshipModel = $relationshipModelName::find ($relationshipId);
@@ -285,13 +315,23 @@ abstract class Model extends BaseModel {
 		$relation = array_shift($relations);
 		
 		//Now load it
-		$this->load($relation);
+		if ($this->relationLoaded($relation) === false) {
+			$this->load($relation);
+		}
 		
 		// If relations is not empty, load recursively
 		if (empty($relations) === false) {
 			/** @var Model $nestedModel */
-			$nestedModel = $this->{$relationToLoad};
-			$nestedModel->loadRelatedModel($relations);
+			$nestedModel = $this->{$relation};
+			if ($nestedModel instanceof Model) {
+				$nestedModel->loadRelatedModel($relations);
+			}
+			else if ($nestedModel instanceof Collection) {
+				$nestedModels = $nestedModel;
+				foreach ($nestedModels as $nestedModel) {
+					$nestedModel->loadRelatedModel($relations);
+				}
+			}
 		}
 	}
 	
@@ -299,10 +339,10 @@ abstract class Model extends BaseModel {
 	 *
 	 */
 	public function filterForeignKeys () {
-		$attributesToArray = $this->getArrayableAttributes();
+		$attributes = $this->getArrayableAttributes();
 		//We suppose that every attribute that ends in '_id' is a foreign key, but if convention is not
 		//followed, an array with foreign keys can be used to store them
-		foreach ($attributesToArray as $attributeKey => $attribute) {
+		foreach ($attributes as $attributeKey => $attribute) {
 			if (ends_with($attributeKey, '_id') === true) {
 				$this->addForeignKey($attributeKey);
 			}
@@ -480,7 +520,7 @@ abstract class Model extends BaseModel {
 		else {
 			$reflectionClass = new \ReflectionClass($this);
 			
-			return $this->resourceType = s($reflectionClass->getShortName ())->dasherize ()->__toString ();
+			return $this->resourceType =  StringUtils::dasherizedResourceName($reflectionClass->getShortName ());
 		}
 	}
 	
@@ -492,5 +532,11 @@ abstract class Model extends BaseModel {
 			return $this->modelURL = url (sprintf ('%s/%d', Pluralizer::plural($this->getResourceType ()), $this->{$this->getPrimaryKey()}));
 		}
 		return $this->modelURL;
+	}
+	
+	public static function throwInheritanceException ($modelName) {
+		throw new \InvalidArgumentException(
+			sprintf ("Model %s is not a JSONAPI model", $modelName)
+		);
 	}
 }

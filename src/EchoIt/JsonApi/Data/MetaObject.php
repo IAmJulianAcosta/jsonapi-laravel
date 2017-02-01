@@ -23,7 +23,7 @@
 			$this->metaObjects = $metaObjects;
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if ($this->metaObjects->isEmpty() === true) {
 				Exception::throwSingleException("Meta object should not be empty",
 					ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);

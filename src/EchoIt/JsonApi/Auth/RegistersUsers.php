@@ -9,7 +9,6 @@
 	namespace EchoIt\JsonApi\Auth;
 	
 	use EchoIt\JsonApi\Data\TopLevelObject;
-	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Contracts\Auth\Guard;
 	use Illuminate\Http\Request;
 	use Illuminate\Contracts\Auth\Authenticatable;

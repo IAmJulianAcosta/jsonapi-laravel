@@ -50,7 +50,7 @@
 		/**
 		 * Validates if required parameters for object are valid.
 		 */
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			if (empty ($this->type) === true) {
 				Exception::throwSingleException("Model type invalid", 0, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
 			}

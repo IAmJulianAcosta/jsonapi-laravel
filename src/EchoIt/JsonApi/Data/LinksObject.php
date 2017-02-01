@@ -23,7 +23,7 @@
 			$this->setLinks($links);
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			foreach ($this->links as $link) {
 				if ($link instanceof LinkObject === false) {
 					Exception::throwSingleException("Links object can only contain LinkObjects",

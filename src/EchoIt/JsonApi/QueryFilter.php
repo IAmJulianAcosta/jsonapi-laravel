@@ -9,6 +9,7 @@
 	namespace EchoIt\JsonApi;
 	
 	use EchoIt\JsonApi\Http\Request;
+	use EchoIt\JsonApi\Http\Response;
 	use Illuminate\Database\Eloquent\Builder;
 	use Illuminate\Support\Collection;
 	
@@ -55,10 +56,16 @@
 		/**
 		 * Function to handle sorting requests.
 		 */
-		public static function sortRequest(Request $request, Builder &$query) {
+		public static function sortRequest(Request $request, Builder &$query, $modelName) {
 			$sort = $request->getSort();
 			if (empty($sort) === false) {
 				foreach ($sort as $parameter) {
+					if (in_array($parameter, $modelName::$nonSortableColumns) === true) {
+						Exception::throwSingleException(
+							sprintf("Sorting request by parameter %s is not supported", $parameter), 0,
+							Response::HTTP_BAD_REQUEST
+						);
+					}
 					$isDesc    = starts_with($parameter, "-");
 					$direction = $isDesc ? 'desc' : 'asc';
 					if ($isDesc) {

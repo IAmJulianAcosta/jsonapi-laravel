@@ -58,7 +58,7 @@
 			$this->validateRequiredParameters();
 		}
 		
-		protected function validateRequiredParameters() {
+		public function validateRequiredParameters() {
 			$this->validatePresence($this->data, $this->errors, $this->meta);
 			$this->validateCoexistence($this->data, $this->errors);
 		}
