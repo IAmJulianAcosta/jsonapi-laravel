@@ -17,6 +17,7 @@
         }
     ],
     "require": {
+	    "php" : "~7.0",
 	    "laravel/framework": "5.3.*",
 	    "illuminate/auth": "5.3.*",
         "illuminate/database": "5.3.*",
@@ -31,10 +32,10 @@
     },
     "autoload": {
         "psr-0": {
-            "EchoIt\\JsonApi\\": "src/"
+            "IAmJulianAcosta\\JsonApi\\": "src/"
         },
         "psr-4": {
-            "EchoIt\\JsonApi\\Tests\\": "tests/"
+            "IAmJulianAcosta\\JsonApi\\Tests\\": "tests/"
         }
     }
 }
