@@ -89,11 +89,17 @@ abstract class Model extends BaseModel {
 	
 	/**
 	 * Defines the exposed relations that are visible if no specific relations are requested.
-	 * Also works as visible relations, if is not present in this array, won't be returned, even if requested.
 	 *
 	 * @var  array
 	 */
 	public static $defaultExposedRelations;
+	
+	/**
+	 * If is relation is not present in this array, won't be returned, even if requested.
+	 *
+	 * @var  array
+	 */
+	public static $visibleRelations;
 	
 	/**
 	 * Relations that will be returned by this model.
@@ -298,10 +304,10 @@ abstract class Model extends BaseModel {
 	 */
 	public function loadRelatedModels($requestedRelations = []) {
 		if (empty($requestedRelations) === true) {
-			$this->exposedRelations = static::$defaultExposedRelations;
+			$this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
 		}
 		else {
-			$this->exposedRelations = array_intersect($requestedRelations, static::$defaultExposedRelations);
+			$this->exposedRelations = array_intersect(static::$visibleRelations, $requestedRelations);
 		}
 		/** @var string $relation */
 		foreach ($this->exposedRelations as $relation) {
@@ -504,15 +510,19 @@ abstract class Model extends BaseModel {
 	}
 	
 	/**
-	 * Gets model's exposed relations. If not defined, will return $defaultExposedRelations
+	 * Gets model exposed relations.
 	 *
 	 * @return array
 	 */
 	public function getExposedRelations () {
-		if (empty($this->exposedRelations) === true) {
-			return static::$defaultExposedRelations;
-		}
 		return $this->exposedRelations;
+	}
+	
+	/**
+	 * @param array $exposedRelations
+	 */
+	public function setExposedRelations($exposedRelations) {
+		$this->exposedRelations = array_intersect(static::$visibleRelations, $exposedRelations);
 	}
 	
 	/**
