@@ -9,6 +9,7 @@
 	namespace IAmJulianAcosta\JsonApi\Exceptions;
 	
 	use Illuminate\Foundation\Exceptions\Handler as BaseHandler;
+	use Illuminate\Http\Response;
 	
 	class ExceptionHandler extends BaseHandler {
 		/**
@@ -20,12 +21,15 @@
 		 */
 		public function render($request, \Exception $exception) {
 			$caller = debug_backtrace()[1]['function'];
-			if ($caller === "handleException") {
-				if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception) {
-					$response = $exception->response();
-					return $response;
+			if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception) {
+				if ($caller === "renderHttpResponse") {
+					return new Response("",500);
 				}
-				return parent::render($request, $exception);
+				else {
+					$response = $exception->response();
+				}
+				return $response;
 			}
+			return parent::render($request, $exception);
 		}
 	}
