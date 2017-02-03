@@ -37,7 +37,11 @@
 			}
 		}
 		
-		public function guard(Request $request) {
-			return Auth::guard($request->getGuardType());
+		public function guard() {
+			/** @var \IAmJulianAcosta\JsonApi\Http\Request $request */
+			$request = $this->request;
+			$guardType = is_null($request) === false ? $request->getGuardType() : null;
+			
+			return Auth::guard($guardType);
 		}
 	}
