@@ -112,7 +112,9 @@
 		 * @param $data
 		 */
 		private function validateId($data) {
-			if ($this->request->getMethod() === 'POST' && isset($data['id']) === false) {
+			$method  = $this->request->getMethod();
+			$isPatch = $method === 'PATCH' || $method === 'PUT';
+			if ($isPatch === true && isset($data['id']) === false) {
 				Exception::throwSingleException('"id" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES,
 					Response::HTTP_BAD_REQUEST);
 			}
