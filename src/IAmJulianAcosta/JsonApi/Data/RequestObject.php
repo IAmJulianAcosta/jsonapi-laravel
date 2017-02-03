@@ -100,7 +100,7 @@
 					Response::HTTP_BAD_REQUEST
 				);
 			}
-			if ($data['type'] !== $type = Pluralizer::plural($this->dataType)) {
+			if ($this->request->isAuthRequest () === false && $data['type'] !== $type = Pluralizer::plural($this->dataType)) {
 				Exception::throwSingleException(
 					sprintf('"type" parameter is not valid. Expecting %s, %s given', $type, $data['type']),
 					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT
@@ -231,6 +231,5 @@
 		public function setRelationships($relationships) {
 			$this->relationships = $relationships;
 		}
-		
 		
 	}

@@ -96,6 +96,13 @@
 		protected $requestJsonApi;
 		
 		/**
+		 * If this is an auth controller
+		 *
+		 * @var bool
+		 */
+		protected static $isAuthController = false;
+		
+		/**
 		 * Controller constructor.
 		 *
 		 * @param Request $request
@@ -106,6 +113,7 @@
 			$request->checkRequestAccept();
 			$this->setResourceNameFromClassName();
 			$request->extractData();
+			$request->setAuthRequest(static::$isAuthController);
 			if ($request->shouldHaveContent() === true) {
 				$requestJsonApi = $this->requestJsonApi = $request->getJsonApiContent();
 				$dataType       = StringUtils::dasherizedResourceName($this->resourceName);
@@ -310,8 +318,8 @@
 				);
 			}
 			
-			StringUtils::normalizeAttributes($this->requestJsonApi->getAttributes ());
 			$attributes = $this->requestJsonApi->getAttributes ();
+			StringUtils::normalizeAttributes($attributes);
 			
 			/** @var Model $model */
 			$model = forward_static_call_array ([$modelName, 'createAndValidate'], [$attributes]);

@@ -21,6 +21,13 @@
 		use \Illuminate\Foundation\Auth\AuthenticatesUsers;
 		use ValidatesRequests;
 		
+		public function __construct(Request $request) {
+			if (empty(static::$isAuthController) || static::$isAuthController === false) {
+				throw new \LogicException("Auth controller subclasses must have defined isAuthController static property as true");
+			}
+			parent::__construct($request);
+		}
+		
 		/**
 		 * @param Request $request
 		 *

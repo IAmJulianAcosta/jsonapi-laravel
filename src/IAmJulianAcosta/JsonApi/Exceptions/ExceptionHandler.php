@@ -23,7 +23,7 @@
 			$caller = debug_backtrace()[1]['function'];
 			if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception) {
 				if ($caller === "renderHttpResponse") {
-					return new Response("",500);
+					return new Response("", 500);
 				}
 				else {
 					$response = $exception->response();

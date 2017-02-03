@@ -82,6 +82,11 @@
 		protected $guardType;
 		
 		/**
+		 * @var bool Is this request is an auth requeest.
+		 */
+		protected $isAuthRequest;
+		
+		/**
 		 * @var RequestObject
 		 */
 		protected $jsonApiContent;
@@ -361,5 +366,13 @@
 		 */
 		public function shouldHaveContent() {
 			return $this->getMethod() === "PATCH" || $this->getMethod() === "PUT" || $this->getMethod() === "POST";
+		}
+		
+		public function setAuthRequest ($isAuthRequest) {
+			$this->isAuthRequest = $isAuthRequest;
+		}
+		
+		public function isAuthRequest() {
+			return $this->isAuthRequest;
 		}
 	}
