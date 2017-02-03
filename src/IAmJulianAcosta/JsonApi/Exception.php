@@ -2,7 +2,7 @@
 
 use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 use IAmJulianAcosta\JsonApi\Data\MetaObject;
-use IAmJulianAcosta\JsonApi\Http\Controller;
+use IAmJulianAcosta\JsonApi\Routing\Controller;
 use IAmJulianAcosta\JsonApi\Http\ErrorResponse;
 use Illuminate\Support\Collection;
 

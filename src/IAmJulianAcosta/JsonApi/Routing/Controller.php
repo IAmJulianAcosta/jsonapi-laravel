@@ -1,6 +1,6 @@
 <?php
 
-	namespace IAmJulianAcosta\JsonApi\Http;
+	namespace IAmJulianAcosta\JsonApi\Routing;
 	
 	use IAmJulianAcosta\JsonApi\Data\LinkObject;
 	use IAmJulianAcosta\JsonApi\Data\LinksObject;
