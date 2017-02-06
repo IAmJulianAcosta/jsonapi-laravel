@@ -19,8 +19,8 @@
 			
 			if (is_null($user) === true) {
 				Exception::throwSingleException(
-					"Invalid API key or not provided", ErrorObject::UNAUTHORIZED_ACCESS_TOKEN_PROVIDED,
-					Response::HTTP_FORBIDDEN
+					"Invalid API key or not provided, you are not logged in",
+					ErrorObject::UNAUTHORIZED_ACCESS_TOKEN_PROVIDED, Response::HTTP_UNAUTHORIZED
 				);
 			}
 			
