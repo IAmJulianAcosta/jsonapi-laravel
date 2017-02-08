@@ -98,6 +98,8 @@
 		}
 		
 		/**
+		 * Converts an illuminate typed request to a JSON API request, throws exception if is not a JSON API request
+		 *
 		 * @param BaseRequest $request
 		 *
 		 * @return Request
