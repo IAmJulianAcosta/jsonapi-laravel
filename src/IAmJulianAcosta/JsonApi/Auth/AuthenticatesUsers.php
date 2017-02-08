@@ -7,6 +7,8 @@
 	use IAmJulianAcosta\JsonApi\Data\ResourceObject;
 	use IAmJulianAcosta\JsonApi\Data\TopLevelObject;
 	use IAmJulianAcosta\JsonApi\Exception;
+	use IAmJulianAcosta\JsonApi\Http\Request as JsonApiRequest;
+	use IAmJulianAcosta\JsonApi\Routing\Controller;
 	use Illuminate\Http\Request;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
@@ -22,10 +24,16 @@
 		use ValidatesRequests;
 		
 		public function __construct(Request $request) {
-			if (empty(static::$isAuthController) || static::$isAuthController === false) {
-				throw new \LogicException("Auth controller subclasses must have defined isAuthController static property as true");
+			if (is_subclass_of(static::class, Controller::class) === true) {
+				if (empty(static::$isAuthController) || static::$isAuthController === false) {
+					throw new \LogicException("Auth controller subclasses must have defined isAuthController static property as true");
+				}
+				parent::__construct($request);
 			}
-			parent::__construct($request);
+			else {
+				throw new \LogicException("AuthenticatesUsers trait must be used with JSON API controller, please 
+				make your Auth controller a subclass of IAmJulianAcosta\\JsonApi\\Routing\\Controller");
+			}
 		}
 		
 		/**
@@ -197,16 +205,17 @@
 		 * @return mixed
 		 */
 		protected function getAttributes(Request $request) {
-			$attributes = $request->all() ["data"]["attributes"];
+			$request = JsonApiRequest::convertIlluminateRequestToJsonApiRequest($request);
 			
-			return $attributes;
+			return $request->getJsonApiContent()->getAttributes();
 		}
 		
 		public function guard() {
 			/** @var \IAmJulianAcosta\JsonApi\Http\Request $request */
-			$request = $this->request;
+			$request = JsonApiRequest::convertIlluminateRequestToJsonApiRequest($this->request);
 			$guardType = is_null($request) === false ? $request->getGuardType() : null;
 			
 			return Auth::guard($guardType);
 		}
+		
 	}

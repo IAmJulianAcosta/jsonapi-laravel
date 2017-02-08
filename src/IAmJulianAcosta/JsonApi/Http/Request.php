@@ -97,6 +97,20 @@
 			parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
 		}
 		
+		/**
+		 * @param BaseRequest $request
+		 *
+		 * @return Request
+		 * @throws \LogicException
+		 */
+		public static function convertIlluminateRequestToJsonApiRequest(BaseRequest $request) {
+			if ($request instanceof \IAmJulianAcosta\JsonApi\Http\Request) {
+				return $request;
+			} else {
+				throw new \LogicException("You must configure your laravel installation to use JSON API request");
+			}
+		}
+		
 		public function duplicate(array $query = null, array $request = null, array $attributes = null,
 			array $cookies = null, array $files = null, array $server = null
 		) {
