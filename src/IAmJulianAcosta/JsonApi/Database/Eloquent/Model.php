@@ -272,7 +272,7 @@ abstract class Model extends BaseModel {
 				}
 				else {
 					Exception::throwSingleException(
-						"Relationship $relationshipName is not invalid", ErrorObject::INVALID_ATTRIBUTES,
+						"Relationship $relationshipName is not valid", ErrorObject::INVALID_ATTRIBUTES,
 						Response::HTTP_BAD_REQUEST
 					);
 				}
