@@ -107,9 +107,17 @@
 			else if ($relationModels instanceof Collection === true) {
 				/** @var Model $relationModel */
 				foreach ($relationModels as $relationModel) {
-					static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
-					static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
+					if ($relationModels instanceof Model === true) {
+						static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
+						static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
+					}
+					else {
+						Model::throwInheritanceException(get_class($relationModel));
+					}
 				}
+			}
+			else {
+				Model::throwInheritanceException(get_class($relationModels));
 			}
 			
 			return $models;
