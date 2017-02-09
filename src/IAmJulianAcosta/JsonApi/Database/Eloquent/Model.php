@@ -536,7 +536,9 @@ abstract class Model extends BaseModel {
 		else {
 			$reflectionClass = new \ReflectionClass($this);
 			
-			return $this->resourceType =  StringUtils::dasherizedResourceName($reflectionClass->getShortName ());
+			return $this->resourceType = Pluralizer::plural(
+				StringUtils::dasherizedResourceName($reflectionClass->getShortName ())
+			);
 		}
 	}
 	
