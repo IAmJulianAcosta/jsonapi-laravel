@@ -107,7 +107,7 @@
 			else if ($relationModels instanceof Collection === true) {
 				/** @var Model $relationModel */
 				foreach ($relationModels as $relationModel) {
-					if ($relationModels instanceof Model === true) {
+					if ($relationModels instanceof Model === false) {
 						static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
 						static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
 					}
