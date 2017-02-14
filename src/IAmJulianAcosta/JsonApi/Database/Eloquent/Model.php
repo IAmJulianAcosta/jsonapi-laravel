@@ -355,7 +355,7 @@ abstract class Model extends BaseModel {
 		//We suppose that every attribute that ends in '_id' is a foreign key, but if convention is not
 		//followed, an array with foreign keys can be used to store them
 		foreach ($attributes as $attributeKey => $attribute) {
-			if (ends_with($attributeKey, '_id') === true) {
+			if (ends_with($attributeKey, '_id') === true || ends_with($attributeKey, '-id') === true) {
 				$this->addForeignKey($attributeKey);
 			}
 		}

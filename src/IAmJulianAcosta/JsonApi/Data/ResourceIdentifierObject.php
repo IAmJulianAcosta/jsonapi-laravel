@@ -29,6 +29,8 @@
 		protected $type;
 		
 		public function __construct(Model $model) {
+			//First remove all unwanted keys
+			$model->filterForeignKeys();
 			$this->model = $model;
 			$this->setParameters();
 			$this->validateRequiredParameters();
