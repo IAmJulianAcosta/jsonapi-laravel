@@ -131,7 +131,7 @@ abstract class Model extends BaseModel {
 		foreach (static::$requiredClassProperties as $property) {
 			$className = get_class(new static ());
 			$propertyIsSet = isset ($className::$$property) === false;
-			if ($propertyIsSet) {
+			if ($propertyIsSet === true) {
 				throw new \LogicException("Static property $property must be defined on $className model");
 			}
 		}
@@ -179,21 +179,21 @@ abstract class Model extends BaseModel {
 		if (empty($relationships) === false) {
 			//Iterate all the relationships object
 			foreach ($relationships as $relationshipName => $relationship) {
-				if (is_array ($relationship)) {
+				if (is_array ($relationship) === true) {
 					//If the relationship object is an array
-					if (array_key_exists ('data', $relationship)) {
+					if (array_key_exists ('data', $relationship) === true) {
 						//If the relationship has a data object
 						$relationshipData = $relationship ['data'];
-						if (is_array ($relationshipData)) {
+						if (is_array ($relationshipData) === true) {
 							//One to one
-							if (array_key_exists ('type', $relationshipData)) {
+							if (array_key_exists ('type', $relationshipData) === true) {
 								$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
 							}
 							//One to many
 							else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
 								$relationshipDataItems = $relationshipData;
 								foreach ($relationshipDataItems as $relationshipDataItem) {
-									if (array_key_exists ('type', $relationshipDataItem)) {
+									if (array_key_exists ('type', $relationshipDataItem) === true) {
 										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
 									}
 									else {
@@ -255,9 +255,9 @@ abstract class Model extends BaseModel {
 			/** @var $relationshipModelName Model */
 			$newRelationshipModel = $relationshipModelName::find ($relationshipId);
 			
-			if ($newRelationshipModel) {
+			if (empty($newRelationshipModel) === false) {
 				//Relationship exists in model
-				if (method_exists ($this, $relationshipName)) {
+				if (method_exists ($this, $relationshipName) === true) {
 					/** @var Relation $relationship */
 					$relationship = $this->$relationshipName ();
 					//If creating, only update belongs to before saving. If not creating (updating), update
@@ -335,10 +335,10 @@ abstract class Model extends BaseModel {
 		if (empty($relations) === false) {
 			/** @var Model $nestedModel */
 			$nestedModel = $this->{$relation};
-			if ($nestedModel instanceof Model) {
+			if ($nestedModel instanceof Model === true) {
 				$nestedModel->loadRelatedModel($relations);
 			}
-			else if ($nestedModel instanceof Collection) {
+			else if ($nestedModel instanceof Collection === true) {
 				$nestedModels = $nestedModel;
 				foreach ($nestedModels as $nestedModel) {
 					$nestedModel->loadRelatedModel($relations);
@@ -498,7 +498,6 @@ abstract class Model extends BaseModel {
 	public function getPrimaryKey () {
 		return $this->primaryKey;
 	}
-	
 	
 	/**
 	 * Returns validation errors if any

@@ -56,7 +56,7 @@
 		protected function clearUserDataFromStorage() {
 			$this->session->remove($this->getName());
 			
-			if (! is_null($this->getRecaller())) {
+			if (is_null($this->getRecaller()) === false) {
 				$this->getCookieJar()->queue($this->forgetRecaller());
 			}
 		}

@@ -170,7 +170,7 @@
 			$model = $this->handleRequest ();
 			$this->afterHandleRequest($model);
 
-			if (is_null ($model)) {
+			if (is_null ($model) === true) {
 				Exception::throwSingleException(
 					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
 				);
@@ -213,7 +213,7 @@
 		protected function handleGet () {
 			$id = $this->request->getId();
 			
-			if (empty($id)) {
+			if (empty($id) === true) {
 				$models = $this->handleGetAll ();
 				return $models;
 			}
@@ -381,7 +381,7 @@
 			
 			$model->verifyIfModelChanged ($originalAttributes);
 
-			if ($model->isChanged()) {
+			if ($model->isChanged() === true) {
 				CacheManager::clearCache (
 					StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model)
 				;
@@ -410,7 +410,7 @@
 			$this->beforeHandleDelete ();
 			$this->requestType = static::DELETE;
 			
-			if (empty($this->request->getId())) {
+			if (empty($this->request->getId()) === true) {
 				Exception::throwSingleException(
 					'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
 				);
@@ -422,7 +422,7 @@
 			
 			$model->validateUserDeletePermissions ($this->request, Auth::user ());
 			
-			if (is_null ($model)) {
+			if (is_null ($model) === true) {
 				return null;
 			}
 			
@@ -486,7 +486,7 @@
 		 */
 		private function generateCacheableResponse ($models) {
 			$id = $this->request->getId();
-			if (empty($id)) {
+			if (empty($id) === true) {
 				$key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
 			}
 			else {
@@ -529,15 +529,15 @@
 					]
 				)
 			);
-			if ($models instanceof LengthAwarePaginator) {
+			if ($models instanceof LengthAwarePaginator === true) {
 				$paginator = $models;
 				$modelsCollection = new Collection($paginator->items ());
 				$links = $links->addLinks($this->getPaginationLinks($paginator));
 			}
-			else if ($models instanceof Collection) {
+			else if ($models instanceof Collection === true) {
 				$modelsCollection = $models;
 			}
-			else if ($models instanceof Model) {
+			else if ($models instanceof Model === true) {
 				$modelsCollection = new Collection([$models]);
 			}
 			else {
@@ -552,8 +552,8 @@
 			$included = ModelsUtils::getIncludedModels ($modelsCollection, $this->request);
 			
 			//If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
-			if ($models instanceof Model) {
 				$resourceObject = new ResourceObject($models);
+			if ($models instanceof Model === true) {
 			}
 			else {
 				$resourceObject = $modelsCollection->map(
@@ -626,7 +626,7 @@
 					return Response::HTTP_CREATED;
 				case 'PATCH':
 				case 'PUT':
-					if ($model instanceof Model && $model->isChanged()) {
+					if ($model instanceof Model === true && $model->isChanged() === true) {
 						return Response::HTTP_OK;
 					}
 				case 'DELETE':
@@ -780,7 +780,7 @@
 		 * Method that runs after generating a POST response. Should be implemented by child classes.
 		 */
 		protected function afterGeneratePostResponse ($model, Response $response) {
-			if ($model instanceof Model) {
+			if ($model instanceof Model === true) {
 				$response->header('Location', $model->getModelURL());
 			}
 		}

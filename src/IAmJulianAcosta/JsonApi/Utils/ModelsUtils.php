@@ -28,7 +28,7 @@
 		public static function getIncludedModels($models, Request $request) {
 			$includedModels = new Collection();
 			if ($models instanceof Collection === false) {
-				if (is_array($models)) {
+				if (is_array($models) === true) {
 					$models = new Collection($models);
 				}
 				else {
@@ -78,7 +78,7 @@
 		public static function getModelsForRelation (
 			Model $model, $relationKey, Collection $requestAllowedFields = null, Collection &$models = null
 		) {
-			if (is_null($models)) {
+			if (is_null($models) === true) {
 				$models = new Collection();
 			}
 			
