@@ -13,7 +13,7 @@
 	use Illuminate\Support\Collection;
 	use JsonSerializable;
 	
-	abstract class ResponseObject implements JsonSerializable {
+	abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializable {
 		/**
 		 * Adds an object property to array if not empty
 		 *
@@ -67,7 +67,7 @@
 		 * @return bool
 		 */
 		protected function checkEmpty ($object) {
-			if ($object instanceof JSONAPIDataObject === true) {
+			if ($object instanceof ResponseObject === true) {
 				return $object->isEmpty ();
 			}
 			else if ($object instanceof Collection) {
