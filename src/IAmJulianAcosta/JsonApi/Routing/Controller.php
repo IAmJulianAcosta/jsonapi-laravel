@@ -548,7 +548,7 @@
 					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE);
 			}
 			
-			if ($loadRelations) {
+			if ($loadRelations === true) {
 				$this->loadRelatedModels($modelsCollection);
 			}
 			
