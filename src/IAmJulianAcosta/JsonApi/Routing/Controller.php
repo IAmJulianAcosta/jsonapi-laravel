@@ -555,8 +555,8 @@
 			$included = ModelsUtils::getIncludedModels ($modelsCollection, $this->request);
 			
 			//If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
-				$resourceObject = new ResourceObject($models);
 			if ($models instanceof Model === true) {
+				$resourceObject = new ResourceObject($modelsCollection->get(0));
 			}
 			else {
 				$resourceObject = $modelsCollection->map(
