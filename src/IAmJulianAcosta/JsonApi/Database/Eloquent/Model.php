@@ -451,6 +451,18 @@ abstract class Model extends BaseModel {
 	public function validateUserDeletePermissions (Request $request, $user) {
 		
 	}
+
+    public function validateOnCreate (Request $request) {
+		
+    }
+	
+	public function validateOnUpdate (Request $request) {
+		
+	}
+	
+	public function validateOnDelete (Request $request) {
+		
+	}
 	
 	/*
 	 * ========================================
