@@ -147,8 +147,9 @@ abstract class Model extends BaseModel {
 	
 	/**
 	 * @param array $attributes
+	 * @param bool  $creatingModel
 	 *
-	 * @throws ValidationException
+	 * @return Validator
 	 */
 	public static function validateAttributes (array $attributes, $creatingModel = false) {
 		if ($creatingModel === true) {
@@ -157,10 +158,8 @@ abstract class Model extends BaseModel {
 		else {
 			$validationRules = static::$validationRulesOnUpdate;
 		}
-		/** @var \IAmJulianAcosta\JsonApi\Validation\Validator $validator */
-		$validator       = ValidatorFacade::make($attributes, $validationRules);
 		
-		return $validator;
+		return ValidatorFacade::make($attributes, $validationRules);
 	}
 	
 	public function validate ($creatingModel = false) {
@@ -420,6 +419,11 @@ abstract class Model extends BaseModel {
 		return $this->getFormattedTimestamp ($date);
 	}
 	
+	/**
+	 * @param $date
+	 *
+	 * @return null|string
+	 */
 	private function getFormattedTimestamp ($date) {
 		if (is_null($date) === false) {
 			return Carbon::createFromFormat("Y-m-d H:i:s", $date)->format('c');
