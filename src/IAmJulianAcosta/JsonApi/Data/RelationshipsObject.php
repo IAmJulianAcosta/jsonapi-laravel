@@ -94,7 +94,7 @@
 						$resourceType = $firstItem->getResourceType ();
 						
 						//Generate index of array to add
-						$index = Pluralizer::plural (s ($resourceType)->dasherize ()->__toString ());
+						$index = $relationName;
 						
 						//The relationName to add is an array with a data key that is itself an array
 						$relationData = [];
@@ -124,7 +124,7 @@
 					$resourceType = $model->getResourceType ();
 					
 					//Generate index of array to add
-					$index = s($resourceType)->dasherize()->__toString();
+					$index = $relationName;
 					
 					$relations[$index] = [
 						'data' => $this->generateRelationArrayInformation($model, $resourceType)
