@@ -276,7 +276,7 @@ abstract class Model extends BaseModel {
 			/** @var Relation $relationship */
 			$relationship = $this->$relationshipName ();
 			
-			$newRelationshipModel = $this->getRelationshipModel($relationshipId);
+			$newRelationshipModel = $this->getRelationshipModel($relationshipId, $relationshipModelName, $type);
 			//If creating, only update belongs to before saving. If not creating (updating), update
 			if ($this->shouldUpdateBelongsTo($creating, $relationship)) {
 				/** @var BelongsTo $relationship */
@@ -311,7 +311,7 @@ abstract class Model extends BaseModel {
 	 *
 	 * @return bool
 	 */
-	protected function shouldUpdatePolymorphic($creating, $isMorphOneOrMany) {
+	protected function shouldUpdatePolymorphic($creating, $relationship) {
 		$isMorphOneOrMany = $relationship instanceof MorphOneOrMany;
 		return $isMorphOneOrMany && (($creating === true && $this->exists) || $creating === false);
 	}
@@ -325,7 +325,7 @@ abstract class Model extends BaseModel {
 		}
 	}
 	
-	protected function getRelationshipModel ($modelId) {
+	protected function getRelationshipModel ($relationshipId, $relationshipModelName, $type) {
 		$newRelationshipModel = $relationshipModelName::find($relationshipId);
 		
 		if (empty($newRelationshipModel) === true) {
