@@ -405,16 +405,20 @@
 		 */
 		protected function initializePage() {
 			$this->page       = $page = $this->input('page') ? $this->input('page') : [];
-			$this->pageSize   = null;
-			$this->pageNumber = null;
 			
-			if (empty($page) === false) {
-				if (is_array($page) === true && empty($page['size']) === false && empty($page['number']) === false) {
-					$this->pageSize   = (integer)$page['size'];
-					$this->pageNumber = (integer)$page['number'];
-				} else {
-					Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
-				}
+			$this->checkIfPageIsValid($page);
+			
+			$this->pageSize   = (integer)$page['size'];
+			$this->pageNumber = (integer)$page['number'];
+		}
+		
+		/**
+		 * @param $page
+		 */
+		protected function checkIfPageIsValid($page) {
+			if (is_array($page) === false || empty($page['size']) === true || empty($page['number']) === true) {
+				Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
 			}
 		}
+		
 	}
