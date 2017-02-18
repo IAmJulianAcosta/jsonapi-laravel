@@ -19,11 +19,12 @@
 			
 			forward_static_call_array ([$this->fullModelName, 'validateUserGetSinglePermissions'], [$this->request, \Auth::user(), $id]);
 			
-			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
+			$key             = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
 			
-			$model = \Cache::remember(
+			$controllerClass = get_class($this->controller);
+			$model           = \Cache::remember(
 				$key,
-				get_class($this->controller)::$cacheTime,
+				$controllerClass::$cacheTime,
 				function () {
 					$query = $this->generateSelectQuery ();
 					

@@ -31,7 +31,7 @@
 			
 			$this->fillModelAttributes($model, $modelName);
 			
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, false);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->controller->getModelsNamespace(), false);
 			
 			$this->controller->beforeSaveModel ($model);
 			$this->saveModel($model);

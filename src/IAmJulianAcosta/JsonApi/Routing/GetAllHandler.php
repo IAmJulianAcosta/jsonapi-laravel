@@ -27,8 +27,10 @@
 			forward_static_call_array ([$this->fullModelName, 'validateUserGetAllPermissions'], [$this->request, \Auth::user()]);
 			
 			$key = CacheManager::getQueryCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
+			$controllerClass = get_class($this->controller);
 			$models = \Cache::remember (
-				$key, static::$cacheTime,
+				$key,
+				$controllerClass::$cacheTime,
 				function () {
 					$query = $this->generateSelectQuery ();
 					

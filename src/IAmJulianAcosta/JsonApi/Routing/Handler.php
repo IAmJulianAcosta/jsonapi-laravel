@@ -33,6 +33,11 @@
 		 */
 		protected $requestJsonApi;
 		
+		/**
+		 * @var string
+		 */
+		protected $resourceName;
+		
 		public function __construct(Controller $controller) {
 			$this->controller = $controller;
 			$this->fullModelName = $controller->getFullModelName();
@@ -41,5 +46,5 @@
 			$this->resourceName = $controller->getResourceName();
 		}
 		
-		public abstract function handle ($id = null);
+		abstract public function handle ($id = null);
 	}

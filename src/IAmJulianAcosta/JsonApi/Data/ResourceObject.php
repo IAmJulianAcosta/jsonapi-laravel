@@ -56,7 +56,7 @@
 		}
 		
 		/**
-		 * @param array $attributes
+		 * @param AttributesObject $attributes
 		 */
 		public function setAttributes($attributes) {
 			$this->attributes = $attributes;
@@ -84,7 +84,7 @@
 		}
 		
 		/**
-		 * @param array $relationships
+		 * @param RelationshipsObject $relationships
 		 */
 		public function setRelationships($relationships) {
 			$this->relationships = $relationships;
