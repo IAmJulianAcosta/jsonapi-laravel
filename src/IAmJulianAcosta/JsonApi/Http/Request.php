@@ -90,6 +90,20 @@
 		 * @var RequestObject
 		 */
 		protected $jsonApiContent;
+	
+		static $formats = [
+			'html' => array('text/html', 'application/xhtml+xml'),
+			'txt' => array('text/plain'),
+			'js' => array('application/javascript', 'application/x-javascript', 'text/javascript'),
+			'css' => array('text/css'),
+			'json' => array('application/json', 'application/x-json'),
+			'xml' => array('text/xml', 'application/xml', 'application/x-xml'),
+			'rdf' => array('application/rdf+xml'),
+			'atom' => array('application/atom+xml'),
+			'rss' => array('application/rss+xml'),
+			'form' => array('application/x-www-form-urlencoded'),
+			'jsonapi' => array('application/vnd.api+json')
+		];
 		
 		public function __construct(array $query = [], array $request = [], array $attributes = [], array $cookies = [],
 			array $files = [], array $server = [], $content = null
@@ -150,22 +164,6 @@
 			foreach ($this->input('fields') as $model => $fields) {
 				$this->fields->put($model, array_filter(explode(',', $fields)));
 			}
-		}
-		
-		protected static function initializeFormats() {
-			static::$formats = array(
-				'html' => array('text/html', 'application/xhtml+xml'),
-				'txt' => array('text/plain'),
-				'js' => array('application/javascript', 'application/x-javascript', 'text/javascript'),
-				'css' => array('text/css'),
-				'json' => array('application/json', 'application/x-json'),
-				'xml' => array('text/xml', 'application/xml', 'application/x-xml'),
-				'rdf' => array('application/rdf+xml'),
-				'atom' => array('application/atom+xml'),
-				'rss' => array('application/rss+xml'),
-				'form' => array('application/x-www-form-urlencoded'),
-				'jsonapi' => array('application/vnd.api+json')
-			);
 		}
 		
 		protected function checkRequestContentType () {
