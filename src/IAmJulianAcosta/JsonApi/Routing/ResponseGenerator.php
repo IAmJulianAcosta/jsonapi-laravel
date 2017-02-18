@@ -116,7 +116,7 @@
 			$topLevelObject = new TopLevelObject($resourceObject, null, null, $included, $links);
 			
 			$response = new Response($topLevelObject,
-				static::successfulHttpStatusCode ($this->request->getMethod(), $topLevelObject, $models));
+				StatusCodeGenerator::successfulHttpStatusCode ($this->request->getMethod(), $topLevelObject, $models));
 			
 			return $response;
 		}
@@ -206,42 +206,6 @@
 					}
 				);
 			}
-		}
-		
-		/**
-		 * A method for getting the proper HTTP status code for a successful request
-		 *
-		 * @param  string $method "PUT", "POST", "DELETE" or "GET"
-		 * @param  Model|Collection|LengthAwarePaginator|null $model The model that a PUT request was executed against
-		 * @return int
-		 */
-		public static function successfulHttpStatusCode($method, TopLevelObject $topLevelObject, $model = null) {
-			// if we did a put request, we need to ensure that the model wasn't
-			// changed in other ways than those specified by the request
-			//     Ref: http://jsonapi.org/format/#crud-updating-responses-200
-			
-			switch ($method) {
-				case 'POST':
-					return Response::HTTP_CREATED;
-				case 'PATCH':
-				case 'PUT':
-					if ($model instanceof Model === true && $model->isChanged() === true) {
-						return Response::HTTP_OK;
-					}
-				case 'DELETE':
-					if (empty($topLevelObject->getMeta()) === true) {
-						return Response::HTTP_NO_CONTENT;
-					}
-					else {
-						return Response::HTTP_OK;
-					}
-				case 'GET':
-					return Response::HTTP_OK;
-			}
-			
-			// Code shouldn't reach this point, but if it does we assume that the
-			// client has made a bad request.
-			return Response::HTTP_BAD_REQUEST;
 		}
 		
 	}
