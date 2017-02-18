@@ -76,8 +76,8 @@
 			$this->data = $data = $content['data'];
 			$this->id = array_key_exists('id', $data) ? $data['id'] : null;
 			$this->type = array_key_exists('type', $data) ? $data['type'] : null;
-			$this->attributes = array_key_exists('attributes', $data) ? $data['attributes'] : null;
-			$this->relationships = array_key_exists('relationships', $data) ? $data['relationships'] : null;
+			$this->attributes = array_key_exists('attributes', $data) ? $data['attributes'] : [];
+			$this->relationships = array_key_exists('relationships', $data) ? $data['relationships'] : [];
 		}
 		
 		/**
