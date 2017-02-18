@@ -14,7 +14,6 @@
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Database\Eloquent\Relations\Pivot;
 	use Illuminate\Support\Pluralizer;
-	use function Stringy\create as s;
 	
 	class RelationshipsObject extends ResponseObject {
 		/**
