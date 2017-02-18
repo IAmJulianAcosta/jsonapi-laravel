@@ -184,7 +184,7 @@ abstract class Model extends BaseModel {
 				//If the relationship has a data object
 				$relationshipData = $relationship ['data'];
 				if (is_array ($relationshipData) === true) {
-					
+					return true;
 				}
 				else if (is_null ($relationshipData) === false) {
 					//If the data object is not array or null (invalid)
