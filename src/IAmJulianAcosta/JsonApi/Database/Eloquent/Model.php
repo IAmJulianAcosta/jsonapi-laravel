@@ -222,6 +222,7 @@ abstract class Model extends BaseModel {
 			//Iterate all the relationships object
 			foreach ($relationships as $relationshipName => $relationship) {
 				if ($this->validateRelationship ($relationship)) {
+					$relationshipData = $relationship ['data'];
 					//One to one
 					if (array_key_exists ('type', $relationshipData) === true) {
 						$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
