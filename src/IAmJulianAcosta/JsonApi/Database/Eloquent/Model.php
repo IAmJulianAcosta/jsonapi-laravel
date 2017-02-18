@@ -137,12 +137,18 @@ abstract class Model extends BaseModel {
 		}
 	}
 	
-	public static function createAndValidate (array $attributes = []) {
+	public static function validateAttributesOnCreate(array $attributes = []) {
+		$validator = static::validateAttributes($attributes, false);
+		if ($validator->fails() === true) {
+			throw new ValidationException($validator->validationErrors());
+		}
+	}
+	
+	public static function validateAttributesOnUpdate(array $attributes = []) {
 		$validator = static::validateAttributes($attributes, true);
 		if ($validator->fails() === true) {
 			throw new ValidationException($validator->validationErrors());
 		}
-		return new static($attributes);
 	}
 	
 	/**
@@ -213,7 +219,7 @@ abstract class Model extends BaseModel {
 						else if (is_null ($relationshipData) === false) {
 							//If the data object is not array or null (invalid)
 							Exception::throwSingleException(
-								'Relationship "data" object must be an array or null', ErrorObject::INVALID_ATTRIBUTES,
+								'Relationship "data" object must be an array', ErrorObject::INVALID_ATTRIBUTES,
 								Response::HTTP_BAD_REQUEST
 							);
 						}

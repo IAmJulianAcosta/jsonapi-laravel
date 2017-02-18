@@ -123,14 +123,19 @@
 			}
 		}
 		
+		//TODO breaking changes
+		public function initializeModelNamespaces ($modelsNamespace) {
+			$this->setModelsNamespace($modelsNamespace);
+			$this->generateModelName ();
+			$this->checkModelInheritance();
+			forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
+		}
+				
 		/**
 		 * @param string $modelsNamespace
 		 */
 		public function setModelsNamespace($modelsNamespace) {
 			$this->modelsNamespace = $modelsNamespace;
-			$this->generateModelName ();
-			$this->checkModelInheritance();
-			forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
 		}
 		
 		/**
@@ -142,6 +147,9 @@
 			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}
 		
+		/**
+		 * Check if this model inherits from JsonAPI Model
+		 */
 		protected function checkModelInheritance () {
 			if (is_subclass_of($this->fullModelName, Model::class) === false) {
 				Model::throwInheritanceException($this->fullModelName);
@@ -156,45 +164,42 @@
 		 */
 		public function fulfillRequest () {
 			$this->beforeFulfillRequest();
-			$httpMethod = $this->request->getMethod ();
-
-			if ($this->supportsMethod ($httpMethod) === false) {
-				Exception::throwSingleException (
-					'Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED, Response::HTTP_METHOD_NOT_ALLOWED,
-					static::ERROR_SCOPE
-				);
-			}
+			
+			$this->checkIfMethodIsSupported();
 			
 			//Executes the request
 			$this->beforeHandleRequest();
 			$model = $this->handleRequest ();
 			$this->afterHandleRequest($model);
-
-			if (is_null ($model) === true) {
-				Exception::throwSingleException(
-					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
-				);
-			}
+			
+			$this->checkIfModelIsInvalid($model);
 
 			$this->beforeGenerateResponse($model);
-			if ($httpMethod === 'GET') {
-				$response = $this->generateCacheableResponse ($model);
-			}
-			else {
-				$response = $this->generateNonCacheableResponse ($model);
-			}
+			$respnse = $this->generateAdequateResponse($model);
 			$this->afterGenerateResponse($model, $response);
 			return $response;
 		}
 		
 		/**
-		 * Check whether a method is supported for a model.
+		 * Check whether a method is supported for a model. If not supported, throws and exception
 		 *
 		 * @param  string $method HTTP method
-		 * @return boolean
+		 * @throws Exception
 		 */
-		public function supportsMethod($method) {
-			return in_array(s($method)->toLowerCase (), $this->supportedMethods);
+		private function checkIfMethodIsSupported() {
+			$httpMethod = $this->request->getMethod ();
+			if (in_array(s($method)->toLowerCase (), $this->supportedMethods) === false) {
+				Exception::throwSingleException('Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED,
+					Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE);
+			}
+		}
+		
+		private function checkIfModelIsInvalid ($model) {
+			if (is_null ($model) === true) {
+				Exception::throwSingleException(
+					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
+				);
+			}
 		}
 		
 		/**
@@ -281,12 +286,13 @@
 					catch (QueryException $exception) {
 						throw new Exception(
 							new Collection(
-								new SqlError ('Database error', ErrorObject::DATABASE_ERROR,
-									Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
-								)
+								[
+									new SqlError ('Database error', ErrorObject::DATABASE_ERROR,
+										Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
+									)
+							    ]
 							)
 						);
-						
 					}
 					
 					$this->afterModelsQueried ($model);
@@ -311,24 +317,15 @@
 			
 			$modelName = $this->fullModelName;
 			
-			if (empty($this->requestJsonApi->getId ()) === false) {
-				Exception::throwSingleException(
-					"Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
-					Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
-				);
-			}
+			$this->checkIfClientGeneratedIdWasSent ();
 			
 			$attributes = $this->requestJsonApi->getAttributes ();
 			StringUtils::normalizeAttributes($attributes);
 			
 			/** @var Model $model */
-			$model = forward_static_call_array ([$modelName, 'createAndValidate'], [$attributes]);
-			if (empty($model) === true) {
-				Exception::throwSingleException(
-					'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-					static::ERROR_SCOPE
-				);
-			}
+			forward_static_call_array ([$modelName, 'validateAttributesOnCreate'], [$attributes]);
+			$model = new $modelName([$attributes]);
+			$this->checkIfEmptyModelWasCreated();
 			
 			$model->validateUserCreatePermissions ($this->request, Auth::user ());
 			$model->validateOnCreate ($this->request);
@@ -346,6 +343,24 @@
 			$this->afterHandlePost ($model);
 
 			return $model;
+		}
+		
+		protected function checkIfClientGeneratedIdWasSent () {
+			if (empty($this->requestJsonApi->getId ()) === false) {
+				Exception::throwSingleException(
+					"Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
+					Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
+				);
+			}
+		}
+		
+		protected function checkIfEmptyModelWasCreated () {
+			if (empty($model) === true) {
+				Exception::throwSingleException(
+					'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
+					static::ERROR_SCOPE
+				);
+			}
 		}
 		
 		/**
@@ -367,13 +382,7 @@
 			
 			$originalAttributes = $model->getOriginal ();
 			
-			$attributes = $this->requestJsonApi->getAttributes();
-			if (empty ($attributes) === false) {
-				StringUtils::normalizeAttributes($attributes);
-				
-				forward_static_call_array ([$modelName, 'validateAttributes'], [$attributes]);
-				$model->fill ($attributes);
-			}
+			$this->fillModelAttributes($model, $modelName);
 
 			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, false);
 
@@ -383,15 +392,27 @@
 			
 			$model->verifyIfModelChanged ($originalAttributes);
 
-			if ($model->isChanged() === true) {
-				CacheManager::clearCache (
-					StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model)
-				;
-			}
+			$this->clearCacheIfModelChanged();
 			
 			$this->afterHandlePatch ($model);
 			
 			return $model;
+		}
+		
+		protected function clearCacheIfModelChanged () {
+			if ($model->isChanged() === true) {
+				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model);
+			}
+		}
+		
+		protected function fillModelAttributes ($model, $modelName) {
+			$attributes = $this->requestJsonApi->getAttributes();
+			if (empty ($attributes) === false) {
+				StringUtils::normalizeAttributes($attributes);
+				
+				forward_static_call_array ([$modelName, 'validateAttributesOnUpdate'], [$attributes]);
+				$model->fill ($attributes);
+			}
 		}
 		
 		/**
@@ -411,12 +432,6 @@
 		protected function handleDelete () {
 			$this->beforeHandleDelete ();
 			$this->requestType = static::DELETE;
-			
-			if (empty($this->request->getId()) === true) {
-				Exception::throwSingleException(
-					'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-				);
-			}
 			
 			$modelName = $this->fullModelName;
 			
@@ -443,8 +458,9 @@
 		 */
 		protected function tryToFindModel($modelName) {
 			try {
-				/** @var Model $model */
 				$id    = $this->request->getId();
+				$this->validateIfIdIsPresentInRequest($id);
+				/** @var Model $model */
 				$model = $modelName::findOrFail($id);
 				
 				return $model;
@@ -457,6 +473,14 @@
 			}
 		}
 		
+		protected function validateIfIdIsPresentInRequest ($id) {
+			if (empty($id) === true) {
+				Exception::throwSingleException(
+					'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
+				);
+			}
+		}
+		
 		/**
 		 * @param $model
 		 *
@@ -465,19 +489,31 @@
 		protected function saveModel(Model $model) {
 			try {
 				$model->saveOrFail();
-			} catch (QueryException $exception) {
+			}
+			catch (QueryException $exception) {
 				throw new Exception(
 					new Collection(
 						new SqlError ('Database error', ErrorObject::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
 							$exception, static::ERROR_SCOPE)
 					)
 				);
-			} catch (\Exception $exception) {
+			}
+			catch (\Exception $exception) {
 				Exception::throwSingleException(
 					'An unknown error occurred saving the record', ErrorObject::UNKNOWN_ERROR,
 					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
 				);
 			}
+		}
+		
+		protected function generateAdequateResponse ($models) {
+			if ($this->request->getMethod () === 'GET') {
+				$response = $this->generateCacheableResponse ($model);
+			}
+			else {
+				$response = $this->generateNonCacheableResponse ($model);
+			}
+			return $response;
 		}
 		
 		/**
@@ -523,7 +559,6 @@
 		 * @return Response
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
-			$links = null;
 			$modelsCollection = new Collection();
 			$links = new LinksObject(
 				new Collection(
@@ -532,6 +567,24 @@
 					]
 				)
 			);
+			
+			$modelsCollection = $this->getModelsAsCollection($model);
+			
+			if ($loadRelations === true) {
+				$this->loadRelatedModels($modelsCollection);
+			}
+			
+			$included = ModelsUtils::getIncludedModels ($modelsCollection, $this->request);
+			$resourceObject = $this->generateResourceObject($models, $modelsCollection);
+			$topLevelObject = new TopLevelObject($resourceObject, null, null, $included, $links);
+			
+			$response = new Response($topLevelObject,
+				static::successfulHttpStatusCode ($this->request->getMethod(), $topLevelObject, $models));
+			
+			return $response;
+		}
+		
+		protected function getModelsAsCollection ($models) {
 			if ($models instanceof LengthAwarePaginator === true) {
 				$paginator = $models;
 				$modelsCollection = new Collection($paginator->items ());
@@ -547,31 +600,26 @@
 				Exception::throwSingleException("Unknown error generating response", 0,
 					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE);
 			}
-			
-			if ($loadRelations === true) {
-				$this->loadRelatedModels($modelsCollection);
-			}
-			
-			$included = ModelsUtils::getIncludedModels ($modelsCollection, $this->request);
-			
+			return $modelsCollection;
+		}
+		
+		/**
+		 * @param $models
+		 *
+		 * @return ResourceObject
+		 */
+		protected function generateResourceObject ($models, $modelsCollection) {
 			//If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
 			if ($models instanceof Model === true) {
-				$resourceObject = new ResourceObject($modelsCollection->get(0));
+				return new ResourceObject($modelsCollection->get(0));
 			}
 			else {
-				$resourceObject = $modelsCollection->map(
+				return $modelsCollection->map(
 					function (Model $model) {
 						return new ResourceObject($model);
 					}
 				);
 			}
-			
-			$topLevelObject = new TopLevelObject($resourceObject, null, null, $included, $links);
-			
-			$response = new Response($topLevelObject,
-				static::successfulHttpStatusCode ($this->request->getMethod(), $topLevelObject, $models));
-			
-			return $response;
 		}
 		
 		/**
@@ -896,4 +944,5 @@
 			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
 			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
+		
 	}
