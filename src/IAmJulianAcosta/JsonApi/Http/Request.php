@@ -135,23 +135,11 @@
 		}
 
 		protected function initializeVariables() {
-			$this->include    = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
-			$this->sort       = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
-			$this->filter     = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',',
-				$parameter)) : [];
-			$this->page       = $page = $this->input('page') ? $this->input('page') : [];
-			$this->pageSize   = null;
-			$this->pageNumber = null;
+			$this->initializeInclude();
+			$this->initializeSort();
+			$this->initializeFilter();
+			$this->initializePage();
 			$this->getFieldsParametersFromRequest();
-			
-			if (empty($page) === false) {
-				if (is_array($page) === true && empty($page['size']) === false && empty($page['number']) === false) {
-					$this->pageSize   = (integer)$page['size'];
-					$this->pageNumber = (integer)$page['number'];
-				} else {
-					Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
-				}
-			}
 		}
 		
 		protected function getFieldsParametersFromRequest () {
@@ -390,5 +378,43 @@
 		
 		public function isAuthRequest() {
 			return $this->isAuthRequest;
+		}
+		
+		/**
+		 *
+		 */
+		protected function initializeInclude() {
+			$this->include = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
+		}
+		
+		/**
+		 *
+		 */
+		protected function initializeSort() {
+			$this->sort = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
+			
+		}
+		
+		protected function initializeFilter() {
+			$this->filter = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',',
+				$parameter)) : [];
+		}
+		
+		/**
+		 *
+		 */
+		protected function initializePage() {
+			$this->page       = $page = $this->input('page') ? $this->input('page') : [];
+			$this->pageSize   = null;
+			$this->pageNumber = null;
+			
+			if (empty($page) === false) {
+				if (is_array($page) === true && empty($page['size']) === false && empty($page['number']) === false) {
+					$this->pageSize   = (integer)$page['size'];
+					$this->pageNumber = (integer)$page['number'];
+				} else {
+					Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
+				}
+			}
 		}
 	}
