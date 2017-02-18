@@ -212,7 +212,6 @@ abstract class Model extends BaseModel {
 	/**
 	 * Associate models' relationships
 	 *
-	 * @param array $data
 	 * @param bool  $creating
 	 *
 	 * @throws Exception
@@ -266,55 +265,76 @@ abstract class Model extends BaseModel {
 		$relationshipModelName = ClassUtils::getModelClassName($type, $modelsNamespace);
 		$relationshipName      = StringUtils::camelizeRelationshipName($relationshipName);
 		
-		//If we have an id of the relationship data
-		if (array_key_exists ('id', $relationshipData) === true) {
-			$relationshipId	   = $relationshipData['id'];
-			/** @var $relationshipModelName Model */
-			$newRelationshipModel = $relationshipModelName::find ($relationshipId);
+		$this->checkRelationshipId($relationshipData);
+		
+		$relationshipId = $relationshipData['id'];
+		
+		/** @var $relationshipModelName Model */
+		
+		//Relationship exists in model
+		if (method_exists($this, $relationshipName) === true) {
+			/** @var Relation $relationship */
+			$relationship = $this->$relationshipName ();
 			
-			if (empty($newRelationshipModel) === false) {
-				//Relationship exists in model
-				if (method_exists ($this, $relationshipName) === true) {
-					/** @var Relation $relationship */
-					$relationship = $this->$relationshipName ();
-					
-					$isBelongsTo = $relationship instanceof BelongsTo;
-					$isMorphOneOrMany = $relationship instanceof MorphOneOrMany;
-					
-					$creatingAndSaved    = $creating === true && $this->exists;
-					$creatingAndNotSaved = $creating === true && $this->exists === false;
-					$notCreating         = $creating === false;
-					
-					//If creating, only update belongs to before saving. If not creating (updating), update
-					if ($isBelongsTo && ($creatingAndNotSaved || $notCreating)) {
-						/** @var BelongsTo $relationship */
-						$relationship->associate($newRelationshipModel);
-					} //If creating, only update polymorphic saving. If not creating (updating), update
-					else if ($isMorphOneOrMany && ($creatingAndSaved || $notCreating)) {
-						/** @var MorphOneOrMany $relationship */
-						$relationship->save($newRelationshipModel);
-					}
-				}
-				else {
-					Exception::throwSingleException(
-						"Relationship $relationshipName is not valid", ErrorObject::INVALID_ATTRIBUTES,
-						Response::HTTP_BAD_REQUEST
-					);
-				}
-			}
-			else {
-				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
-				Exception::throwSingleException(
-					"Model $formattedType with id $relationshipId not found in database", ErrorObject::INVALID_ATTRIBUTES,
-					Response::HTTP_BAD_REQUEST
-				);
+			$newRelationshipModel = $this->getRelationshipModel($relationshipId);
+			//If creating, only update belongs to before saving. If not creating (updating), update
+			if ($this->shouldUpdateBelongsTo($creating, $relationship)) {
+				/** @var BelongsTo $relationship */
+				$relationship->associate($newRelationshipModel);
+			} //If creating, only update polymorphic saving. If not creating (updating), update
+			else if ($this->shouldUpdatePolymorphic($creating, $relationship)) {
+				/** @var MorphOneOrMany $relationship */
+				$relationship->save($newRelationshipModel);
 			}
 		}
 		else {
+			Exception::throwSingleException("Relationship $relationshipName is not valid",
+				ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
+		}
+	}
+	
+	/**
+	 * @param $creating
+	 * @param $relationship
+	 *
+	 * @return bool
+	 */
+	protected function shouldUpdateBelongsTo($creating, $relationship) {
+		$isBelongsto = $relationship instanceof BelongsTo;
+		
+		return $isBelongsto && (($creating === true && $this->exists === false) || $creating === false);
+	}
+	
+	/**
+	 * @param $creating
+	 * @param $isMorphOneOrMany
+	 *
+	 * @return bool
+	 */
+	protected function shouldUpdatePolymorphic($creating, $isMorphOneOrMany) {
+		$isMorphOneOrMany = $relationship instanceof MorphOneOrMany;
+		return $isMorphOneOrMany && (($creating === true && $this->exists) || $creating === false);
+	}
+	
+	protected function checkRelationshipId ($relationshipData) {
+		//If we have an id of the relationship data
+		if (array_key_exists ('id', $relationshipData) === false) {
 			Exception::throwSingleException(
 				'Relationship id key not present in the request', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
 			);
 		}
+	}
+	
+	protected function getRelationshipModel ($modelId) {
+		$newRelationshipModel = $relationshipModelName::find($relationshipId);
+		
+		if (empty($newRelationshipModel) === true) {
+			$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
+			Exception::throwSingleException("Model $formattedType with id $relationshipId not found in database",
+				ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
+		}
+		
+		return $newRelationshipModel;
 	}
 	
 	/*
