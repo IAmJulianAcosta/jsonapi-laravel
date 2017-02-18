@@ -15,8 +15,10 @@
 	
 	namespace IAmJulianAcosta\JsonApi\Routing;
 	
+	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 	use IAmJulianAcosta\JsonApi\Data\TopLevelObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
+	use IAmJulianAcosta\JsonApi\Exception;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	
 	class StatusCodeGenerator {
@@ -63,11 +65,15 @@
 		 * @param Model $model
 		 *
 		 * @return int
+		 * @throws Exception
 		 */
 		protected static function generateCodeForPatchRequest(Model $model) {
-			if ($model->isChanged() === true) {
+			if (is_null($model) === false && $model->isChanged() === true) {
 				return Response::HTTP_OK;
 			}
+			Exception::throwSingleException(
+				'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR
+			);
 		}
 		
 		protected static function generateCodeForDeleteRequest(TopLevelObject $topLevelObject) {
