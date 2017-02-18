@@ -186,15 +186,11 @@
 		}
 		
 		protected function checkRequestAccept () {
-			$acceptHeaders = $this->header("accept");
-			if (empty($acceptHeaders) === false) {
-				$acceptHeaders = explode (';', $acceptHeaders);
-				if (count($acceptHeaders) > 0 && $acceptHeaders [0] === "application/vnd.api+json" &&
-				    count($acceptHeaders) > 1) {
+			$acceptHeaders = explode (';', $this->header("accept"));
+				if (count($acceptHeaders) > 1 && $acceptHeaders [0] === "application/vnd.api+json") {
 					Exception::throwSingleException("Accept type can't have media type parameters",
 						0, Response::HTTP_UNSUPPORTED_MEDIA_TYPE);
 				}
-			}
 		}
 		
 		/**
