@@ -113,13 +113,16 @@
 			}
 		}
 		
-		public function duplicate(array $query = null, array $request = null, array $attributes = null,
-			array $cookies = null, array $files = null, array $server = null
+		public function duplicate(
+			array $query = null, array $request = null, array $attributes = null, array $cookies = null,
+			array $files = null, array $server = null
 		) {
 			/** @var Request $duplicated */
 			$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files),
 				$server);
 			$duplicated->initializeVariables();
+			$duplicated->checkRequestContentType();
+			$duplicated->checkRequestAccept();
 			return $duplicated;
 		}
 		
@@ -165,7 +168,7 @@
 			);
 		}
 		
-		public function checkRequestContentType () {
+		protected function checkRequestContentType () {
 			if ($this->getContentType() === "jsonapi" || true) {
 				$mediaTypes = $this->getContentTypeMediaTypes();
 				
@@ -182,7 +185,7 @@
 			}
 		}
 		
-		public function checkRequestAccept () {
+		protected function checkRequestAccept () {
 			$acceptHeaders = $this->header("accept");
 			if (empty($acceptHeaders) === false) {
 				$acceptHeaders = explode (';', $acceptHeaders);

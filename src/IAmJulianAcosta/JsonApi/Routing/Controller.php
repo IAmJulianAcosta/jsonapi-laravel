@@ -109,8 +109,6 @@
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
-			$request->checkRequestContentType();
-			$request->checkRequestAccept();
 			$this->setResourceNameFromClassName();
 			$request->extractData();
 			$request->setAuthRequest(static::$isAuthController);
