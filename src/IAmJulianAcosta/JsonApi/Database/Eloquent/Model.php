@@ -173,6 +173,43 @@ abstract class Model extends BaseModel {
 	}
 	
 	/**
+	 * Validates if relationship object is valid.
+	 *
+	 * @param $relationship
+	 */
+	public function validateRelationship ($relationship) {
+		if (is_array ($relationship) === true) {
+			//If the relationship object is an array
+			if (array_key_exists ('data', $relationship) === true) {
+				//If the relationship has a data object
+				$relationshipData = $relationship ['data'];
+				if (is_array ($relationshipData) === true) {
+					
+				}
+				else if (is_null ($relationshipData) === false) {
+					//If the data object is not array or null (invalid)
+					Exception::throwSingleException(
+						'Relationship "data" object must be an array', ErrorObject::INVALID_ATTRIBUTES,
+						Response::HTTP_BAD_REQUEST
+					);
+				}
+			}
+			else {
+				Exception::throwSingleException(
+					'Relationship must have an object with "data" key', ErrorObject::INVALID_ATTRIBUTES,
+					Response::HTTP_BAD_REQUEST
+				);
+			}
+		}
+		else {
+			//If the relationship is not an array, return error
+			Exception::throwSingleException(
+				'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
+			);
+		}
+	}
+	
+	/**
 	 * Associate models' relationships
 	 *
 	 * @param array $data
@@ -184,58 +221,32 @@ abstract class Model extends BaseModel {
 		if (empty($relationships) === false) {
 			//Iterate all the relationships object
 			foreach ($relationships as $relationshipName => $relationship) {
-				if (is_array ($relationship) === true) {
-					//If the relationship object is an array
-					if (array_key_exists ('data', $relationship) === true) {
-						//If the relationship has a data object
-						$relationshipData = $relationship ['data'];
-						if (is_array ($relationshipData) === true) {
-							//One to one
-							if (array_key_exists ('type', $relationshipData) === true) {
-								$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
-							}
-							//One to many
-							else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
-								$relationshipDataItems = $relationshipData;
-								foreach ($relationshipDataItems as $relationshipDataItem) {
-									if (array_key_exists ('type', $relationshipDataItem) === true) {
-										$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
-									}
-									else {
-										Exception::throwSingleException(
-											'Relationship type key not present in the request for an item',
-											ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
-										);
-									}
-								}
+				if ($this->validateRelationship ($relationship)) {
+					//One to one
+					if (array_key_exists ('type', $relationshipData) === true) {
+						$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
+					}
+					//One to many
+					else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
+						$relationshipDataItems = $relationshipData;
+						foreach ($relationshipDataItems as $relationshipDataItem) {
+							if (array_key_exists ('type', $relationshipDataItem) === true) {
+								$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
 							}
 							else {
 								Exception::throwSingleException(
-									'Relationship type key not in the request', ErrorObject::INVALID_ATTRIBUTES,
-									Response::HTTP_BAD_REQUEST
+									'Relationship type key not present in the request for an item',
+									ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
 								);
 							}
-						}
-						else if (is_null ($relationshipData) === false) {
-							//If the data object is not array or null (invalid)
-							Exception::throwSingleException(
-								'Relationship "data" object must be an array', ErrorObject::INVALID_ATTRIBUTES,
-								Response::HTTP_BAD_REQUEST
-							);
 						}
 					}
 					else {
 						Exception::throwSingleException(
-							'Relationship must have an object with "data" key', ErrorObject::INVALID_ATTRIBUTES,
+							'Relationship type key not in the request', ErrorObject::INVALID_ATTRIBUTES,
 							Response::HTTP_BAD_REQUEST
 						);
 					}
-				}
-				else {
-					//If the relationship is not an array, return error
-					Exception::throwSingleException(
-						'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
-					);
 				}
 			}
 		}
