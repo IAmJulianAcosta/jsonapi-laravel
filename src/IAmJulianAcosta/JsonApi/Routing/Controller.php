@@ -175,7 +175,7 @@
 			$this->checkIfModelIsInvalid($model);
 
 			$this->beforeGenerateResponse($model);
-			$respnse = $this->generateAdequateResponse($model);
+			$response = $this->generateAdequateResponse($model);
 			$this->afterGenerateResponse($model, $response);
 			return $response;
 		}
@@ -183,11 +183,10 @@
 		/**
 		 * Check whether a method is supported for a model. If not supported, throws and exception
 		 *
-		 * @param  string $method HTTP method
 		 * @throws Exception
 		 */
 		private function checkIfMethodIsSupported() {
-			$httpMethod = $this->request->getMethod ();
+			$method = $this->request->getMethod ();
 			if (in_array(s($method)->toLowerCase (), $this->supportedMethods) === false) {
 				Exception::throwSingleException('Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED,
 					Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE);
@@ -325,7 +324,7 @@
 			/** @var Model $model */
 			forward_static_call_array ([$modelName, 'validateAttributesOnCreate'], [$attributes]);
 			$model = new $modelName([$attributes]);
-			$this->checkIfEmptyModelWasCreated();
+			$this->checkIfEmptyModelWasCreated($model);
 			
 			$model->validateUserCreatePermissions ($this->request, Auth::user ());
 			$model->validateOnCreate ($this->request);
@@ -354,7 +353,7 @@
 			}
 		}
 		
-		protected function checkIfEmptyModelWasCreated () {
+		protected function checkIfEmptyModelWasCreated ($model) {
 			if (empty($model) === true) {
 				Exception::throwSingleException(
 					'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
@@ -392,14 +391,14 @@
 			
 			$model->verifyIfModelChanged ($originalAttributes);
 
-			$this->clearCacheIfModelChanged();
+			$this->clearCacheIfModelChanged($model);
 			
 			$this->afterHandlePatch ($model);
 			
 			return $model;
 		}
 		
-		protected function clearCacheIfModelChanged () {
+		protected function clearCacheIfModelChanged ($model) {
 			if ($model->isChanged() === true) {
 				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model);
 			}
@@ -463,8 +462,13 @@
 				/** @var Model $model */
 				$model = $modelName::findOrFail($id);
 				
+				if (is_null($model) === true) {
+					throw new ModelNotFoundException();
+				}
+				
 				return $model;
-			} catch (ModelNotFoundException $e) {
+			}
+			catch (ModelNotFoundException $e) {
 				$title = 'Record not found in Database';
 				$code  = ErrorObject::UNKNOWN_ERROR;
 				$status = Response::HTTP_NOT_FOUND;
@@ -506,7 +510,7 @@
 			}
 		}
 		
-		protected function generateAdequateResponse ($models) {
+		protected function generateAdequateResponse ($model) {
 			if ($this->request->getMethod () === 'GET') {
 				$response = $this->generateCacheableResponse ($model);
 			}
@@ -559,16 +563,9 @@
 		 * @return Response
 		 */
 		private function generateResponse ($models, $loadRelations = true) {
-			$modelsCollection = new Collection();
-			$links = new LinksObject(
-				new Collection(
-					[
-						new LinkObject("self", $this->request->fullUrl())
-					]
-				)
-			);
+			$links = $this->generateResponseLinks();
 			
-			$modelsCollection = $this->getModelsAsCollection($model);
+			$modelsCollection = $this->getModelsAsCollection($models, $links);
 			
 			if ($loadRelations === true) {
 				$this->loadRelatedModels($modelsCollection);
@@ -584,7 +581,17 @@
 			return $response;
 		}
 		
-		protected function getModelsAsCollection ($models) {
+		protected function generateResponseLinks () {
+			return new LinksObject(
+				new Collection(
+					[
+						new LinkObject("self", $this->request->fullUrl())
+					]
+				)
+			);
+		}
+		
+		protected function getModelsAsCollection ($models, &$links) {
 			if ($models instanceof LengthAwarePaginator === true) {
 				$paginator = $models;
 				$modelsCollection = new Collection($paginator->items ());
