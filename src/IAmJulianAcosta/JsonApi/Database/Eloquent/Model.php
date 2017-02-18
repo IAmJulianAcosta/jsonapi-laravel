@@ -259,14 +259,22 @@ abstract class Model extends BaseModel {
 				if (method_exists ($this, $relationshipName) === true) {
 					/** @var Relation $relationship */
 					$relationship = $this->$relationshipName ();
+					
+					$isBelongsTo = $relationship instanceof BelongsTo;
+					$isMorphOneOrMany = $relationship instanceof MorphOneOrMany;
+					
+					$creatingAndSaved    = $creating === true && $this->exists;
+					$creatingAndNotSaved = $creating === true && $this->exists === false;
+					$notCreating         = $creating === false;
+					
 					//If creating, only update belongs to before saving. If not creating (updating), update
-					if ($relationship instanceof BelongsTo && (($creating && $this->isDirty()) || !$creating)) {
-						$relationship->associate ($newRelationshipModel);
-					}
-					//If creating, only update polymorphic saving. If not creating (updating), update
-					else if ($relationship instanceof MorphOneOrMany && (($creating && !$this->isDirty()) || !$creating)) {
-						$relationship->save ($newRelationshipModel);
-						
+					if ($isBelongsTo && ($creatingAndNotSaved || $notCreating)) {
+						/** @var BelongsTo $relationship */
+						$relationship->associate($newRelationshipModel);
+					} //If creating, only update polymorphic saving. If not creating (updating), update
+					else if ($isMorphOneOrMany && ($creatingAndSaved || $notCreating)) {
+						/** @var MorphOneOrMany $relationship */
+						$relationship->save($newRelationshipModel);
 					}
 				}
 				else {
