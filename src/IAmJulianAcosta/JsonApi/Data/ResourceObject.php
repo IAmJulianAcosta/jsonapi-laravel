@@ -12,7 +12,7 @@
 	
 	class ResourceObject extends ResourceIdentifierObject {
 		/**
-		 * @var array
+		 * @var AttributesObject
 		 */
 		protected $attributes;
 		
@@ -22,7 +22,7 @@
 		protected $links;
 		
 		/**
-		 * @var array
+		 * @var RelationshipsObject
 		 */
 		protected $relationships;
 		
@@ -49,7 +49,7 @@
 		}
 		
 		/**
-		 * @return array
+		 * @return AttributesObject
 		 */
 		public function getAttributes() {
 			return $this->attributes;
@@ -77,7 +77,7 @@
 		}
 		
 		/**
-		 * @return array
+		 * @return RelationshipsObject
 		 */
 		public function getRelationships() {
 			return $this->relationships;

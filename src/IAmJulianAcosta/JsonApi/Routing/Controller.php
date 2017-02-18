@@ -22,6 +22,7 @@
 	use Illuminate\Database\Eloquent\Builder;
 	use Illuminate\Database\Eloquent\ModelNotFoundException;
 	use Illuminate\Database\QueryException;
+	use Illuminate\Pagination\Paginator;
 	use Illuminate\Routing\Controller as BaseController;
 	use Illuminate\Support\Collection;
 	use Illuminate\Support\Facades\Auth;
@@ -128,13 +129,6 @@
 			$this->checkModelInheritance();
 			forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
 		}
-				
-		/**
-		 * @param string $modelsNamespace
-		 */
-		public function setModelsNamespace($modelsNamespace) {
-			$this->modelsNamespace = $modelsNamespace;
-		}
 		
 		/**
 		 * Generates model names from controller name class
@@ -216,200 +210,23 @@
 			$id = $this->request->getId();
 			
 			if (empty($id) === true) {
-				$models = $this->handleGetAll ();
-				return $models;
+				$handler = new GetAllHandler($this);
+				return $handler->handle();
 			}
 			else {
-				return $this->handleGetSingle($id);
+				$handler = new GetSingleHandler($this);
+				return $handler->handle($this->request->getId());
 			}
 		}
 		
-		/**
-		 * @param         $id
-		 *
-		 * @return mixed
-		 */
-		protected function handleGetSingle ($id) {
-			$this->beforeHandleGet();
-			$this->requestType = static::GET;
-			
-			forward_static_call_array ([$this->fullModelName, 'validateUserGetSinglePermissions'], [$this->request, \Auth::user(), $id]);
-			
-			$key = CacheManager::getQueryCacheForSingleResource($id, StringUtils::dasherizedResourceName($this->resourceName));
-			
-			$model = Cache::remember(
-				$key,
-				static::$cacheTime,
-				function () {
-					$query = $this->generateSelectQuery ();
-					
-					$query->where('id', $this->request->getId());
-					/** @var Model $model */
-					$model = $query->first ();
-					
-					$this->afterModelQueried ($model);
-
-					return $model;
-				}
-			);
-			$this->afterHandleGet ($model);
-
-			return $model;
-		}
-
-		/**
-		 * @return Collection
-		 */
-		protected function handleGetAll () {
-			$this->beforeHandleGetAll ();
-			$this->requestType = static::GET_ALL;
-			
-			forward_static_call_array ([$this->fullModelName, 'validateUserGetAllPermissions'], [$this->request, \Auth::user()]);
-			
-			$key = CacheManager::getQueryCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
-			$models = Cache::remember (
-				$key, static::$cacheTime,
-				function () {
-					$query = $this->generateSelectQuery ();
-					
-					QueryFilter::filterRequest($this->request, $query);
-					QueryFilter::sortRequest($this->request, $query, $this->fullModelName);
-					$this->applyFilters ($query);
-					
-					try {
-						//This method will execute get function inside paginate () or if not pagination present, inside itself.
-						$model = QueryFilter::paginateRequest($this->request, $query);
-					}
-					catch (QueryException $exception) {
-						throw new Exception(
-							new Collection(
-								[
-									new SqlError ('Database error', ErrorObject::DATABASE_ERROR,
-										Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
-									)
-							    ]
-							)
-						);
-					}
-					
-					$this->afterModelsQueried ($model);
-					
-					return $model;
-				}
-			);
-			$this->afterHandleGetAll ($models);
-			return $models;
-		}
-
-		/**
-		 * Handle POST requests
-		 *
-		 * @return Model
-		 * @throws Exception
-		 * @throws ValidationException
-		 */
 		protected function handlePost () {
-			$this->beforeHandlePost ();
-			$this->requestType = static::POST;
-			
-			$modelName = $this->fullModelName;
-			
-			$this->checkIfClientGeneratedIdWasSent ();
-			
-			$attributes = $this->requestJsonApi->getAttributes ();
-			StringUtils::normalizeAttributes($attributes);
-			
-			/** @var Model $model */
-			forward_static_call_array ([$modelName, 'validateAttributesOnCreate'], [$attributes]);
-			$model = new $modelName([$attributes]);
-			$this->checkIfEmptyModelWasCreated($model);
-			
-			$model->validateUserCreatePermissions ($this->request, Auth::user ());
-			$model->validateOnCreate ($this->request);
-			
-			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
-			
-			$this->beforeSaveNewModel ($model);
-			$this->saveModel($model);
-			$this->afterSaveNewModel ($model);
-			
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
-			$model->markChanged ();
-			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
-			$this->afterHandlePost ($model);
-
-			return $model;
+			$handler = new PostHandler($this);
+			return $handler->handle($this->request->getId());
 		}
 		
-		protected function checkIfClientGeneratedIdWasSent () {
-			if (empty($this->requestJsonApi->getId ()) === false) {
-				Exception::throwSingleException(
-					"Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
-					Response::HTTP_FORBIDDEN, static::ERROR_SCOPE
-				);
-			}
-		}
-		
-		protected function checkIfEmptyModelWasCreated ($model) {
-			if (empty($model) === true) {
-				Exception::throwSingleException(
-					'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-					static::ERROR_SCOPE
-				);
-			}
-		}
-		
-		/**
-		 * Handle PATCH requests
-		 *
-		 * @return Model|null
-		 * @throws Exception
-		 */
 		protected function handlePatch () {
-			$this->beforeHandlePatch ();
-			$this->requestType = static::PATCH;
-			
-			$modelName = $this->fullModelName;
-			
-			$model = $this->tryToFindModel($modelName);
-			
-			$model->validateUserUpdatePermissions ($this->request, Auth::user ());
-			$model->validateOnUpdate ($this->request);
-			
-			$originalAttributes = $model->getOriginal ();
-			
-			$this->fillModelAttributes($model, $modelName);
-
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, false);
-
-			$this->beforeSaveModel ($model);
-			$this->saveModel($model);
-			$this->afterSaveModel ($model);
-			
-			$model->verifyIfModelChanged ($originalAttributes);
-
-			$this->clearCacheIfModelChanged($model);
-			
-			$this->afterHandlePatch ($model);
-			
-			return $model;
-		}
-		
-		protected function clearCacheIfModelChanged ($model) {
-			if ($model->isChanged() === true) {
-				CacheManager::clearCache (StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model);
-			}
-		}
-		
-		protected function fillModelAttributes ($model, $modelName) {
-			$attributes = $this->requestJsonApi->getAttributes();
-			if (empty ($attributes) === false) {
-				StringUtils::normalizeAttributes($attributes);
-				
-				forward_static_call_array ([$modelName, 'validateAttributesOnUpdate'], [$attributes]);
-				$model->fill ($attributes);
-			}
+			$handler = new PatchHandler($this);
+			return $handler->handle($this->request->getId());
 		}
 		
 		/**
@@ -419,95 +236,13 @@
 		protected function handlePut () {
 			return $this->handlePatch ();
 		}
-
-		/**
-		 * Handle DELETE requests
-		 *
-		 * @return \IAmJulianAcosta\JsonApi\Database\Eloquent\Model
-		 * @throws \IAmJulianAcosta\JsonApi\Exception
-		 */
+		
 		protected function handleDelete () {
-			$this->beforeHandleDelete ();
-			$this->requestType = static::DELETE;
-			
-			$modelName = $this->fullModelName;
-			
-			$model = $this->tryToFindModel($modelName);
-			
-			$model->validateUserDeletePermissions ($this->request, Auth::user ());
-			$model->validateOnDelete ($this->request);
-			
-			if (is_null ($model) === true) {
-				return null;
-			}
-			
-			$model->delete ();
-			
-			$this->afterHandleDelete ($model);
-			return $model;
+			$handler = new DeleteHandler($this);
+			return $handler->handle($this->request->getId());
 		}
 		
-		/**
-		 * @param $modelName
-		 *
-		 * @return Model
-		 * @throws Exception
-		 */
-		protected function tryToFindModel($modelName) {
-			try {
-				$id    = $this->request->getId();
-				$this->validateIfIdIsPresentInRequest($id);
-				/** @var Model $model */
-				$model = $modelName::findOrFail($id);
-				
-				if (is_null($model) === true) {
-					throw new ModelNotFoundException();
-				}
-				
-				return $model;
-			}
-			catch (ModelNotFoundException $e) {
-				$title = 'Record not found in Database';
-				$code  = ErrorObject::UNKNOWN_ERROR;
-				$status = Response::HTTP_NOT_FOUND;
-				$resourceIdentifier = static::ERROR_SCOPE;
-				Exception::throwSingleException($title, $code, $status, $resourceIdentifier);
-			}
-		}
-		
-		protected function validateIfIdIsPresentInRequest ($id) {
-			if (empty($id) === true) {
-				Exception::throwSingleException(
-					'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
-				);
-			}
-		}
-		
-		/**
-		 * @param $model
-		 *
-		 * @throws Exception
-		 */
-		protected function saveModel(Model $model) {
-			try {
-				$model->saveOrFail();
-			}
-			catch (QueryException $exception) {
-				throw new Exception(
-					new Collection(
-						new SqlError ('Database error', ErrorObject::DATABASE_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR,
-							$exception, static::ERROR_SCOPE)
-					)
-				);
-			}
-			catch (\Exception $exception) {
-				Exception::throwSingleException(
-					'An unknown error occurred saving the record', ErrorObject::UNKNOWN_ERROR,
-					Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE
-				);
-			}
-		}
-		
+
 		protected function generateAdequateResponse ($model) {
 			if ($this->request->getMethod () === 'GET') {
 				$response = $this->generateCacheableResponse ($model);
@@ -589,8 +324,9 @@
 			);
 		}
 		
-		protected function getModelsAsCollection ($models, &$links) {
+		protected function getModelsAsCollection ($models, LinksObject &$links) {
 			if ($models instanceof LengthAwarePaginator === true) {
+				/** @var LengthAwarePaginator $paginator */
 				$paginator = $models;
 				$modelsCollection = new Collection($paginator->items ());
 				$links = $links->addLinks($this->getPaginationLinks($paginator));
@@ -700,16 +436,6 @@
 			// client has made a bad request.
 			return Response::HTTP_BAD_REQUEST;
 		}
-
-		/**
-		 * Generates a find query from model name
-		 *
-		 * @return Builder|null
-		 */
-		protected function generateSelectQuery() {
-			$modelName = $this->fullModelName;
-			return forward_static_call_array ([$modelName, 'generateSelectQuery'], [$this->request->getInclude()]);
-		}
 		
 		/**
 		 * This abstract function allows implementations to implement own filters
@@ -718,40 +444,40 @@
 		 *
 		 * @return void
 		 */
-		protected abstract function applyFilters (&$query);
+		public abstract function applyFilters (&$query);
 		
 		/**
 		 * Method that runs before fullfilling a request. Should be implemented by child classes.
 		 */
-		protected function beforeFulfillRequest () {
+		public function beforeFulfillRequest () {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleRequest () {
+		public function beforeHandleRequest () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a request. Should be implemented by child classes.
 		 */
-		protected function afterHandleRequest ($models) {
+		public function afterHandleRequest ($models) {
 			
 		}
 		
 		/**
 		 * Method that runs before generating the response. Should be implemented by child classes.
 		 */
-		protected function beforeGenerateResponse ($models) {
+		public function beforeGenerateResponse ($models) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating the response. Shouldn't be overridden by child classes.
 		 */
-		protected function afterGenerateResponse ($model, Response $response) {
+		public function afterGenerateResponse ($model, Response $response) {
 			switch ($this->requestType) {
 				case static::GET;
 					$this->afterGenerateGetResponse ($model, $response);
@@ -774,7 +500,7 @@
 		/**
 		 * Method that runs before handling a GET request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleGet () {
+		public function beforeHandleGet () {
 			
 		}
 		
@@ -783,21 +509,21 @@
 		 *
 		 * @param Model|null
 		 */
-		protected function afterHandleGet ($model) {
+		public function afterHandleGet ($model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response. Should be implemented by child classes.
 		 */
-		protected function afterGenerateGetResponse ($model, Response $response) {
+		public function afterGenerateGetResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a GET request of all resources. Should be implemented by child classes.
 		 */
-		protected function beforeHandleGetAll () {
+		public function beforeHandleGetAll () {
 			
 		}
 		
@@ -806,7 +532,7 @@
 		 *
 		 * @param Collection|LengthAwarePaginator $models
 		 */
-		protected function afterHandleGetAll ($models) {
+		public function afterHandleGetAll ($models) {
 			
 		}
 		
@@ -814,28 +540,28 @@
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGenerateGetAllResponse ($model, Response $response) {
+		public function afterGenerateGetAllResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a POST request. Should be implemented by child classes.
 		 */
-		protected function beforeHandlePost () {
+		public function beforeHandlePost () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a POST request. Should be implemented by child classes.
 		 */
-		protected function afterHandlePost (Model $model) {
+		public function afterHandlePost (Model $model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a POST response. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePostResponse ($model, Response $response) {
+		public function afterGeneratePostResponse ($model, Response $response) {
 			if ($model instanceof Model === true) {
 				$response->header('Location', $model->getModelURL());
 			}
@@ -844,42 +570,42 @@
 		/**
 		 * Method that runs before handling a PATCH request. Should be implemented by child classes.
 		 */
-		protected function beforeHandlePatch () {
+		public function beforeHandlePatch () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a PATCH request. Should be implemented by child classes.
 		 */
-		protected function afterHandlePatch ($model) {
+		public function afterHandlePatch ($model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGeneratePatchResponse ($model, Response $response) {
+		public function afterGeneratePatchResponse ($model, Response $response) {
 			
 		}
 		
 		/**
 		 * Method that runs before handling a DELETE request. Should be implemented by child classes.
 		 */
-		protected function beforeHandleDelete () {
+		public function beforeHandleDelete () {
 			
 		}
 		
 		/**
 		 * Method that runs after handling a DELETE request. Should be implemented by child classes.
 		 */
-		protected function afterHandleDelete ($model) {
+		public function afterHandleDelete ($model) {
 			
 		}
 		
 		/**
 		 * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
 		 */
-		protected function afterGenerateDeleteResponse ($model, Response $response) {
+		public function afterGenerateDeleteResponse ($model, Response $response) {
 			
 		}
 		
@@ -888,7 +614,7 @@
 		 *
 		 * @param Model   $model
 		 */
-		protected function beforeSaveNewModel (Model $model) {
+		public function beforeSaveNewModel (Model $model) {
 			
 		}
 		
@@ -897,7 +623,7 @@
 		 *
 		 * @param Model   $model
 		 */
-		protected function afterSaveNewModel (Model $model) {
+		public function afterSaveNewModel (Model $model) {
 			
 		}
 		
@@ -906,7 +632,7 @@
 		 *
 		 * @param Model   $model
 		 */
-		protected function beforeSaveModel (Model $model) {
+		public function beforeSaveModel (Model $model) {
 			
 		}
 		
@@ -915,15 +641,15 @@
 		 *
 		 * @param Model   $model
 		 */
-		protected function afterSaveModel (Model $model) {
+		public function afterSaveModel (Model $model) {
 			
 		}
 		
-		protected function afterModelQueried ($model) {
+		public function afterModelQueried ($model) {
 			
 		}
 		
-		protected function afterModelsQueried ( $model) {
+		public function afterModelsQueried ( $model) {
 			
 		}
 		
@@ -939,6 +665,76 @@
 		 */
 		public function setRequest($request) {
 			$this->request = $request;
+		}
+		
+		/**
+		 * @return string
+		 */
+		public function getFullModelName() {
+			return $this->fullModelName;
+		}
+		
+		/**
+		 * @param string $fullModelName
+		 */
+		public function setFullModelName($fullModelName) {
+			$this->fullModelName = $fullModelName;
+		}
+		
+		/**
+		 * @return string
+		 */
+		public function getResourceName() {
+			return $this->resourceName;
+		}
+		
+		/**
+		 * @param string $resourceName
+		 */
+		public function setResourceName($resourceName) {
+			$this->resourceName = $resourceName;
+		}
+		
+		/**
+		 * @return int
+		 */
+		public function getRequestType() {
+			return $this->requestType;
+		}
+		
+		/**
+		 * @param int $requestType
+		 */
+		public function setRequestType($requestType) {
+			$this->requestType = $requestType;
+		}
+		
+		/**
+		 * @return RequestObject
+		 */
+		public function getRequestJsonApi() {
+			return $this->requestJsonApi;
+		}
+		
+		/**
+		 * @param RequestObject $requestJsonApi
+		 */
+		public function setRequestJsonApi($requestJsonApi) {
+			$this->requestJsonApi = $requestJsonApi;
+		}
+		
+		/**
+		 * @return string
+		 */
+		public function getModelsNamespace() {
+			return $this->modelsNamespace;
+		}
+		
+		/**
+		 * @param string $modelsNamespace
+		 */
+		public function setModelsNamespace($modelsNamespace) {
+			$this->modelsNamespace = $modelsNamespace;
 		}
 		
 		/**

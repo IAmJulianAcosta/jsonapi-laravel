@@ -111,22 +111,6 @@
 			parent::__construct($query, $request, $attributes, $cookies, $files, $server, $content);
 		}
 		
-		/**
-		 * Converts an illuminate typed request to a JSON API request, throws exception if is not a JSON API request
-		 *
-		 * @param BaseRequest $request
-		 *
-		 * @return Request
-		 * @throws \LogicException
-		 */
-		public static function convertIlluminateRequestToJsonApiRequest(BaseRequest $request) {
-			if ($request instanceof \IAmJulianAcosta\JsonApi\Http\Request) {
-				return $request;
-			} else {
-				throw new \LogicException("You must configure your laravel installation to use JSON API request");
-			}
-		}
-		
 		public function duplicate(
 			array $query = null, array $request = null, array $attributes = null, array $cookies = null,
 			array $files = null, array $server = null
@@ -218,6 +202,9 @@
 			$this->jsonApiContent = $jsonApiContent;
 		}
 		
+		/**
+		 * @return array
+		 */
 		public function getData () {
 			return $this->jsonApiContent->getData ();
 		}
@@ -362,13 +349,6 @@
 			$this->fields = $fields;
 		}
 		
-		/**
-		 * @return bool
-		 */
-		public function shouldHaveContent() {
-			return $this->getMethod() === "PATCH" || $this->getMethod() === "PUT" || $this->getMethod() === "POST";
-		}
-		
 		public function setAuthRequest ($isAuthRequest) {
 			$this->isAuthRequest = $isAuthRequest;
 		}
@@ -415,6 +395,29 @@
 		protected function checkIfPageIsValid($page) {
 			if (is_array($page) === false || empty($page['size']) === true || empty($page['number']) === true) {
 				Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
+			}
+		}
+		
+		/**
+		 * @return bool
+		 */
+		public function shouldHaveContent() {
+			return $this->getMethod() === "PATCH" || $this->getMethod() === "PUT" || $this->getMethod() === "POST";
+		}
+		
+		/**
+		 * Converts an illuminate typed request to a JSON API request, throws exception if is not a JSON API request
+		 *
+		 * @param BaseRequest $request
+		 *
+		 * @return Request
+		 * @throws \LogicException
+		 */
+		public static function convertIlluminateRequestToJsonApiRequest(BaseRequest $request) {
+			if ($request instanceof \IAmJulianAcosta\JsonApi\Http\Request) {
+				return $request;
+			} else {
+				throw new \LogicException("You must configure your laravel installation to use JSON API request");
 			}
 		}
 		
