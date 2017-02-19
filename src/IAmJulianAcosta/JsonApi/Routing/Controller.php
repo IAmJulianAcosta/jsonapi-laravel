@@ -86,6 +86,13 @@
 		public function __construct (Request $request) {
 			$this->request = $request;
 			$this->setResourceNameFromClassName();
+			$this->initializeRequest($request);
+		}
+		
+		/**
+		 * @param Request $request
+		 */
+		protected function initializeRequest(Request $request) {
 			$request->extractData();
 			$request->setAuthRequest(static::$isAuthController);
 			if ($request->shouldHaveContent() === true) {
@@ -95,6 +102,15 @@
 				$requestJsonApi->validateRequiredParameters();
 				$requestJsonApi->extractData();
 			}
+		}
+		
+		/**
+		 * Generates resource name from class name
+		 */
+		protected function setResourceNameFromClassName () {
+			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
+			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
+			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
 		
 		/**
@@ -404,15 +420,6 @@
 		 */
 		public function setModelsNamespace($modelsNamespace) {
 			$this->modelsNamespace = $modelsNamespace;
-		}
-		
-		/**
-		 * Generates resource name from class name
-		 */
-		private function setResourceNameFromClassName () {
-			$shortClassName = ClassUtils::getControllerShortClassName(get_called_class());
-			$resourceNameLength = strlen($shortClassName) - self::CONTROLLER_WORD_LENGTH;
-			$this->resourceName = substr ($shortClassName, 0, $resourceNameLength);
 		}
 		
 	}
