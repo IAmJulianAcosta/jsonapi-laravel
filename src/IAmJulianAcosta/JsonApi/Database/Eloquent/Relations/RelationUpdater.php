@@ -32,7 +32,7 @@
 			$this->model = $model;
 		}
 		
-		public function updateRelationships ($relationships, $modelsNamespace) {
+		public function updateRelationships ($relationships, $modelsNamespace, $creating) {
 			//Iterate all the relationships object
 			foreach ($relationships as $relationshipName => $relationship) {
 				if ($this->validateRelationship($relationship)) {
