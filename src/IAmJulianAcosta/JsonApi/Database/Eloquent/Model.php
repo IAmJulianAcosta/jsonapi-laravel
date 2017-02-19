@@ -27,14 +27,14 @@ abstract class Model extends BaseModel {
 	 *
 	 * @var array
 	 */
-	static protected $validationRulesOnCreate;
+	static public $validationRulesOnCreate;
 	
 	/**
 	 * Validation rules when updating a new model
 	 *
 	 * @var array
 	 */
-	static protected $validationRulesOnUpdate;
+	static public $validationRulesOnUpdate;
 	
 	/**
 	 * @var integer Amount time that response should be cached
@@ -137,45 +137,19 @@ abstract class Model extends BaseModel {
 		}
 	}
 	
-	public static function validateAttributesOnCreate(array $attributes = []) {
-		$validator = static::validateAttributes($attributes, false);
-		if ($validator->fails() === true) {
-			throw new ValidationException($validator->validationErrors());
-		}
-	}
-	
-	public static function validateAttributesOnUpdate(array $attributes = []) {
-		$validator = static::validateAttributes($attributes, true);
-		if ($validator->fails() === true) {
-			throw new ValidationException($validator->validationErrors());
-		}
-	}
-	
-	/**
-	 * @param array $attributes
-	 * @param bool  $creatingModel
-	 *
-	 * @return Validator
-	 */
-	public static function validateAttributes (array $attributes, $creatingModel = false) {
-		if ($creatingModel === true) {
-			$validationRules = static::$validationRulesOnCreate;
-		}
-		else {
-			$validationRules = static::$validationRulesOnUpdate;
-		}
-		
-		return ValidatorFacade::make($attributes, $validationRules);
-	}
-	
 	public function validate ($creatingModel = false) {
-		$this->validator = static::validateAttributes($this->attributes, $creatingModel);
+		$this->validator = Validator::validateModelAttributes(
+			$this->attributes,
+			$creatingModel ? static::$validationRulesOnCreate : static::$validationRulesOnUpdate
+		);
 	}
 	
 	/**
 	 * Validates if relationship object is valid.
 	 *
 	 * @param $relationship
+	 *
+	 * @return bool
 	 */
 	public function validateRelationship ($relationship) {
 		if (is_array ($relationship) === true) {

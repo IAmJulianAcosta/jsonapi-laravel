@@ -14,21 +14,23 @@
 	use IAmJulianAcosta\JsonApi\Exception;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Utils\StringUtils;
+	use IAmJulianAcosta\JsonApi\Validation\Validator;
 	
 	class PostHandler extends DataModifierHandler {
 		public function handle($id = null) {
 			$this->controller->beforeHandlePost ();
 			$this->controller->setRequestType(Controller::POST);
 			
-			$modelName = $this->fullModelName;
-			
 			$this->checkIfClientGeneratedIdWasSent ();
 			
 			$attributes = $this->requestJsonApi->getAttributes ();
 			StringUtils::normalizeAttributes($attributes);
 			
+			/** @var Model $modelName */
+			$modelName = $this->fullModelName;
+			Validator::validateModelAttributes($attributes, $modelName::$validationRulesOnCreate);
+			
 			/** @var Model $model */
-			forward_static_call_array ([$modelName, 'validateAttributesOnCreate'], [$attributes]);
 			$model = new $modelName([$attributes]);
 			$this->checkIfEmptyModelWasCreated($model);
 			

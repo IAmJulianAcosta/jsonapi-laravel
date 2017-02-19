@@ -14,6 +14,7 @@
 	use IAmJulianAcosta\JsonApi\Exception;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Utils\StringUtils;
+	use IAmJulianAcosta\JsonApi\Validation\Validator;
 	
 	class PatchHandler extends DataModifierHandler {
 		public function handle($id = null) {
@@ -51,7 +52,9 @@
 			if (empty ($attributes) === false) {
 				StringUtils::normalizeAttributes($attributes);
 				
-				forward_static_call_array ([$modelName, 'validateAttributesOnUpdate'], [$attributes]);
+				/** @var Model $modelName */
+				$modelName = $this->fullModelName;
+				Validator::validateModelAttributes($attributes, $modelName::$validationRulesOnUpdate);
 				$model->fill ($attributes);
 			}
 		}

@@ -34,4 +34,20 @@
 			
 			$this->validationErrors->push (new ValidationError($attribute, $rule, $message));
 		}
+
+		/**
+		 * @param array $attributes
+		 * @param array $modelRules
+		 *
+		 * @throws ValidationException
+		 */
+		public static function validateModelAttributes (array $attributes, array $modelRules) {
+			/** @var Validator $validator */
+			$validator = Validator::make($attributes, $modelRules);
+			if ($validator->fails() === true) {
+				throw new ValidationException($validator->validationErrors());
+			}
+			return $validator;
+		}
+		
 	}
