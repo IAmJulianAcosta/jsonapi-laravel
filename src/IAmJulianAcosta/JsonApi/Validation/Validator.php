@@ -10,6 +10,7 @@
 	
 	use Illuminate\Support\Collection;
 	use Symfony\Component\Translation\TranslatorInterface;
+	use Illuminate\Support\Facades\Validator as ValidatorFacade;
 	
 	class Validator extends \Illuminate\Validation\Validator {
 		protected $validationErrors;
@@ -34,16 +35,17 @@
 			
 			$this->validationErrors->push (new ValidationError($attribute, $rule, $message));
 		}
-
+		
 		/**
 		 * @param array $attributes
 		 * @param array $modelRules
 		 *
+		 * @return Validator
 		 * @throws ValidationException
 		 */
 		public static function validateModelAttributes (array $attributes, array $modelRules) {
 			/** @var Validator $validator */
-			$validator = Validator::make($attributes, $modelRules);
+			$validator = ValidatorFacade::make($attributes, $modelRules);
 			if ($validator->fails() === true) {
 				throw new ValidationException($validator->validationErrors());
 			}

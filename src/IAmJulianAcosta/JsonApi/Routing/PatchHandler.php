@@ -53,7 +53,6 @@
 				StringUtils::normalizeAttributes($attributes);
 				
 				/** @var Model $modelName */
-				$modelName = $this->fullModelName;
 				Validator::validateModelAttributes($attributes, $modelName::$validationRulesOnUpdate);
 				$model->fill ($attributes);
 			}

@@ -8,7 +8,6 @@ use IAmJulianAcosta\JsonApi\Http\Request;
 use IAmJulianAcosta\JsonApi\Http\Response;
 use IAmJulianAcosta\JsonApi\Utils\ClassUtils;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
-use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Pluralizer;
@@ -17,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Validator as ValidatorFacade;
 use function Stringy\create as s;
 
 abstract class Model extends BaseModel {
@@ -144,6 +142,42 @@ abstract class Model extends BaseModel {
 		);
 	}
 	
+	/*
+	 * ========================================
+	 *		    RELATIONSHIPS UPDATING
+	 * ========================================
+	 */
+		
+	/**
+	 * Associate models' relationships
+	 *
+	 * @param bool  $creating
+	 *
+	 * @throws Exception
+	 */
+	public function updateRelationships ($relationships, $modelsNamespace, $creating = false) {
+		//Iterate all the relationships object
+		foreach ($relationships as $relationshipName => $relationship) {
+			if ($this->validateRelationship($relationship)) {
+				$relationshipData = $relationship ['data'];
+				//One to one
+				if (array_key_exists('type', $relationshipData) === true) {
+					$this->updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace);
+				} //One to many
+				else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
+					$relationshipDataItems = $relationshipData;
+					$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
+						$relationshipName);
+				}
+				else {
+					Exception::throwSingleException('Relationship type key not in the request',
+						ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST)
+					;
+				}
+			}
+		}
+	}
+	
 	/**
 	 * Validates if relationship object is valid.
 	 *
@@ -183,35 +217,6 @@ abstract class Model extends BaseModel {
 		}
 	}
 	
-	/**
-	 * Associate models' relationships
-	 *
-	 * @param bool  $creating
-	 *
-	 * @throws Exception
-	 */
-	public function updateRelationships ($relationships, $modelsNamespace, $creating = false) {
-		//Iterate all the relationships object
-		foreach ($relationships as $relationshipName => $relationship) {
-			if ($this->validateRelationship($relationship)) {
-				$relationshipData = $relationship ['data'];
-				//One to one
-				if (array_key_exists('type', $relationshipData) === true) {
-					$this->updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace);
-				} //One to many
-				else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
-					$relationshipDataItems = $relationshipData;
-					$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
-						$relationshipName);
-				}
-				else {
-					Exception::throwSingleException('Relationship type key not in the request',
-						ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST)
-					;
-				}
-			}
-		}
-	}
 	
 	/**
 	 * @param array  $relationshipData
@@ -317,7 +322,7 @@ abstract class Model extends BaseModel {
 	
 	/*
 	 * ========================================
-	 *			     RELATIONS
+	 *			  RELATIONS LOADING
 	 * ========================================
 	 */
 	/**
