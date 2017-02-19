@@ -229,17 +229,8 @@ abstract class Model extends BaseModel {
 					//One to many
 					else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
 						$relationshipDataItems = $relationshipData;
-						foreach ($relationshipDataItems as $relationshipDataItem) {
-							if (array_key_exists ('type', $relationshipDataItem) === true) {
-								$this->updateSingleRelationship ($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
-							}
-							else {
-								Exception::throwSingleException(
-									'Relationship type key not present in the request for an item',
-									ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
-								);
-							}
-						}
+						$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
+							$relationshipName);
 					}
 					else {
 						Exception::throwSingleException(
@@ -290,6 +281,23 @@ abstract class Model extends BaseModel {
 		else {
 			Exception::throwSingleException("Relationship $relationshipName is not valid",
 				ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
+		}
+	}
+	
+	/**
+	 * @param $modelsNamespace
+	 * @param $creating
+	 * @param $relationshipDataItems
+	 * @param $relationshipName
+	 */
+	protected function updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems, $relationshipName) {
+		foreach ($relationshipDataItems as $relationshipDataItem) {
+			if (array_key_exists('type', $relationshipDataItem) === true) {
+				$this->updateSingleRelationship($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
+			} else {
+				Exception::throwSingleException("Relationship type key not present in the request for $relationshipName",
+					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
+			}
 		}
 	}
 	
