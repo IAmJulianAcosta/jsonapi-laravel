@@ -113,7 +113,6 @@
 			
 			$relationshipId = $relationshipData['id'];
 			
-			
 			//Relationship exists in model
 			if (method_exists($this->model, $relationshipName) === true) {
 				/** @var Relation $relationship */
@@ -150,10 +149,10 @@
 		 * @param $relationshipModelName
 		 * @param $type
 		 *
-		 * @return mixed
+		 * @return Model
 		 */
 		protected function getRelationshipModel ($relationshipId, $relationshipModelName, $type) {
-			$newRelationshipModel = $relationshipModelName::find($relationshipId);
+			$newRelationshipModel = forward_static_call_array ([$relationshipModelName, 'generateSelectQuery'], [$relationshipId]);
 			
 			if (empty($newRelationshipModel) === true) {
 				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
