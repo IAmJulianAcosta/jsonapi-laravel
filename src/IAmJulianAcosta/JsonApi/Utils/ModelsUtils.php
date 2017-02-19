@@ -87,40 +87,50 @@
 			
 			$relationKey = array_shift($explodedRelationKeys);
 			
-			if (method_exists($model, $relationKey) === false) {
-				Exception::throwSingleException (
-					'Relation "' . $relationKey . '" does not exist in model',
-					ErrorObject::RELATION_DOESNT_EXISTS_IN_MODEL, Response::HTTP_UNPROCESSABLE_ENTITY
-				);
-			}
+			static::validateRelationMethodInModel($model, $relationKey);
 			$relationModels = $model->{$relationKey};
 			
 			if (is_null($relationModels) === true) {
 				return null;
 			}
-			else if ($relationModels instanceof Model === true) {
-				/** @var Model $relationModel */
-				$relationModel = $relationModels;
-				static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
-				static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
-			}
 			else if ($relationModels instanceof Collection === true) {
 				/** @var Model $relationModel */
 				foreach ($relationModels as $relationModel) {
-					if ($relationModels instanceof Model === false) {
-						static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
-						static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
-					}
-					else {
-						Model::throwInheritanceException(get_class($relationModel));
-					}
+					static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
 				}
 			}
 			else {
-				Model::throwInheritanceException(get_class($relationModels));
+				/** @var Model $relationModel */
+				$relationModel = $relationModels;
+				static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
 			}
 			
 			return $models;
+		}
+		
+		/**
+		 * @param            $relationKey
+		 * @param Model      $relationModel
+		 * @param Collection $models
+		 * @param            $explodedRelationKeys
+		 * @param Collection $requestAllowedFields
+		 */
+		protected static function processModelRelation($relationKey, Model $relationModel, Collection &$models,
+			$explodedRelationKeys, Collection $requestAllowedFields
+		) {
+			static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
+			static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
+		}
+		
+		/**
+		 * @param Model $model
+		 * @param       $relationKey
+		 */
+		protected static function validateRelationMethodInModel(Model $model, $relationKey) {
+			if (method_exists($model, $relationKey) === false) {
+				Exception::throwSingleException('Relation "' . $relationKey . '" does not exist in model',
+					ErrorObject::RELATION_DOESNT_EXISTS_IN_MODEL, Response::HTTP_UNPROCESSABLE_ENTITY);
+			}
 		}
 		
 		/**
@@ -128,9 +138,7 @@
 		 * @param            $relationModel
 		 * @param            $explodedRelationKeys
 		 */
-		protected static function loadRelationForModel (
-			Collection &$models, $relationModel, $explodedRelationKeys, $requestAllowedFields
-		) {
+		protected static function loadRelationForModel (Collection &$models, $relationModel, $explodedRelationKeys, $requestAllowedFields) {
 			if (empty($explodedRelationKeys) === false) {
 				static::getModelsForRelation($relationModel, implode(".", $explodedRelationKeys), $requestAllowedFields, $models);
 			}
@@ -178,4 +186,6 @@
 		protected static function generateKey (Model $model) {
 			return sprintf("%s_%s", get_class($model), $model->getKey());
 		}
+		
+
 	}
