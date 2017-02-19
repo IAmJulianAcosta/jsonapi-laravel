@@ -11,12 +11,23 @@
 	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use IAmJulianAcosta\JsonApi\Exception;
+	use IAmJulianAcosta\JsonApi\Http\Request;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Utils\ClassUtils;
 	use Illuminate\Database\Eloquent\Collection;
 	use function Stringy\create as s;
 	
 	class RequestHandler {
+		
+		/**
+		 * @var Controller
+		 */
+		protected $controller;
+		
+		/**
+		 * @var Request
+		 */
+		protected $request;
 		
 		public function __construct(Controller $controller) {
 			$this->controller = $controller;
