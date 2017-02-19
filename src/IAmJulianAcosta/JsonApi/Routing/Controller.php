@@ -43,16 +43,7 @@
 		 */
 		static protected $cacheTime = 60;
 		
-		/**
-		 * @var string Resource class name including namespace
-		 */
-		protected $fullModelName;
 		
-		/**
-		 * @var string esource class name without namespace
-		 */
-		protected $shortModelName;
-
 		/**
 		 * @var string Controller resource name
 		 */
@@ -106,63 +97,26 @@
 			}
 		}
 		
-		//TODO breaking changes
-		public function initializeModelNamespaces ($modelsNamespace) {
-			$this->setModelsNamespace($modelsNamespace);
-			$this->generateModelName ();
-			$this->checkModelInheritance();
-			forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
-		}
-		
-		/**
-		 * Generates model names from controller name class
-		 */
-		protected function generateModelName () {
-			$shortName = $this->resourceName;
-			$this->shortModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true, true);
-			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
-		}
-		
-		/**
-		 * Check if this model inherits from JsonAPI Model
-		 */
-		protected function checkModelInheritance () {
-			if (is_subclass_of($this->fullModelName, Model::class) === false) {
-				Model::throwInheritanceException($this->fullModelName);
-			}
-		}
-		
 		/**
 		 * Fulfills the API request and return a response. This is the entrypoint of controller.
 		 *
 		 * @return Response
 		 * @throws Exception
 		 */
-		public function fulfillRequest () {
+		public function fulfillRequest ($modelsNamespace) {
 			$this->beforeFulfillRequest();
 			
 			//Executes the request
 			$this->beforeHandleRequest();
 			$requestHandler = new RequestHandler($this);
-			$model          = $requestHandler->handleRequest ();
+			$model          = $requestHandler->handleRequest ($modelsNamespace);
 			$this->afterHandleRequest($model);
 			
-			$this->checkIfModelIsInvalid($model);
-
 			$this->beforeGenerateResponse($model);
 			$responseGenerator = new ResponseGenerator($this);
 			$response = $responseGenerator->generateAdequateResponse($model);
 			$this->afterGenerateResponse($model, $response);
 			return $response;
-		}
-		
-		
-		private function checkIfModelIsInvalid ($model) {
-			if (is_null ($model) === true) {
-				Exception::throwSingleException(
-					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
-				);
-			}
 		}
 		
 		/**
@@ -394,20 +348,6 @@
 		 */
 		public function setRequest($request) {
 			$this->request = $request;
-		}
-		
-		/**
-		 * @return string
-		 */
-		public function getFullModelName() {
-			return $this->fullModelName;
-		}
-		
-		/**
-		 * @param string $fullModelName
-		 */
-		public function setFullModelName($fullModelName) {
-			$this->fullModelName = $fullModelName;
 		}
 		
 		/**

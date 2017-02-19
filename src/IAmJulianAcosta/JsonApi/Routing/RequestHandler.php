@@ -37,27 +37,29 @@
 		/**
 		 * @return Model|Collection
 		 */
-		public function handleRequest () {
+		public function handleRequest ($modelsNamespace) {
 			$this->checkIfMethodIsSupported ();
 			$methodName = ClassUtils::methodHandlerName($this->request->getMethod());
-			$models = $this->{$methodName}();
+			$model = $this->{$methodName}($modelsNamespace);
 			
-			return $models;
+			$this->checkIfModelIsInvalid($model);
+			
+			return $model;
 		}
 		
 		/**
 		 * Handle GET requests
 		 * @return Model|Collection|null
 		 */
-		protected function handleGet () {
+		protected function handleGet ($modelsNamespace) {
 			$id = $this->request->getId();
 			
 			if (empty($id) === true) {
-				$handler = new GetAllHandler($this->controller);
+				$handler = new GetAllHandler($this->controller, $modelsNamespace);
 				return $handler->handle();
 			}
 			else {
-				$handler = new GetSingleHandler($this->controller);
+				$handler = new GetSingleHandler($this->controller, $modelsNamespace);
 				return $handler->handle($this->request->getId());
 			}
 		}
@@ -66,8 +68,8 @@
 		 * Handle POST requests
 		 * @return Model
 		 */
-		protected function handlePost () {
-			$handler = new PostHandler($this->controller);
+		protected function handlePost ($modelsNamespace) {
+			$handler = new PostHandler($this->controller, $modelsNamespace);
 			return $handler->handle($this->request->getId());
 		}
 		
@@ -75,8 +77,8 @@
 		 * Handle PATCH requests
 		 * @return Model|null
 		 */
-		protected function handlePatch () {
-			$handler = new PatchHandler($this->controller);
+		protected function handlePatch ($modelsNamespace) {
+			$handler = new PatchHandler($this->controller, $modelsNamespace);
 			return $handler->handle($this->request->getId());
 		}
 		
@@ -84,16 +86,16 @@
 		 * Handle PUT requests
 		 * @return Model|null
 		 */
-		protected function handlePut () {
-			return $this->handlePatch ();
+		protected function handlePut ($modelsNamespace) {
+			return $this->handlePatch ($modelsNamespace);
 		}
 		
 		/**
 		 * Handle DELETE requests
 		 * @return Model|null
 		 */
-		protected function handleDelete () {
-			$handler = new DeleteHandler($this->controller);
+		protected function handleDelete ($modelsNamespace) {
+			$handler = new DeleteHandler($this->controller, $modelsNamespace);
 			return $handler->handle($this->request->getId());
 		}
 		
@@ -110,5 +112,14 @@
 					Response::HTTP_METHOD_NOT_ALLOWED);
 			}
 		}
+		
+		protected function checkIfModelIsInvalid ($model) {
+			if (is_null ($model) === true) {
+				Exception::throwSingleException(
+					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
+				);
+			}
+		}
+		
 		
 	}
