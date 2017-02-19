@@ -118,38 +118,28 @@
 			/** @var Request $duplicated */
 			$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files),
 				$server);
-			$duplicated->initializeVariables();
-			$duplicated->checkRequestContentType();
-			$duplicated->checkRequestAccept();
+			RequestInitializer::initialize($duplicated);
+			$duplicated->checkHeaders();
 			return $duplicated;
 		}
 		
-		public function getContentTypeMediaTypes () {
-			//Get the content type header
-			$contentTypeHeader = $this->headers->get('CONTENT_TYPE');
-			//Convert to array
-			$contentTypeHeader = explode (';', $contentTypeHeader);
-			//Remove first element
-			array_shift($contentTypeHeader);
-			
-			return $contentTypeHeader;
-		}
-
-		protected function initializeVariables() {
-			$this->initializeInclude();
-			$this->initializeSort();
-			$this->initializeFilter();
-			$this->initializePage();
-			$this->getFieldsParametersFromRequest();
+		/*
+		 * ========================================
+		 *		      REQUEST CHECKING
+		 * ========================================
+		 */
+		
+		/**
+		 * Checks if request headers are valid
+		 */
+		public function checkHeaders() {
+			$this->checkRequestContentType();
+			$this->checkRequestAccept();
 		}
 		
-		protected function getFieldsParametersFromRequest () {
-			$this->fields = new Collection();
-			foreach ($this->input('fields') as $model => $fields) {
-				$this->fields->put($model, array_filter(explode(',', $fields)));
-			}
-		}
-		
+		/**
+		 * Check if request content-type header is valid
+		 */
 		protected function checkRequestContentType () {
 			if ($this->getContentType() === "jsonapi" || true) {
 				$mediaTypes = $this->getContentTypeMediaTypes();
@@ -167,6 +157,23 @@
 			}
 		}
 		
+		/**
+		 * @return array|string
+		 */
+		public function getContentTypeMediaTypes () {
+			//Get the content type header
+			$contentTypeHeader = $this->headers->get('CONTENT_TYPE');
+			//Convert to array
+			$contentTypeHeader = explode (';', $contentTypeHeader);
+			//Remove first element
+			array_shift($contentTypeHeader);
+			
+			return $contentTypeHeader;
+		}
+		
+		/**
+		 * Check if request accept headers are valid
+		 */
 		protected function checkRequestAccept () {
 			$acceptHeaders = explode (';', $this->header("accept"));
 				if (count($acceptHeaders) > 1 && $acceptHeaders [0] === "application/vnd.api+json") {
@@ -188,6 +195,11 @@
 			}
 		}
 		
+		/*
+		 * ========================================
+		 *		     GETTERS AND SETTERS
+		 * ========================================
+		 */
 		/**
 		 * @return RequestObject
 		 */
@@ -349,55 +361,25 @@
 			$this->fields = $fields;
 		}
 		
+		/**
+		 * @param $isAuthRequest
+		 */
 		public function setAuthRequest ($isAuthRequest) {
 			$this->isAuthRequest = $isAuthRequest;
 		}
 		
+		/**
+		 * @return bool
+		 */
 		public function isAuthRequest() {
 			return $this->isAuthRequest;
 		}
 		
-		/**
-		 *
+		/*
+		 * ========================================
+		 *		           UTILS
+		 * ========================================
 		 */
-		protected function initializeInclude() {
-			$this->include = ($parameter = $this->input('include')) ? explode(',', $parameter) : [];
-		}
-		
-		/**
-		 *
-		 */
-		protected function initializeSort() {
-			$this->sort = ($parameter = $this->input('sort')) ? explode(',', $parameter) : [];
-			
-		}
-		
-		protected function initializeFilter() {
-			$this->filter = ($parameter = $this->input('filter')) ? (is_array($parameter) ? $parameter : explode(',',
-				$parameter)) : [];
-		}
-		
-		/**
-		 *
-		 */
-		protected function initializePage() {
-			$this->page       = $page = $this->input('page') ? $this->input('page') : [];
-			
-			$this->checkIfPageIsValid($page);
-			
-			$this->pageSize   = (integer)$page['size'];
-			$this->pageNumber = (integer)$page['number'];
-		}
-		
-		/**
-		 * @param $page
-		 */
-		protected function checkIfPageIsValid($page) {
-			if (is_array($page) === false || empty($page['size']) === true || empty($page['number']) === true) {
-				Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
-			}
-		}
-		
 		/**
 		 * @return bool
 		 */
@@ -420,5 +402,6 @@
 				throw new \LogicException("You must configure your laravel installation to use JSON API request");
 			}
 		}
+		
 		
 	}
