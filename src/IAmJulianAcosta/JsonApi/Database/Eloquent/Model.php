@@ -3,10 +3,10 @@
 namespace IAmJulianAcosta\JsonApi\Database\Eloquent;
 
 use IAmJulianAcosta\JsonApi\Data\ErrorObject;
+use IAmJulianAcosta\JsonApi\Database\Eloquent\Relations\RelationUpdater;
 use IAmJulianAcosta\JsonApi\Exception;
 use IAmJulianAcosta\JsonApi\Http\Request;
 use IAmJulianAcosta\JsonApi\Http\Response;
-use IAmJulianAcosta\JsonApi\Utils\ClassUtils;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
 use Illuminate\Support\Collection;
@@ -14,9 +14,7 @@ use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Carbon\Carbon;
-use function Stringy\create as s;
 
 abstract class Model extends BaseModel {
 	
@@ -156,168 +154,8 @@ abstract class Model extends BaseModel {
 	 * @throws Exception
 	 */
 	public function updateRelationships ($relationships, $modelsNamespace, $creating = false) {
-		//Iterate all the relationships object
-		foreach ($relationships as $relationshipName => $relationship) {
-			if ($this->validateRelationship($relationship)) {
-				$relationshipData = $relationship ['data'];
-				//One to one
-				if (array_key_exists('type', $relationshipData) === true) {
-					$this->updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace);
-				} //One to many
-				else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
-					$relationshipDataItems = $relationshipData;
-					$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
-						$relationshipName);
-				}
-				else {
-					Exception::throwSingleException('Relationship type key not in the request',
-						ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST)
-					;
-				}
-			}
-		}
-	}
-	
-	/**
-	 * Validates if relationship object is valid.
-	 *
-	 * @param $relationship
-	 *
-	 * @return bool
-	 */
-	public function validateRelationship ($relationship) {
-		if (is_array ($relationship) === true) {
-			//If the relationship object is an array
-			if (array_key_exists ('data', $relationship) === true) {
-				//If the relationship has a data object
-				$relationshipData = $relationship ['data'];
-				if (is_array ($relationshipData) === true) {
-					return true;
-				}
-				else if (is_null ($relationshipData) === false) {
-					//If the data object is not array or null (invalid)
-					Exception::throwSingleException(
-						'Relationship "data" object must be an array', ErrorObject::INVALID_ATTRIBUTES,
-						Response::HTTP_BAD_REQUEST
-					);
-				}
-			}
-			else {
-				Exception::throwSingleException(
-					'Relationship must have an object with "data" key', ErrorObject::INVALID_ATTRIBUTES,
-					Response::HTTP_BAD_REQUEST
-				);
-			}
-		}
-		else {
-			//If the relationship is not an array, return error
-			Exception::throwSingleException(
-				'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
-			);
-		}
-	}
-	
-	
-	/**
-	 * @param array  $relationshipData
-	 * @param string $relationshipName
-	 * @param bool   $creating
-	 *
-	 * @throws \IAmJulianAcosta\JsonApi\Exception
-	 */
-	protected function updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace) {
-		//If we have a type of the relationship data
-		$type                  = $relationshipData['type'];
-		$relationshipModelName = ClassUtils::getModelClassName($type, $modelsNamespace);
-		$relationshipName      = StringUtils::camelizeRelationshipName($relationshipName);
-		
-		$this->checkRelationshipId($relationshipData);
-		
-		$relationshipId = $relationshipData['id'];
-		
-		/** @var $relationshipModelName Model */
-		
-		//Relationship exists in model
-		if (method_exists($this, $relationshipName) === true) {
-			/** @var Relation $relationship */
-			$relationship = $this->$relationshipName ();
-			
-			$newRelationshipModel = $this->getRelationshipModel($relationshipId, $relationshipModelName, $type);
-			//If creating, only update belongs to before saving. If not creating (updating), update
-			if ($this->shouldUpdateBelongsTo($creating, $relationship)) {
-				/** @var BelongsTo $relationship */
-				$relationship->associate($newRelationshipModel);
-			} //If creating, only update polymorphic saving. If not creating (updating), update
-			else if ($this->shouldUpdatePolymorphic($creating, $relationship)) {
-				/** @var MorphOneOrMany $relationship */
-				$relationship->save($newRelationshipModel);
-			}
-		}
-		else {
-			Exception::throwSingleException("Relationship $relationshipName is not valid",
-				ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
-		}
-	}
-	
-	/**
-	 * @param $modelsNamespace
-	 * @param $creating
-	 * @param $relationshipDataItems
-	 * @param $relationshipName
-	 */
-	protected function updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems, $relationshipName) {
-		foreach ($relationshipDataItems as $relationshipDataItem) {
-			if (array_key_exists('type', $relationshipDataItem) === true) {
-				$this->updateSingleRelationship($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
-			} else {
-				Exception::throwSingleException("Relationship type key not present in the request for $relationshipName",
-					ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
-			}
-		}
-	}
-	
-	/**
-	 * @param $creating
-	 * @param $relationship
-	 *
-	 * @return bool
-	 */
-	protected function shouldUpdateBelongsTo($creating, $relationship) {
-		$isBelongsto = $relationship instanceof BelongsTo;
-		
-		return $isBelongsto && (($creating === true && $this->exists === false) || $creating === false);
-	}
-	
-	/**
-	 * @param $creating
-	 * @param $isMorphOneOrMany
-	 *
-	 * @return bool
-	 */
-	protected function shouldUpdatePolymorphic($creating, $relationship) {
-		$isMorphOneOrMany = $relationship instanceof MorphOneOrMany;
-		return $isMorphOneOrMany && (($creating === true && $this->exists) || $creating === false);
-	}
-	
-	protected function checkRelationshipId ($relationshipData) {
-		//If we have an id of the relationship data
-		if (array_key_exists ('id', $relationshipData) === false) {
-			Exception::throwSingleException(
-				'Relationship id key not present in the request', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
-			);
-		}
-	}
-	
-	protected function getRelationshipModel ($relationshipId, $relationshipModelName, $type) {
-		$newRelationshipModel = $relationshipModelName::find($relationshipId);
-		
-		if (empty($newRelationshipModel) === true) {
-			$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
-			Exception::throwSingleException("Model $formattedType with id $relationshipId not found in database",
-				ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
-		}
-		
-		return $newRelationshipModel;
+		$relationUpdater = new RelationUpdater($this);
+		$relationUpdater->updateRelationships($relationships, $modelsNamespace, $creating);
 	}
 	
 	/*
@@ -389,6 +227,11 @@ abstract class Model extends BaseModel {
 		}
 	}
 	
+	/*
+	 * ========================================
+	 *		        MODEL CHANGED
+	 * ========================================
+	 */
 	/**
 	 * @param $originalAttributes
 	 */
@@ -424,6 +267,11 @@ abstract class Model extends BaseModel {
 		return $this->changed;
 	}
 	
+	/*
+	 * ========================================
+	 *		         SELECT QUERY
+	 * ========================================
+	 */
 	public static function generateSelectQuery (array $relations = []) {
 		$instance = new static;
 		
@@ -453,7 +301,7 @@ abstract class Model extends BaseModel {
 	 *
 	 * @return null|string
 	 */
-	private function getFormattedTimestamp ($date) {
+	protected function getFormattedTimestamp ($date) {
 		if (is_null($date) === false) {
 			return Carbon::createFromFormat("Y-m-d H:i:s", $date)->format('c');
 		}
