@@ -25,16 +25,8 @@
 		 *
 		 * @return Collection
 		 */
-		public static function getIncludedModels($models, Request $request) {
+		public static function getIncludedModels(Collection $models, Request $request) {
 			$includedModels = new Collection();
-			if ($models instanceof Collection === false) {
-				if (is_array($models) === true) {
-					$models = new Collection($models);
-				}
-				else {
-					$models = new Collection([$models]);
-				}
-			}
 			
 			/** @var Model $model */
 			foreach ($models as $model) {
@@ -75,8 +67,7 @@
 		 *
 		 * @return Collection
 		 */
-		public static function getModelsForRelation (
-			Model $model, $relationKey, Collection $requestAllowedFields = null, Collection &$models = null
+		public static function getModelsForRelation (Model $model, $relationKey, Collection $requestAllowedFields, Collection &$models = null
 		) {
 			if (is_null($models) === true) {
 				$models = new Collection();

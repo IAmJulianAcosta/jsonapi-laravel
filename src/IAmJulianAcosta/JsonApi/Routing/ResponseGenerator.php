@@ -104,6 +104,7 @@
 		private function generateResponse ($models, $loadRelations = true) {
 			$links = $this->generateResponseLinks();
 			
+			/** @var Collection $modelsCollection */
 			$modelsCollection = $this->getModelsAsCollection($models, $links);
 			
 			if ($loadRelations === true) {
@@ -142,6 +143,12 @@
 			}
 		}
 		
+		/**
+		 * @param Collection $models
+		 * @param LinksObject $links
+		 *
+		 * @return Collection
+		 */
 		protected function getModelsAsCollection ($models, LinksObject &$links) {
 			if ($models instanceof LengthAwarePaginator === true) {
 				/** @var LengthAwarePaginator $paginator */
