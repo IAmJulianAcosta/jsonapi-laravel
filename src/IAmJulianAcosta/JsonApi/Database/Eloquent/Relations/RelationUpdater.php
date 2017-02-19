@@ -105,6 +105,7 @@
 		public function updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace) {
 			//If we have a type of the relationship data
 			$type                  = $relationshipData['type'];
+			/** @var $relationshipModelName Model */
 			$relationshipModelName = ClassUtils::getModelClassName($type, $modelsNamespace);
 			$relationshipName      = StringUtils::camelizeRelationshipName($relationshipName);
 			
@@ -112,7 +113,6 @@
 			
 			$relationshipId = $relationshipData['id'];
 			
-			/** @var $relationshipModelName Model */
 			
 			//Relationship exists in model
 			if (method_exists($this->model, $relationshipName) === true) {
@@ -145,6 +145,13 @@
 			}
 		}
 		
+		/**
+		 * @param $relationshipId
+		 * @param $relationshipModelName
+		 * @param $type
+		 *
+		 * @return mixed
+		 */
 		protected function getRelationshipModel ($relationshipId, $relationshipModelName, $type) {
 			$newRelationshipModel = $relationshipModelName::find($relationshipId);
 			

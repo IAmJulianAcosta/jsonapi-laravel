@@ -6,13 +6,6 @@
 	 * @author  Julian Acosta <iam@julianacosta.me>
 	 */
 	
-	/**
-	 * Created by PhpStorm.
-	 * User: julian-acosta
-	 * Date: 2/18/17
-	 * Time: 6:13 PM
-	 */
-	
 	namespace IAmJulianAcosta\JsonApi\Routing;
 	
 	use IAmJulianAcosta\JsonApi\Data\ErrorObject;

@@ -10,7 +10,6 @@
 	
 	use IAmJulianAcosta\JsonApi\Cache\CacheManager;
 	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
-	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use IAmJulianAcosta\JsonApi\Exception;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\QueryFilter;

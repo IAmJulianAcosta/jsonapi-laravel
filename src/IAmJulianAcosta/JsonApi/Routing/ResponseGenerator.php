@@ -11,7 +11,6 @@
 	use IAmJulianAcosta\JsonApi\Cache\CacheManager;
 	use IAmJulianAcosta\JsonApi\Data\LinkObject;
 	use IAmJulianAcosta\JsonApi\Data\LinksObject;
-	use IAmJulianAcosta\JsonApi\Data\RequestObject;
 	use IAmJulianAcosta\JsonApi\Data\ResourceObject;
 	use IAmJulianAcosta\JsonApi\Data\TopLevelObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
@@ -207,5 +206,4 @@
 				);
 			}
 		}
-		
 	}

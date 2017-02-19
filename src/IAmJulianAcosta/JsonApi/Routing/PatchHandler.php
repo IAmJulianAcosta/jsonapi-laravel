@@ -15,6 +15,7 @@
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 	use IAmJulianAcosta\JsonApi\Validation\Validator;
+	use Illuminate\Support\Facades\Auth;
 	
 	class PatchHandler extends DataModifierHandler {
 		public function handle($id = null) {

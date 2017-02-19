@@ -8,12 +8,7 @@
 	
 	namespace IAmJulianAcosta\JsonApi\Routing;
 	
-	use IAmJulianAcosta\JsonApi\Cache\CacheManager;
-	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
-	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
-	use IAmJulianAcosta\JsonApi\Exception;
-	use IAmJulianAcosta\JsonApi\Http\Response;
-	use IAmJulianAcosta\JsonApi\Utils\StringUtils;
+	use Illuminate\Support\Facades\Auth;
 	
 	class DeleteHandler extends DataModifierHandler {
 		public function handle($id = null) {

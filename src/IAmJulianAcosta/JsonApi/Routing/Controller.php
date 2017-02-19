@@ -4,7 +4,6 @@
 	
 	use IAmJulianAcosta\JsonApi\Data\RequestObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
-	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 	use IAmJulianAcosta\JsonApi\Exception;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Http\Request;

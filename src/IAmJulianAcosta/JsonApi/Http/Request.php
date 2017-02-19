@@ -91,7 +91,7 @@
 		 */
 		protected $jsonApiContent;
 	
-		static $formats = [
+		protected static $formats = [
 			'html' => array('text/html', 'application/xhtml+xml'),
 			'txt' => array('text/plain'),
 			'js' => array('application/javascript', 'application/x-javascript', 'text/javascript'),
