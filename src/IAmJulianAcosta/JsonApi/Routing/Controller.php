@@ -2,33 +2,17 @@
 
 	namespace IAmJulianAcosta\JsonApi\Routing;
 	
-	use IAmJulianAcosta\JsonApi\Data\LinkObject;
-	use IAmJulianAcosta\JsonApi\Data\LinksObject;
 	use IAmJulianAcosta\JsonApi\Data\RequestObject;
-	use IAmJulianAcosta\JsonApi\Data\ResourceObject;
-	use IAmJulianAcosta\JsonApi\Data\TopLevelObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 	use IAmJulianAcosta\JsonApi\Exception;
-	use IAmJulianAcosta\JsonApi\Cache\CacheManager;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Http\Request;
-	use IAmJulianAcosta\JsonApi\QueryFilter;
-	use IAmJulianAcosta\JsonApi\SqlError;
 	use IAmJulianAcosta\JsonApi\Utils\ClassUtils;
-	use IAmJulianAcosta\JsonApi\Utils\ModelsUtils;
 	use IAmJulianAcosta\JsonApi\Utils\StringUtils;
-	use IAmJulianAcosta\JsonApi\Validation\ValidationException;
-	use Illuminate\Database\Eloquent\Builder;
-	use Illuminate\Database\Eloquent\ModelNotFoundException;
-	use Illuminate\Database\QueryException;
-	use Illuminate\Pagination\Paginator;
 	use Illuminate\Routing\Controller as BaseController;
 	use Illuminate\Support\Collection;
-	use Illuminate\Support\Facades\Auth;
-	use Illuminate\Support\Facades\Cache;
 	use Illuminate\Pagination\LengthAwarePaginator;
-	use function Stringy\create as s;
 	
 	abstract class Controller extends BaseController {
 		/**
@@ -84,7 +68,7 @@
 		 *
 		 * @var array
 		 */
-		protected $supportedMethods = ["get", "post", "put", "patch", "delete"];
+		protected static $supportedMethods = ["get", "post", "put", "patch", "delete"];
 		
 		/**
 		 * @var Request HTTP Request from user.
@@ -157,11 +141,10 @@
 		public function fulfillRequest () {
 			$this->beforeFulfillRequest();
 			
-			$this->checkIfMethodIsSupported();
-			
 			//Executes the request
 			$this->beforeHandleRequest();
-			$model = $this->handleRequest ();
+			$requestHandler = new RequestHandler($this);
+			$model          = $requestHandler->handleRequest ();
 			$this->afterHandleRequest($model);
 			
 			$this->checkIfModelIsInvalid($model);
@@ -173,18 +156,6 @@
 			return $response;
 		}
 		
-		/**
-		 * Check whether a method is supported for a model. If not supported, throws and exception
-		 *
-		 * @throws Exception
-		 */
-		private function checkIfMethodIsSupported() {
-			$method = $this->request->getMethod ();
-			if (in_array(s($method)->toLowerCase (), $this->supportedMethods) === false) {
-				Exception::throwSingleException('Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED,
-					Response::HTTP_METHOD_NOT_ALLOWED, static::ERROR_SCOPE);
-			}
-		}
 		
 		private function checkIfModelIsInvalid ($model) {
 			if (is_null ($model) === true) {
@@ -192,55 +163,6 @@
 					'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
 				);
 			}
-		}
-		
-		/**
-		 * @return Model|Collection
-		 */
-		protected function handleRequest () {
-			$methodName = ClassUtils::methodHandlerName($this->request->getMethod());
-			$models = $this->{$methodName}();
-
-			return $models;
-		}
-		
-		/**
-		 * @return Model|Collection|null
-		 */
-		protected function handleGet () {
-			$id = $this->request->getId();
-			
-			if (empty($id) === true) {
-				$handler = new GetAllHandler($this);
-				return $handler->handle();
-			}
-			else {
-				$handler = new GetSingleHandler($this);
-				return $handler->handle($this->request->getId());
-			}
-		}
-		
-		protected function handlePost () {
-			$handler = new PostHandler($this);
-			return $handler->handle($this->request->getId());
-		}
-		
-		protected function handlePatch () {
-			$handler = new PatchHandler($this);
-			return $handler->handle($this->request->getId());
-		}
-		
-		/**
-		 * Handle PATCH requests
-		 * @return Model|null
-		 */
-		protected function handlePut () {
-			return $this->handlePatch ();
-		}
-		
-		protected function handleDelete () {
-			$handler = new DeleteHandler($this);
-			return $handler->handle($this->request->getId());
 		}
 		
 		/**
@@ -369,6 +291,7 @@
 		 */
 		public function afterGeneratePostResponse ($model, Response $response) {
 			if ($model instanceof Model === true) {
+				/** @var Model $model */
 				$response->header('Location', $model->getModelURL());
 			}
 		}
