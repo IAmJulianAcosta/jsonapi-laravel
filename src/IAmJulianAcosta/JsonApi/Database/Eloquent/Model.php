@@ -217,27 +217,23 @@ abstract class Model extends BaseModel {
 	 * @throws Exception
 	 */
 	public function updateRelationships ($relationships, $modelsNamespace, $creating = false) {
-		if (empty($relationships) === false) {
-			//Iterate all the relationships object
-			foreach ($relationships as $relationshipName => $relationship) {
-				if ($this->validateRelationship ($relationship)) {
-					$relationshipData = $relationship ['data'];
-					//One to one
-					if (array_key_exists ('type', $relationshipData) === true) {
-						$this->updateSingleRelationship ($relationshipData, $relationshipName, $creating, $modelsNamespace);
-					}
-					//One to many
-					else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
-						$relationshipDataItems = $relationshipData;
-						$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
-							$relationshipName);
-					}
-					else {
-						Exception::throwSingleException(
-							'Relationship type key not in the request', ErrorObject::INVALID_ATTRIBUTES,
-							Response::HTTP_BAD_REQUEST
-						);
-					}
+		//Iterate all the relationships object
+		foreach ($relationships as $relationshipName => $relationship) {
+			if ($this->validateRelationship($relationship)) {
+				$relationshipData = $relationship ['data'];
+				//One to one
+				if (array_key_exists('type', $relationshipData) === true) {
+					$this->updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace);
+				} //One to many
+				else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
+					$relationshipDataItems = $relationshipData;
+					$this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems,
+						$relationshipName);
+				}
+				else {
+					Exception::throwSingleException('Relationship type key not in the request',
+						ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST)
+					;
 				}
 			}
 		}
