@@ -441,7 +441,7 @@ abstract class Model extends BaseModel {
 	}
 	
 	public static function throwInheritanceException ($modelName) {
-		throw new \LogicException(
+		throw new \InvalidArgumentException(
 			sprintf ("Model %s is not a JSONAPI model", $modelName)
 		);
 	}

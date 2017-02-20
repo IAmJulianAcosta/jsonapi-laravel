@@ -44,9 +44,7 @@
 					foreach ($modelsForRelation as $modelForRelation) {
 						//Check if object from collection is a model
 						if ($modelForRelation instanceof Model === false) {
-							throw new \InvalidArgumentException(
-								"Model " . get_class($modelForRelation) . " is not a JSON API model"
-							);
+							Model::throwInheritanceException(get_class($modelForRelation));
 						}
 						$includedModels->put(static::generateKey($modelForRelation), new ResourceObject($modelForRelation));
 					}
