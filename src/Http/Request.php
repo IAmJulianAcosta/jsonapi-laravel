@@ -116,10 +116,8 @@
 			array $files = null, array $server = null
 		) {
 			/** @var Request $duplicated */
-			$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files),
-				$server);
-			RequestInitializer::initialize($duplicated);
-			$duplicated->checkHeaders();
+			$duplicated = parent::duplicate($query, $request, $attributes, $cookies, $this->filterFiles($files), $server);
+			
 			return $duplicated;
 		}
 		

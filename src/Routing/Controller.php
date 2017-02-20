@@ -5,6 +5,7 @@
 	use IAmJulianAcosta\JsonApi\Data\RequestObject;
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use IAmJulianAcosta\JsonApi\Exception;
+	use IAmJulianAcosta\JsonApi\Http\RequestInitializer;
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	use IAmJulianAcosta\JsonApi\Http\Request;
 	use IAmJulianAcosta\JsonApi\Utils\ClassUtils;
@@ -84,6 +85,8 @@
 		 */
 		public function __construct (Request $request) {
 			$this->request = $request;
+			RequestInitializer::initialize($request);
+			$request->checkHeaders();
 			$this->setResourceNameFromClassName();
 			$this->initializeRequest($request);
 		}
