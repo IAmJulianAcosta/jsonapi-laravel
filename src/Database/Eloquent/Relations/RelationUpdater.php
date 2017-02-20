@@ -152,7 +152,7 @@
 		 * @return Model
 		 */
 		protected function getRelationshipModel ($relationshipId, $relationshipModelName, $type) {
-			$newRelationshipModel = forward_static_call_array ([$relationshipModelName, 'generateSelectQuery'], [$relationshipId]);
+			$newRelationshipModel = forward_static_call_array ([$relationshipModelName, 'find'], [$relationshipId]);
 			
 			if (empty($newRelationshipModel) === true) {
 				$formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
