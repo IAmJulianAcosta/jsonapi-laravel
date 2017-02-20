@@ -70,7 +70,7 @@
 		 * Generates model names from controller name class
 		 */
 		protected function generateModelName () {
-			$shortName = $this->resourceName;
+			$shortName = $this->controller->getResourceName ();
 			$this->shortModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true, true);
 			$this->fullModelName = ClassUtils::getModelClassName ($shortName, $this->modelsNamespace, true);
 		}

@@ -59,7 +59,7 @@
 		 *
 		 * @var array
 		 */
-		protected static $supportedMethods = ["get", "post", "put", "patch", "delete"];
+		public static $supportedMethods = ["get", "post", "put", "patch", "delete"];
 		
 		/**
 		 * @var Request HTTP Request from user.

@@ -38,13 +38,13 @@
 			$model->validateOnCreate ($this->request);
 			
 			//Update relationships twice, first to update belongsTo and then to update polymorphic and others
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->controller->getModelsNamespace(), true);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
 			
 			$this->controller->beforeSaveNewModel ($model);
 			$this->saveModel($model);
 			$this->controller->afterSaveNewModel ($model);
 			
-			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->controller->getModelsNamespace(), true);
+			$model->updateRelationships ($this->requestJsonApi->getRelationships(), $this->modelsNamespace, true);
 			$model->markChanged ();
 			CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName));
 			$this->controller->afterHandlePost ($model);
