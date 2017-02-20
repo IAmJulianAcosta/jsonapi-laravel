@@ -176,19 +176,19 @@
 		 */
 		public function afterGenerateResponse ($model, Response $response) {
 			switch ($this->requestType) {
-				case static::GET;
+				case static::GET:
 					$this->afterGenerateGetResponse ($model, $response);
 					break;
-				case static::GET_ALL;
+				case static::GET_ALL:
 					$this->afterGenerateGetAllResponse($model, $response);
 					break;
-				case static::POST;
+				case static::POST:
 					$this->afterGeneratePostResponse($model, $response);
 					break;
-				case static::PATCH;
+				case static::PATCH:
 					$this->afterGeneratePatchResponse($model, $response);
 					break;
-				case static::DELETE;
+				case static::DELETE:
 					$this->afterGenerateDeleteResponse($model, $response);
 					break;
 			}
