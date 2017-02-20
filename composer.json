@@ -31,10 +31,8 @@
         "justinrainbow/json-schema": "^1.5"
     },
     "autoload": {
-        "psr-0": {
-            "IAmJulianAcosta\\JsonApi\\": "src/"
-        },
         "psr-4": {
+            "IAmJulianAcosta\\JsonApi\\": "src/",
             "IAmJulianAcosta\\JsonApi\\Tests\\": "tests/"
         }
     }
