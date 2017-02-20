@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests;
+namespace IAmJulianAcosta\JsonApi\Tests;
 
 use Illuminate\Contracts\Console\Kernel;
 

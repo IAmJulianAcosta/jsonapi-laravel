@@ -1,10 +1,9 @@
 <?php
 
-namespace Tests;
+namespace IAmJulianAcosta\JsonApi\Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
-abstract class TestCase extends BaseTestCase
-{
-    use CreatesApplication;
+abstract class TestCase extends Orchestra\Testbench\TestCase {
+//    use CreatesApplication;
 }
