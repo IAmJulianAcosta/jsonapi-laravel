@@ -25,7 +25,7 @@
 		 */
 		protected static function getFieldsParametersFromRequest (Request &$request) {
 			$fieldsCollection = new Collection();
-			$fields = $request->input('fields');
+			$fields = $request->input('fields') ? $request->input('fields') : [];
 			if (is_array($fields) === true) {
 				foreach ($fields as $model => $field) {
 					$fieldsCollection->put($model, array_filter(explode(',', $field)));
@@ -80,8 +80,8 @@
 		 * @param $page
 		 */
 		protected static function checkIfPageIsValid($page) {
-			 if (empty($page['size']) === true || empty($page['number']) === true) {
-				Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
-			}
+			 if (empty ($page) === false && (empty($page['size']) === true || empty($page['number']) === true)) {
+				 Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
+			 }
 		}
 	}
