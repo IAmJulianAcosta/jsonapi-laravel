@@ -15,13 +15,14 @@
 	use IAmJulianAcosta\JsonApi\Http\Response;
 	
 	class StatusCodeGenerator {
-		/**
-		 * A method for getting the proper HTTP status code for a successful request
-		 *
-		 * @param  string $method "PUT", "POST", "DELETE" or "GET"
-		 * @param  Model|Collection|LengthAwarePaginator|null $model The model that a PUT request was executed against
-		 * @return int
-		 */
+        /**
+         * A method for getting the proper HTTP status code for a successful request
+         *
+         * @param  string $method "PUT", "POST", "DELETE" or "GET"
+         * @param  Model|Collection|LengthAwarePaginator|null $model The model that a PUT request was executed against
+         * @return int
+         * @throws Exception
+         */
 		public static function successfulHttpStatusCode($method, TopLevelObject $topLevelObject, $model = null) {
 			// if we did a put request, we need to ensure that the model wasn't
 			// changed in other ways than those specified by the request
@@ -36,6 +37,7 @@
 				case 'DELETE':
 					return static::generateCodeForDeleteRequest($topLevelObject);
 				case 'GET':
+					return static::generateCodeForGetRequest();
 			}
 			
 			// Code shouldn't reach this point, but if it does we assume that the
