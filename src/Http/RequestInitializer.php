@@ -83,7 +83,7 @@
 		 */
 		protected static function checkIfPageIsValid($page) {
             if (!empty($page) && (empty($page['size']) || empty($page['number']))) {
-                Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
+                Exception::throwSingleException('Expected page[size] or page[number]', 0, Response::HTTP_BAD_REQUEST);
             }
 		}
 	}
