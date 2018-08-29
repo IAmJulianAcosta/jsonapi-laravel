@@ -45,9 +45,7 @@
 						throw new Exception(
 							new Collection(
 								[
-									new SqlError ('Database error', ErrorObject::DATABASE_ERROR,
-										Response::HTTP_INTERNAL_SERVER_ERROR, $exception, static::ERROR_SCOPE
-									)
+									new SqlError('Database error', ErrorObject::DATABASE_ERROR,Response::HTTP_INTERNAL_SERVER_ERROR, $exception)
 								]
 							)
 						);
