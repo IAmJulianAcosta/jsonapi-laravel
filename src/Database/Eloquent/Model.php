@@ -84,14 +84,14 @@ abstract class Model extends BaseModel {
 	 *
 	 * @var  array
 	 */
-	public static $defaultExposedRelations;
+	public static $defaultExposedRelations = [];
 	
 	/**
 	 * If is relation is not present in this array, won't be returned, even if requested.
 	 *
 	 * @var  array
 	 */
-	public static $visibleRelations;
+	public static $visibleRelations = [];
 	
 	/**
 	 * Relations that will be returned by this model.
@@ -165,7 +165,7 @@ abstract class Model extends BaseModel {
 	 * @param array $requestedRelations
 	 */
 	public function loadRelatedModels($requestedRelations = []) {
-		if (empty($requestedRelations) === true) {
+		if (empty($requestedRelations)) {
 			$this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
 		}
 		else {
