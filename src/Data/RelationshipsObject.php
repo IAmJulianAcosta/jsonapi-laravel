@@ -14,7 +14,8 @@
 	use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
 	use Illuminate\Database\Eloquent\Relations\Pivot;
 	use Illuminate\Support\Pluralizer;
-	
+    use IAmJulianAcosta\JsonApi\Utils\StringUtils;
+
 	class RelationshipsObject extends ResponseObject {
 		/**
 		 * @var LinksObject
@@ -93,7 +94,7 @@
 						$resourceType = $firstItem->getResourceType ();
 						
 						//Generate index of array to add
-						$index = $relationName;
+                        $index =  StringUtils::dasherizedResourceName($relationName);
 						
 						//The relationName to add is an array with a data key that is itself an array
 						$relationData = [];
@@ -123,7 +124,7 @@
 					$resourceType = $model->getResourceType ();
 					
 					//Generate index of array to add
-					$index = $relationName;
+                    $index =  StringUtils::dasherizedResourceName($relationName);
 					
 					$relations[$index] = [
 						'data' => $this->generateRelationArrayInformation($model, $resourceType)
