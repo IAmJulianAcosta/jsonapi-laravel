@@ -69,10 +69,12 @@
 			}
 			else {
 				static::checkIfPageIsValid($page);
-				
-				$request->setPage($page);
-				$request->setPageSize((integer)$page['size']);
-				$request->setPageNumber((integer)$page['number']);
+
+                if (!empty($page)) {
+                    $request->setPage($page);
+                    $request->setPageSize((integer)$page['size']);
+                    $request->setPageNumber((integer)$page['number']);
+                }
 			}
 		}
 		
@@ -80,8 +82,8 @@
 		 * @param $page
 		 */
 		protected static function checkIfPageIsValid($page) {
-			 if (empty ($page) === false && (empty($page['size']) === true || empty($page['number']) === true)) {
-				 Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
-			 }
+            if (!empty($page) && (empty($page['size']) || empty($page['number']))) {
+                Exception::throwSingleException('Expected page[size] and page[number]', 0, Response::HTTP_BAD_REQUEST);
+            }
 		}
 	}
