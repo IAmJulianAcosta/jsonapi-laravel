@@ -122,7 +122,7 @@ abstract class Model extends BaseModel {
   public static function checkRequiredClassProperties() {
     foreach (static::$requiredClassProperties as $property) {
       $className = get_class(new static ());
-      $propertyIsSet = isset ($className::$$property) === false;
+      $propertyIsSet = !isset ($className::$$property);
       if ($propertyIsSet === true) {
         throw new \LogicException("Static property $property must be defined on $className model");
       }
@@ -188,17 +188,17 @@ abstract class Model extends BaseModel {
     $relation = array_shift($relations);
 
     //Now load it
-    if ($this->relationLoaded($relation) === false) {
+    if (!$this->relationLoaded($relation)) {
       $this->load($relation);
     }
 
     // If relations is not empty, load recursively
-    if (empty($relations) === false) {
+    if (!empty($relations)) {
       /** @var Model $nestedModel */
       $nestedModel = $this->{$relation};
-      if ($nestedModel instanceof Model === true) {
+      if ($nestedModel instanceof Model) {
         $nestedModel->loadRelatedModel($relations);
-      } else if ($nestedModel instanceof Collection === true) {
+      } else if ($nestedModel instanceof Collection) {
         $nestedModels = $nestedModel;
         foreach ($nestedModels as $nestedModel) {
           $nestedModel->loadRelatedModel($relations);
@@ -215,7 +215,7 @@ abstract class Model extends BaseModel {
     //We suppose that every attribute that ends in '_id' is a foreign key, but if convention is not
     //followed, an array with foreign keys can be used to store them
     foreach ($attributes as $attributeKey => $attribute) {
-      if (ends_with($attributeKey, '_id') === true || ends_with($attributeKey, '-id') === true) {
+      if (ends_with($attributeKey, '_id') || ends_with($attributeKey, '-id')) {
         $this->addForeignKey($attributeKey);
       }
     }
@@ -235,7 +235,7 @@ abstract class Model extends BaseModel {
 
     // loop through the new attributes, and ensure they are identical
     foreach ($newAttributes as $attribute => $value) {
-      if (array_key_exists($attribute, $originalAttributes) === false || $value !== $originalAttributes[$attribute]) {
+      if (!array_key_exists($attribute, $originalAttributes) || $value !== $originalAttributes[$attribute]) {
         $this->markChanged();
         break;
       }
@@ -270,7 +270,7 @@ abstract class Model extends BaseModel {
   public static function generateSelectQuery(array $relations = []) {
     $instance = new static;
 
-    if (empty($relations) === true) {
+    if (empty($relations)) {
       return $instance->newQuery();
     } else {
       return static::with(array_merge($relations, static::$defaultExposedRelations));
@@ -296,7 +296,7 @@ abstract class Model extends BaseModel {
    * @return null|string
    */
   protected function getFormattedTimestamp($date) {
-    if (is_null($date) === false) {
+    if (!is_null($date)) {
       return Carbon::createFromFormat("Y-m-d H:i:s", $date)->format('c');
     }
     return null;
@@ -416,7 +416,7 @@ abstract class Model extends BaseModel {
    * @return string
    */
   public function getResourceType() {
-    if (empty($this->resourceType) === false) {
+    if (!empty($this->resourceType)) {
       return $this->resourceType;
     } else {
       $reflectionClass = new \ReflectionClass($this);
@@ -431,7 +431,7 @@ abstract class Model extends BaseModel {
    * @return string
    */
   public function getModelURL() {
-    if (empty ($this->modelURL) === true) {
+    if (empty ($this->modelURL)) {
       return $this->modelURL = url(sprintf('%s/%d', Pluralizer::plural($this->getResourceType()), $this->{$this->getPrimaryKey()}));
     }
     return $this->modelURL;

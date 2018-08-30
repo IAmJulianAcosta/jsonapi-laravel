@@ -48,7 +48,7 @@ abstract class DataModifierHandler extends Handler {
       /** @var Model $model */
       $model = $modelName::findOrFail($id);
 
-      if (is_null($model) === true) {
+      if (is_null($model)) {
         throw new ModelNotFoundException();
       }
 
@@ -64,7 +64,7 @@ abstract class DataModifierHandler extends Handler {
   }
 
   protected function validateIfIdIsPresentInRequest($id) {
-    if (empty($id) === true) {
+    if (empty($id)) {
       Exception::throwSingleException(
         'No ID provided', ErrorObject::NO_ID, Response::HTTP_BAD_REQUEST, static::ERROR_SCOPE
       );

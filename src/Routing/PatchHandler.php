@@ -50,7 +50,7 @@ class PatchHandler extends DataModifierHandler {
 
   protected function fillModelAttributes(Model $model, $modelName) {
     $attributes = $this->requestJsonApi->getAttributes();
-    if (empty ($attributes) === false) {
+    if (!empty ($attributes)) {
       StringUtils::normalizeAttributes($attributes);
 
       /** @var Model $modelName */
@@ -60,7 +60,7 @@ class PatchHandler extends DataModifierHandler {
   }
 
   protected function checkIfClientGeneratedIdWasSent() {
-    if (empty($this->requestJsonApi->getId()) === false) {
+    if (!empty($this->requestJsonApi->getId())) {
       Exception::throwSingleException(
         "Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
         Response::HTTP_FORBIDDEN
@@ -69,7 +69,7 @@ class PatchHandler extends DataModifierHandler {
   }
 
   protected function checkIfEmptyModelWasCreated(Model $model) {
-    if (empty($model) === true) {
+    if (empty($model)) {
       Exception::throwSingleException(
         'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR
       );
@@ -77,7 +77,7 @@ class PatchHandler extends DataModifierHandler {
   }
 
   protected function clearCacheIfModelChanged(Model $model) {
-    if ($model->isChanged() === true) {
+    if ($model->isChanged()) {
       CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model);
     }
   }

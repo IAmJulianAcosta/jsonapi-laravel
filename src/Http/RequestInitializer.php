@@ -26,7 +26,7 @@ class RequestInitializer {
   protected static function getFieldsParametersFromRequest(Request &$request) {
     $fieldsCollection = new Collection();
     $fields = $request->input('fields') ? $request->input('fields') : [];
-    if (is_array($fields) === true) {
+    if (is_array($fields)) {
       foreach ($fields as $model => $field) {
         $fieldsCollection->put($model, array_filter(explode(',', $field)));
       }
@@ -63,7 +63,7 @@ class RequestInitializer {
   protected static function initializePage(Request &$request) {
     $page = $request->input('page') ? $request->input('page') : [];
 
-    if (is_array($page) === false) {
+    if (!is_array($page)) {
       Exception::throwSingleException('Page parameter must be an array', 0, Response::HTTP_BAD_REQUEST);
     } else {
       static::checkIfPageIsValid($page);

@@ -64,7 +64,7 @@ class StatusCodeGenerator {
    * @throws Exception
    */
   protected static function generateCodeForPatchRequest(Model $model) {
-    if (is_null($model) === false && $model->isChanged() === true) {
+    if (!is_null($model) && $model->isChanged() === true) {
       return Response::HTTP_OK;
     }
     Exception::throwSingleException(

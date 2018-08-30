@@ -143,7 +143,7 @@ class Request extends BaseRequest {
     if ($this->getContentType() === "jsonapi" || true) {
       $mediaTypes = $this->getContentTypeMediaTypes();
 
-      if (empty($mediaTypes) === false) {
+      if (!empty($mediaTypes)) {
         Exception::throwSingleException(
           "Content-Type header can't have media type parameters", 0, Response::HTTP_NOT_ACCEPTABLE
         );
@@ -186,7 +186,7 @@ class Request extends BaseRequest {
    * @throws \IAmJulianAcosta\JsonApi\Exception
    */
   public function extractData() {
-    if ($this->shouldHaveContent() === true) {
+    if ($this->shouldHaveContent()) {
       $content = json_decode($this->getContent(), true);
 
       $this->jsonApiContent = new RequestObject($content, $this);

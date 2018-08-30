@@ -65,7 +65,7 @@ class ResponseGenerator {
    */
   private function generateCacheableResponse($models) {
     $id = $this->request->getId();
-    if (empty($id) === true) {
+    if (empty($id)) {
       $key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
     } else {
       $key = CacheManager::getResponseCacheForSingleResource($id,
@@ -149,14 +149,14 @@ class ResponseGenerator {
    * @return Collection
    */
   protected function getModelsAsCollection($models, LinksObject &$links) {
-    if ($models instanceof LengthAwarePaginator === true) {
+    if ($models instanceof LengthAwarePaginator) {
       /** @var LengthAwarePaginator $paginator */
       $paginator = $models;
       $modelsCollection = new Collection($paginator->items());
       $links = $links->addLinks($this->getPaginationLinks($paginator));
-    } else if ($models instanceof Collection === true) {
+    } else if ($models instanceof Collection) {
       $modelsCollection = $models;
-    } else if ($models instanceof Model === true) {
+    } else if ($models instanceof Model) {
       $modelsCollection = new Collection([$models]);
     } else {
       Exception::throwSingleException("Unknown error generating response", 0,
@@ -200,7 +200,7 @@ class ResponseGenerator {
    */
   protected function generateResourceObject($models, Collection $modelsCollection) {
     //If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
-    if ($models instanceof Model === true) {
+    if ($models instanceof Model) {
       return new ResourceObject($modelsCollection->get(0));
     } else {
       return $modelsCollection->map(

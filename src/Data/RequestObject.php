@@ -84,7 +84,7 @@ class RequestObject extends JSONAPIDataObject {
    * @param $content
    */
   private function validateContent($content) {
-    if (isset ($content) === false || is_array($content) === false || array_key_exists('data', $content) === false) {
+    if (!($content) || !is_array($content) || !array_key_exists('data', $content)) {
       Exception::throwSingleException('Payload either contains misformed JSON or missing "data" parameter.',
         ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
     }
@@ -94,13 +94,13 @@ class RequestObject extends JSONAPIDataObject {
    * @param $data
    */
   private function validateType($data) {
-    if (array_key_exists("type", $data) === false) {
+    if (!array_key_exists("type", $data)) {
       Exception::throwSingleException(
         '"type" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES,
         Response::HTTP_BAD_REQUEST
       );
     }
-    if ($this->request->isAuthRequest() === false && $data['type'] !== $type = Pluralizer::plural($this->dataType)) {
+    if (!$this->request->isAuthRequest() && $data['type'] !== $type = Pluralizer::plural($this->dataType)) {
       Exception::throwSingleException(
         sprintf('"type" parameter is not valid. Expecting %s, %s given', $type, $data['type']),
         ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_CONFLICT
@@ -114,7 +114,7 @@ class RequestObject extends JSONAPIDataObject {
   private function validateId($data) {
     $method = $this->request->getMethod();
     $isPatch = $method === 'PATCH' || $method === 'PUT';
-    if ($isPatch === true && isset($data['id']) === false) {
+    if ($isPatch === true && !isset($data['id'])) {
       Exception::throwSingleException('"id" parameter not set in request.', ErrorObject::INVALID_ATTRIBUTES,
         Response::HTTP_BAD_REQUEST);
     }

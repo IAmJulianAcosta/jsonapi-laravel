@@ -25,7 +25,7 @@ class LinksObject extends ResponseObject {
 
   public function validateRequiredParameters() {
     foreach ($this->links as $link) {
-      if ($link instanceof LinkObject === false) {
+      if (!$link instanceof LinkObject) {
         Exception::throwSingleException("Links object can only contain LinkObjects",
           ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
       }

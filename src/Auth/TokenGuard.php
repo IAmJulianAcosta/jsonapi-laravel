@@ -60,7 +60,7 @@ class TokenGuard extends BaseTokenGuard {
   public function attempt(array $credentials = []) {
     /** @var Model $user */
     $user = $this->validateUser($credentials);
-    if (is_null($user) === false) {
+    if (!is_null($user)) {
       $user->api_token = Str::random(60);
       $user->save();
       return true;

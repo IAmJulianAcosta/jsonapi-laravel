@@ -39,7 +39,7 @@ class LinkObject extends ResponseObject {
     $this->key = $key;
 
     //No meta, just the URL
-    if (empty($meta) === false) {
+    if (!empty($meta)) {
       $this->linkObject = [
         "href" => $url,
         "meta" => $meta
@@ -51,11 +51,11 @@ class LinkObject extends ResponseObject {
   }
 
   public function validateRequiredParameters() {
-    if (empty ($this->key) === true) {
+    if (empty ($this->key)) {
       Exception::throwSingleException("Key must be present on link object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
-    if (empty ($this->url) === true && empty ($this->meta) === true) {
+    if (empty ($this->url) && empty ($this->meta)) {
       Exception::throwSingleException("Url or meta object must be present on link object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
@@ -63,7 +63,7 @@ class LinkObject extends ResponseObject {
 
   public function jsonSerialize() {
     $returnArray = [];
-    if (empty($this->linkObject) === false) {
+    if (!empty($this->linkObject)) {
       $this->pushInstanceObjectToReturnArray($returnArray, "related");
       return $returnArray;
     } else {

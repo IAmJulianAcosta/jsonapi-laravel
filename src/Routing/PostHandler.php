@@ -53,7 +53,7 @@ class PostHandler extends DataModifierHandler {
   }
 
   protected function checkIfClientGeneratedIdWasSent() {
-    if (empty($this->requestJsonApi->getId()) === false) {
+    if (!empty($this->requestJsonApi->getId())) {
       Exception::throwSingleException(
         "Creating a resource with a client generated ID is unsupported", ErrorObject::MALFORMED_REQUEST,
         Response::HTTP_FORBIDDEN
@@ -62,7 +62,7 @@ class PostHandler extends DataModifierHandler {
   }
 
   protected function checkIfEmptyModelWasCreated($model) {
-    if (empty($model) === true) {
+    if (empty($model)) {
       Exception::throwSingleException(
         'An unknown error occurred', ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR
       );

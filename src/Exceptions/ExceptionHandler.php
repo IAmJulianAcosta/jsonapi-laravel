@@ -22,7 +22,7 @@ class ExceptionHandler extends BaseHandler {
    */
   public function render($request, \Exception $exception) {
     $caller = debug_backtrace()[1]['function'];
-    if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception === true) {
+    if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception) {
       if ($caller === "renderHttpResponse") {
         return new Response("", 500);
       } else {

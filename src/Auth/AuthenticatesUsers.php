@@ -24,7 +24,7 @@ trait AuthenticatesUsers {
   use ValidatesRequests;
 
   public function __construct(Request $request) {
-    if (is_subclass_of(static::class, Controller::class) === true) {
+    if (is_subclass_of(static::class, Controller::class)) {
       if (empty(static::$isAuthController) || static::$isAuthController === false) {
         throw new \LogicException("Auth controller subclasses must have defined isAuthController static property as true");
       }
@@ -211,7 +211,7 @@ trait AuthenticatesUsers {
   public function guard() {
     /** @var \IAmJulianAcosta\JsonApi\Http\Request $request */
     $request = JsonApiRequest::convertIlluminateRequestToJsonApiRequest($this->request);
-    $guardType = is_null($request) === false ? $request->getGuardType() : null;
+    $guardType = !is_null($request) ? $request->getGuardType() : null;
 
     return Auth::guard($guardType);
   }

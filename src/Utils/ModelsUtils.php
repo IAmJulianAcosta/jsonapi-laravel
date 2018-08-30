@@ -35,7 +35,7 @@ class ModelsUtils {
       foreach ($exposedRelations as $relationName) {
         $modelsForRelation = static::getModelsForRelation($model, $relationName, $request->getFields());
 
-        if (is_null($modelsForRelation) === true) {
+        if (is_null($modelsForRelation)) {
           continue;
         }
 
@@ -44,7 +44,7 @@ class ModelsUtils {
         foreach ($modelsForRelation as $modelForRelation) {
           //Check if object from collection is a model
           $modelForRelation->loadRelatedModels();
-          if ($modelForRelation instanceof Model === false) {
+          if (!$modelForRelation instanceof Model) {
             Model::throwInheritanceException(get_class($modelForRelation));
           }
           $includedModels->put(static::generateKey($modelForRelation), new ResourceObject($modelForRelation));
@@ -68,7 +68,7 @@ class ModelsUtils {
    */
   public static function getModelsForRelation(Model $model, $relationKey, Collection $requestAllowedFields, Collection &$models = null
   ) {
-    if (is_null($models) === true) {
+    if (is_null($models)) {
       $models = new Collection();
     }
 
@@ -80,9 +80,9 @@ class ModelsUtils {
     static::validateRelationMethodInModel($model, $relationKey);
     $relationModels = $model->{$relationKey};
 
-    if (is_null($relationModels) === true) {
+    if (is_null($relationModels)) {
       return null;
-    } else if ($relationModels instanceof Collection === true) {
+    } else if ($relationModels instanceof Collection) {
       /** @var Model $relationModel */
       foreach ($relationModels as $relationModel) {
         static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
@@ -115,7 +115,7 @@ class ModelsUtils {
    * @param       $relationKey
    */
   protected static function validateRelationMethodInModel(Model $model, $relationKey) {
-    if (method_exists($model, $relationKey) === false) {
+    if (!method_exists($model, $relationKey)) {
       Exception::throwSingleException('Relation "' . $relationKey . '" does not exist in model',
         ErrorObject::RELATION_DOESNT_EXISTS_IN_MODEL, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
@@ -127,7 +127,7 @@ class ModelsUtils {
    * @param            $explodedRelationKeys
    */
   protected static function loadRelationForModel(Collection &$models, $relationModel, $explodedRelationKeys, $requestAllowedFields) {
-    if (empty($explodedRelationKeys) === false) {
+    if (!empty($explodedRelationKeys)) {
       static::getModelsForRelation($relationModel, implode(".", $explodedRelationKeys), $requestAllowedFields, $models);
     }
   }
@@ -166,7 +166,7 @@ class ModelsUtils {
    */
   protected static function filterUnwantedKeys(Collection $fields, $relationName, Model $model) {
     $allowedFields = $fields->get($relationName);
-    if (empty($allowedFields) === false) {
+    if (!empty($allowedFields)) {
       $model->addVisible($allowedFields);
     }
   }

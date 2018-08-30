@@ -53,10 +53,10 @@ class ResourceIdentifierObject extends ResponseObject {
    * Validates if required parameters for object are valid.
    */
   public function validateRequiredParameters() {
-    if (empty ($this->type) === true) {
+    if (empty ($this->type)) {
       Exception::throwSingleException("Model type invalid", 0, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
-    if (empty ($this->id) === true) {
+    if (empty ($this->id)) {
       Exception::throwSingleException("Model ID invalid", 0, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
   }

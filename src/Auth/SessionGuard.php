@@ -57,7 +57,7 @@ class SessionGuard extends \Illuminate\Auth\SessionGuard {
   protected function clearUserDataFromStorage() {
     $this->session->remove($this->getName());
 
-    if (is_null($this->getRecaller()) === false) {
+    if (!is_null($this->getRecaller())) {
       $this->getCookieJar()->queue($this->forgetRecaller());
     }
   }

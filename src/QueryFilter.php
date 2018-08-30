@@ -25,7 +25,7 @@ class QueryFilter {
    */
   public static function filterFields(Request $request) {
     $fields = $request->getFields();
-    if (empty ($fields) === false && $fields instanceof Collection) {
+    if (!empty ($fields) && $fields instanceof Collection) {
       $fieldsForRequestedModel = $fields->get('users');
       if (is_array($fieldsForRequestedModel)) {
         $fieldsForRequestedModel = array_merge($fieldsForRequestedModel, ['id']);
@@ -43,7 +43,7 @@ class QueryFilter {
    */
   public static function paginateRequest(Request $request, Builder &$query) {
     $columns = static::filterFields($request);
-    if (empty($request->getPage()) === false) {
+    if (!empty($request->getPage())) {
       $paginator = $query->paginate($request->getPageSize(), $columns,
         sprintf('page[size]=%d&page[number]', $request->getPageSize()), $request->getPageNumber());
       return $paginator;
@@ -57,9 +57,9 @@ class QueryFilter {
    */
   public static function sortRequest(Request $request, Builder &$query, $modelName) {
     $sort = $request->getSort();
-    if (empty($sort) === false) {
+    if (!empty($sort)) {
       foreach ($sort as $parameter) {
-        if (in_array($parameter, $modelName::$nonSortableColumns) === true) {
+        if (in_array($parameter, $modelName::$nonSortableColumns)) {
           Exception::throwSingleException(
             sprintf("Sorting request by parameter %s is not supported", $parameter), 0,
             Response::HTTP_BAD_REQUEST
@@ -101,7 +101,7 @@ class QueryFilter {
    * @param $query
    */
   protected static function applyFilters($filters, &$query) {
-    if (empty($filters) === false) {
+    if (!empty($filters)) {
       foreach ($filters as $filterName => $filterValues) {
         static::parse($filterValues, $filterName, $query);
       }
@@ -117,7 +117,7 @@ class QueryFilter {
     $mainRegex = '/([a-zA-Z]*)\[((?:\([a-z]+=(?:[0-9a-zA-Z,=<>\[\]\(\)]+,?)+\),?)+)\]/';
     preg_match_all($mainRegex, $filterValues, $matches);
     $method = $matches [1][0];
-    if (empty($matches[2]) === false) {
+    if (!empty($matches[2])) {
       //This regex separates the group methods https://regex101.com/r/pLeQCq/4
       $parenthesesRegex = '/\((?:(?:[a-z]+=(?:[[:alnum:]<>=]+,?)+)|(?:[a-z]+=\[?[a-zA-Z0-9,=<>\[\]\(\)]*?\]))\)/';
       preg_match_all($parenthesesRegex, $matches[2][0], $parenthesesMatches);
@@ -158,7 +158,7 @@ class QueryFilter {
 
     //If the method requires the second parameter as an array, create a new array with first parameter as
     //string and second parameter as array
-    if (in_array($method, static::$methodsThatReceiveAnArray) === true) {
+    if (in_array($method, static::$methodsThatReceiveAnArray)) {
       $filterValuesArray = [array_shift($filterValuesArray), $filterValuesArray];
     }
 

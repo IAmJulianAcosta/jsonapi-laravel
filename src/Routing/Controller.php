@@ -262,7 +262,7 @@ abstract class Controller extends BaseController {
    * Method that runs after generating a POST response. Should be implemented by child classes.
    */
   public function afterGeneratePostResponse($model, Response $response) {
-    if ($model instanceof Model === true) {
+    if ($model instanceof Model) {
       /** @var Model $model */
       $response->header('Location', $model->getModelURL());
     }

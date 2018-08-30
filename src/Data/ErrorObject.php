@@ -102,15 +102,15 @@ class ErrorObject extends ResponseObject {
   }
 
   public function validateRequiredParameters() {
-    if (empty ($this->key) === true) {
+    if (empty ($this->key)) {
       Exception::throwSingleException("Title must be present on errors object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
-    if (empty ($this->code) === true) {
+    if (empty ($this->code)) {
       Exception::throwSingleException("Code must be present on errors object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }
-    if (empty ($this->status) === true) {
+    if (empty ($this->status)) {
       Exception::throwSingleException("Status must be present on errors object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0);
     }

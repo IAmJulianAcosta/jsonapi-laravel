@@ -54,7 +54,7 @@ class RequestHandler {
   protected function handleGet($modelsNamespace) {
     $id = $this->request->getId();
 
-    if (empty($id) === true) {
+    if (empty($id)) {
       $handler = new GetAllHandler($this->controller, $modelsNamespace);
       return $handler->handle();
     } else {
@@ -106,14 +106,14 @@ class RequestHandler {
   protected function checkIfMethodIsSupported() {
     $method = $this->request->getMethod();
     $controllerClass = get_class($this->controller);
-    if (in_array(s($method)->toLowerCase(), $controllerClass::$supportedMethods) === false) {
+    if (!in_array(s($method)->toLowerCase(), $controllerClass::$supportedMethods)) {
       Exception::throwSingleException('Method not allowed', ErrorObject::HTTP_METHOD_NOT_ALLOWED,
         Response::HTTP_METHOD_NOT_ALLOWED);
     }
   }
 
   protected function checkIfModelIsInvalid($model) {
-    if (is_null($model) === true) {
+    if (is_null($model)) {
       Exception::throwSingleException(
         'Unknown ID', ErrorObject::UNKNOWN_ERROR, Response::HTTP_NOT_FOUND, static::ERROR_SCOPE
       );

@@ -79,7 +79,7 @@ abstract class Handler {
    * Check if this model inherits from JsonAPI Model
    */
   protected function checkModelInheritance() {
-    if (is_subclass_of($this->fullModelName, Model::class) === false) {
+    if (!is_subclass_of($this->fullModelName, Model::class)) {
       Model::throwInheritanceException($this->fullModelName);
     }
   }

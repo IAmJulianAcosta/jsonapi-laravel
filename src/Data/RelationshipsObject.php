@@ -46,8 +46,8 @@ class RelationshipsObject extends ResponseObject {
   }
 
   public function validateRequiredParameters() {
-    if (empty($this->links) === true) {
-      if (empty ($this->model) === true && empty ($this->meta) === true) {
+    if (empty($this->links)) {
+      if (empty ($this->model) && empty ($this->meta)) {
         Exception::throwSingleException(
           "Either 'model', 'links' or 'meta' object must be present on relationship object",
           ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0

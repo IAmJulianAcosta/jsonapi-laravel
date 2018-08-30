@@ -64,7 +64,7 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
    * @return bool
    */
   protected function checkEmpty($object) {
-    if ($object instanceof ResponseObject === true) {
+    if ($object instanceof ResponseObject) {
       return $object->isEmpty();
     } else if ($object instanceof Collection) {
       return $object->isEmpty();

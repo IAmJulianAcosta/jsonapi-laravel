@@ -32,7 +32,7 @@ trait RegistersUsers {
   protected function userRegistered(Request $request, Authenticatable $user, TopLevelObject $topLevelObject) {
     /** @var Guard $guard */
     $guard = $this->guard($request);
-    if ($guard instanceof TokenGuard === true) {
+    if ($guard instanceof TokenGuard) {
       /** @var TokenGuard $guard */
       $guard->addTokenToResponse($topLevelObject, $user);
     }
@@ -41,7 +41,7 @@ trait RegistersUsers {
   public function guard() {
     /** @var \IAmJulianAcosta\JsonApi\Http\Request $request */
     $request = $this->request;
-    $guardType = is_null($request) === false ? $request->getGuardType() : null;
+    $guardType = !is_null($request) ? $request->getGuardType() : null;
 
     return Auth::guard($guardType);
   }

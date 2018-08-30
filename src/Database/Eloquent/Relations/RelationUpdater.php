@@ -39,7 +39,7 @@ class RelationUpdater {
         $relationshipData = $relationship ['data'];
 
         //One to one
-        if (array_key_exists('type', $relationshipData) === true) {
+        if (array_key_exists('type', $relationshipData)) {
           $this->updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace);
         } //One to many
         else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
@@ -61,14 +61,15 @@ class RelationUpdater {
    * @return bool
    */
   public function validateRelationship($relationship) {
-    if (is_array($relationship) === true) {
+    if (is_array($relationship)) {
       //If the relationship object is an array
-      if (array_key_exists('data', $relationship) === true) {
+      if (array_key_exists('data', $relationship)) {
         //If the relationship has a data object
         $relationshipData = $relationship ['data'];
-        if (is_array($relationshipData) === true) {
+        if (is_array($relationshipData)) {
           return true;
-        } else if (is_null($relationshipData) === false) {
+        }
+        else if (!is_null($relationshipData)) {
           //If the data object is not array or null (invalid)
           Exception::throwSingleException(
             'Relationship "data" object must be an array', ErrorObject::INVALID_ATTRIBUTES,
@@ -109,7 +110,7 @@ class RelationUpdater {
     $relationshipId = $relationshipData['id'];
 
     //Relationship exists in model
-    if (method_exists($this->model, $relationshipName) === true) {
+    if (method_exists($this->model, $relationshipName)) {
       /** @var Relation $relationship */
       $relationship = $this->model->$relationshipName ();
 
@@ -131,7 +132,7 @@ class RelationUpdater {
 
   protected function checkRelationshipId($relationshipData) {
     //If we have an id of the relationship data
-    if (array_key_exists('id', $relationshipData) === false) {
+    if (!array_key_exists('id', $relationshipData)) {
       Exception::throwSingleException(
         'Relationship id key not present in the request', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
       );
@@ -148,7 +149,7 @@ class RelationUpdater {
   protected function getRelationshipModel($relationshipId, $relationshipModelName, $type) {
     $newRelationshipModel = forward_static_call_array([$relationshipModelName, 'find'], [$relationshipId]);
 
-    if (empty($newRelationshipModel) === true) {
+    if (empty($newRelationshipModel)) {
       $formattedType = s(Pluralizer::singular($type))->underscored()->humanize()->toLowerCase()->__toString();
       Exception::throwSingleException("Model $formattedType with id $relationshipId not found in database",
         ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
@@ -188,7 +189,7 @@ class RelationUpdater {
    */
   public function updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems, $relationshipName) {
     foreach ($relationshipDataItems as $relationshipDataItem) {
-      if (array_key_exists('type', $relationshipDataItem) === true) {
+      if (array_key_exists('type', $relationshipDataItem)) {
         $this->updateSingleRelationship($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
       } else {
         Exception::throwSingleException("Relationship type key not present in the request for $relationshipName",

@@ -22,7 +22,7 @@ class DeleteHandler extends DataModifierHandler {
     $model->validateUserDeletePermissions($this->request, Auth::user());
     $model->validateOnDelete($this->request);
 
-    if (is_null($model) === true) {
+    if (is_null($model)) {
       return null;
     }
 

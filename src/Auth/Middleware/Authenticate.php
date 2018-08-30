@@ -17,7 +17,7 @@ class Authenticate extends \Illuminate\Auth\Middleware\Authenticate {
   public function handle($request, Closure $next, ...$guards) {
     $user = $this->authenticate($guards);
 
-    if (is_null($user) === true) {
+    if (is_null($user)) {
       Exception::throwSingleException(
         "Invalid API key or not provided, you are not logged in",
         ErrorObject::UNAUTHORIZED_ACCESS_TOKEN_PROVIDED, Response::HTTP_UNAUTHORIZED
