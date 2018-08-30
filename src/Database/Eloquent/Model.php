@@ -80,7 +80,7 @@ abstract class Model extends BaseModel {
   protected $resourceType;
 
   /**
-   * Defines the exposed relations that are visible if no specific relations are requested.
+   * Defines the exposed relations that will be returned as included models if no specific relations are requested.
    *
    * @var  array
    */
@@ -94,7 +94,7 @@ abstract class Model extends BaseModel {
   public static $visibleRelations = [];
 
   /**
-   * Relations that will be returned by this model.
+   * Relations that will be returned in the included object of this model. This array is generated in runtime
    *
    * @var array
    */
@@ -177,7 +177,7 @@ abstract class Model extends BaseModel {
       $this->exposedRelations = array_intersect(static::$visibleRelations, $requestedRelations);
     }
     /** @var string $relation */
-    foreach ($this->exposedRelations as $relation) {
+    foreach (static::$visibleRelations as $relation) {
       //Explode the relation separated by dots
       $relationArray = explode(".", $relation);
 
