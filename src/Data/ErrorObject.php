@@ -52,6 +52,7 @@ class ErrorObject extends ResponseObject {
   const UNKNOWN_ERROR = 91;
   const SERVER_GENERIC_ERROR = 92;
   const DATABASE_ERROR = 93;
+  const INVALID_RELATION = 98;
   const LOGIC_ERROR = 99;
 
   const ERROR_LEVEL = 0;

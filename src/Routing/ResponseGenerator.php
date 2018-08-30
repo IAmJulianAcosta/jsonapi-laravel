@@ -151,6 +151,8 @@ class ResponseGenerator {
    * Load related models before generating response
    *
    * @param $models
+   *
+   * @throws Exception
    */
   private function loadRelatedModels(Collection $models) {
     /** @var Model $model */

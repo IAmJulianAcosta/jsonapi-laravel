@@ -2,11 +2,15 @@
 
 namespace IAmJulianAcosta\JsonApi\Database\Eloquent;
 
+use IAmJulianAcosta\JsonApi\Data\ErrorObject;
 use IAmJulianAcosta\JsonApi\Database\Eloquent\Relations\RelationUpdater;
+use IAmJulianAcosta\JsonApi\Exception;
+use IAmJulianAcosta\JsonApi\Http\Response;
 use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 use IAmJulianAcosta\JsonApi\Http\Request;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
+use Illuminate\Database\Eloquent\RelationNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Model as BaseModel;
@@ -168,6 +172,8 @@ abstract class Model extends BaseModel {
    * Load model relations
    *
    * @param array $requestedRelations
+   *
+   * @throws Exception
    */
   public function loadRelatedModels($requestedRelations = []) {
     if (empty($requestedRelations)) {
@@ -188,14 +194,22 @@ abstract class Model extends BaseModel {
 
   /**
    * @param array $relations
+   *
+   * @throws Exception
    */
   protected function loadRelatedModel($relations) {
     //Get the first relation to load
     $relation = array_shift($relations);
 
     //Now load it
-    if (!$this->relationLoaded($relation)) {
-      $this->load($relation);
+    try {
+      if (!$this->relationLoaded($relation)) {
+        $this->load($relation);
+      }
+    }
+    catch(RelationNotFoundException $e) {
+      Exception::throwSingleException('Invalid relationship: ' . $relation, ErrorObject::INVALID_RELATION,
+        Response::HTTP_NOT_IMPLEMENTED, 0, 'The relationship wasn\'t declared in the model, so you need to declare it on order to make this work');
     }
 
     // If relations is not empty, load recursively
