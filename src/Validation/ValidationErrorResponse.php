@@ -14,6 +14,8 @@ class ValidationErrorResponse extends ErrorResponse {
    *
    * @param Collection $errors
    * @param int        $httpStatusCode
+   *
+   * @throws \IAmJulianAcosta\JsonApi\Exception
    */
   public function __construct(Collection $errors, $httpStatusCode = self::HTTP_BAD_REQUEST) {
     parent::__construct($errors, $httpStatusCode);

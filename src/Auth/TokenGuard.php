@@ -11,6 +11,7 @@ namespace IAmJulianAcosta\JsonApi\Auth;
 use IAmJulianAcosta\JsonApi\Data\MetaObject;
 use IAmJulianAcosta\JsonApi\Data\TopLevelObject;
 use IAmJulianAcosta\JsonApi\Database\Eloquent\Model;
+use IAmJulianAcosta\JsonApi\Exception;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 
@@ -52,11 +53,22 @@ class TokenGuard extends BaseTokenGuard {
     return null;
   }
 
+  /**
+   * @param TopLevelObject  $topLevelObject
+   * @param Authenticatable $user
+   *
+   * @throws Exception
+   */
   public function addTokenToResponse(TopLevelObject $topLevelObject, Authenticatable $user) {
     $rememberToken = $user->getRememberToken();
     $topLevelObject->setMeta(new MetaObject(new Collection(["token" => $rememberToken])));
   }
 
+  /**
+   * @param array $credentials
+   *
+   * @return bool
+   */
   public function attempt(array $credentials = []) {
     /** @var Model $user */
     $user = $this->validateUser($credentials);

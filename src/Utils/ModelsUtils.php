@@ -21,9 +21,13 @@ class ModelsUtils {
   /**
    * Iterate through result set to fetch the requested resources to include.
    *
-   * @param $models
+   * @param Collection $models
+   *
+   * @param Request    $request
    *
    * @return Collection
+   * @throws Exception
+   * @throws \ReflectionException
    */
   public static function getIncludedModels(Collection $models, Request $request) {
     $includedModels = new Collection();
@@ -65,6 +69,7 @@ class ModelsUtils {
    * @param Collection $models
    *
    * @return Collection
+   * @throws Exception
    */
   public static function getModelsForRelation(Model $model, $relationKey, Collection $requestAllowedFields, Collection &$models = null
   ) {
@@ -82,12 +87,14 @@ class ModelsUtils {
 
     if (is_null($relationModels)) {
       return null;
-    } else if ($relationModels instanceof Collection) {
+    }
+    else if ($relationModels instanceof Collection) {
       /** @var Model $relationModel */
       foreach ($relationModels as $relationModel) {
         static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
       }
-    } else {
+    }
+    else {
       /** @var Model $relationModel */
       $relationModel = $relationModels;
       static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
@@ -102,6 +109,8 @@ class ModelsUtils {
    * @param Collection $models
    * @param            $explodedRelationKeys
    * @param Collection $requestAllowedFields
+   *
+   * @throws Exception
    */
   protected static function processModelRelation($relationKey, Model $relationModel, Collection &$models,
     $explodedRelationKeys, Collection $requestAllowedFields
@@ -113,6 +122,8 @@ class ModelsUtils {
   /**
    * @param Model $model
    * @param       $relationKey
+   *
+   * @throws Exception
    */
   protected static function validateRelationMethodInModel(Model $model, $relationKey) {
     if (!method_exists($model, $relationKey)) {
@@ -125,6 +136,9 @@ class ModelsUtils {
    * @param Collection $models
    * @param            $relationModel
    * @param            $explodedRelationKeys
+   * @param            $requestAllowedFields
+   *
+   * @throws Exception
    */
   protected static function loadRelationForModel(Collection &$models, $relationModel, $explodedRelationKeys, $requestAllowedFields) {
     if (!empty($explodedRelationKeys)) {

@@ -24,10 +24,20 @@ class AttributesObject extends ResponseObject {
    */
   protected $attributes;
 
+  /**
+   * AttributesObject constructor.
+   *
+   * @param Model $model
+   *
+   * @throws Exception
+   */
   public function __construct(Model $model) {
     $this->setModel($model);
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if (isset ($this->attributes [$this->model->getPrimaryKey()])) {
       Exception::throwSingleException("Attributes must not have ID key",
@@ -61,6 +71,11 @@ class AttributesObject extends ResponseObject {
     return empty ($this->attributes);
   }
 
+  /**
+   * @param $model
+   *
+   * @throws Exception
+   */
   public function setModel($model) {
     $this->model = $model;
     $this->setParameters();

@@ -58,6 +58,7 @@ class SessionGuard extends \Illuminate\Auth\SessionGuard {
     $this->session->remove($this->getName());
 
     if (!is_null($this->getRecaller())) {
+      /** @noinspection PhpMethodParametersCountMismatchInspection */
       $this->getCookieJar()->queue($this->forgetRecaller());
     }
   }

@@ -48,7 +48,8 @@ class Exception extends \Exception {
       $this->httpErrorCode = ErrorResponse::HTTP_BAD_REQUEST;
       $this->errorCode = ErrorObject::MULTIPLE_ERRORS;
       $this->errorMessage = "Bad request";
-    } else {
+    }
+    else {
       /** @var ErrorObject $error */
       $error = $errors->get(0);
       $this->httpErrorCode = $error->getStatus();
@@ -86,6 +87,7 @@ class Exception extends \Exception {
    * This method returns a HTTP response representation of the Exception
    *
    * @return \IAmJulianAcosta\JsonApi\Http\ErrorResponse
+   * @throws Exception
    */
   public function response() {
     return new ErrorResponse($this->errors, $this->httpErrorCode);

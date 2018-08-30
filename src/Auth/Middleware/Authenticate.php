@@ -14,6 +14,15 @@ use IAmJulianAcosta\JsonApi\Http\Response;
 use \Closure;
 
 class Authenticate extends \Illuminate\Auth\Middleware\Authenticate {
+  /**
+   * @param \Illuminate\Http\Request $request
+   * @param Closure                  $next
+   * @param mixed                    ...$guards
+   *
+   * @return mixed
+   * @throws Exception
+   * @throws \Illuminate\Auth\AuthenticationException
+   */
   public function handle($request, Closure $next, ...$guards) {
     $user = $this->authenticate($guards);
 

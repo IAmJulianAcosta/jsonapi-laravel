@@ -18,18 +18,25 @@ use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 trait AuthenticatesUsers {
   use \Illuminate\Foundation\Auth\AuthenticatesUsers;
   use ValidatesRequests;
 
+  /**
+   * AuthenticatesUsers constructor.
+   *
+   * @param Request $request
+   */
   public function __construct(Request $request) {
     if (is_subclass_of(static::class, Controller::class)) {
       if (empty(static::$isAuthController) || static::$isAuthController === false) {
         throw new \LogicException("Auth controller subclasses must have defined isAuthController static property as true");
       }
       parent::__construct($request);
-    } else {
+    }
+    else {
       throw new \LogicException("AuthenticatesUsers trait must be used with JSON API controller, please 
 				make your Auth controller a subclass of IAmJulianAcosta\\JsonApi\\Routing\\Controller");
     }
@@ -38,8 +45,9 @@ trait AuthenticatesUsers {
   /**
    * @param Request $request
    *
-   * @return Response
+   * @return \Illuminate\Http\Response
    * @throws Exception
+   * @noinspection PhpInconsistentReturnPointsInspection
    */
   public function login(Request $request) {
     $this->validateLogin($request);
@@ -75,7 +83,10 @@ trait AuthenticatesUsers {
     $validator = $this->getValidationFactory()->make($this->getAttributes($request), $rules, $messages, $customAttributes);
 
     if ($validator->fails()) {
-      $this->throwValidationException($request, $validator);
+      try {
+        $this->throwValidationException($request, $validator);
+      } catch (ValidationException $e) {
+      }
     }
   }
 
@@ -101,6 +112,8 @@ trait AuthenticatesUsers {
    *
    * @return Response
    * @throws Exception
+   * @throws \ReflectionException
+   * @noinspection PhpInconsistentReturnPointsInspection
    */
   protected function authenticated(Request $request, $user) {
     if ($user instanceof Model) {
@@ -112,7 +125,8 @@ trait AuthenticatesUsers {
       }
 
       return new Response($topLevelObject, Response::HTTP_OK);
-    } else {
+    }
+    else {
       Exception::throwSingleException(
         'User passed is not a valid Model object', ErrorObject::SERVER_GENERIC_ERROR,
         Response::HTTP_BAD_REQUEST
@@ -126,7 +140,6 @@ trait AuthenticatesUsers {
    * @param Request $request
    *
    * @return array
-   * @throws Exception
    */
   protected function credentials(Request $request) {
     $attributes = $this->getAttributes($request);
@@ -167,6 +180,7 @@ trait AuthenticatesUsers {
    * @param Request $request
    *
    * @return Response
+   * @throws Exception
    */
   public function logout(Request $request) {
     $this->guard()->logout();
@@ -182,6 +196,7 @@ trait AuthenticatesUsers {
    * @param Request $request
    *
    * @return Response
+   * @throws Exception
    */
   protected function sendLogoutResponse(Request $request) {
     return new Response(

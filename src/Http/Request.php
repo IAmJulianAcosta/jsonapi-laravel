@@ -130,6 +130,7 @@ class Request extends BaseRequest {
 
   /**
    * Checks if request headers are valid
+   * @throws Exception
    */
   public function checkHeaders() {
     $this->checkRequestContentType();
@@ -138,6 +139,7 @@ class Request extends BaseRequest {
 
   /**
    * Check if request content-type header is valid
+   * @throws Exception
    */
   protected function checkRequestContentType() {
     if ($this->getContentType() === "jsonapi" || true) {
@@ -148,7 +150,8 @@ class Request extends BaseRequest {
           "Content-Type header can't have media type parameters", 0, Response::HTTP_NOT_ACCEPTABLE
         );
       }
-    } else {
+    }
+    else {
       Exception::throwSingleException(
         "Content-Type header must be application/vnd.api+json", 0, Response::HTTP_NOT_ACCEPTABLE
       );
@@ -171,6 +174,7 @@ class Request extends BaseRequest {
 
   /**
    * Check if request accept headers are valid
+   * @throws Exception
    */
   protected function checkRequestAccept() {
     $acceptHeaders = explode(';', $this->header("accept"));
@@ -182,8 +186,6 @@ class Request extends BaseRequest {
 
   /**
    * Parses content from request into an array of values.
-   *
-   * @throws \IAmJulianAcosta\JsonApi\Exception
    */
   public function extractData() {
     if ($this->shouldHaveContent()) {
@@ -394,9 +396,10 @@ class Request extends BaseRequest {
    * @throws \LogicException
    */
   public static function convertIlluminateRequestToJsonApiRequest(BaseRequest $request) {
-    if ($request instanceof \IAmJulianAcosta\JsonApi\Http\Request) {
+    if ($request instanceof Request) {
       return $request;
-    } else {
+    }
+    else {
       throw new \LogicException("You must configure your laravel installation to use JSON API request");
     }
   }

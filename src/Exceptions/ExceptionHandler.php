@@ -8,6 +8,7 @@
 
 namespace IAmJulianAcosta\JsonApi\Exceptions;
 
+use IAmJulianAcosta\JsonApi\Exception;
 use Illuminate\Foundation\Exceptions\Handler as BaseHandler;
 use Illuminate\Http\Response;
 
@@ -19,13 +20,15 @@ class ExceptionHandler extends BaseHandler {
    * @param  \Exception               $exception
    *
    * @return \Illuminate\Http\Response
+   * @throws Exception
    */
   public function render($request, \Exception $exception) {
     $caller = debug_backtrace()[1]['function'];
-    if ($exception instanceof \IAmJulianAcosta\JsonApi\Exception) {
+    if ($exception instanceof Exception) {
       if ($caller === "renderHttpResponse") {
         return new Response("", 500);
-      } else {
+      }
+      else {
         $response = $exception->response();
       }
       return $response;

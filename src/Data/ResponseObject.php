@@ -20,6 +20,9 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
    * @param $returnArray
    * @param $key
    *
+   * @param $object
+   *
+   * @return array
    * @see Collection::jsonSerialize()
    */
   protected function pushToReturnArray(&$returnArray, $key, $object) {
@@ -28,15 +31,18 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
         $returnArray [$key] = $object->jsonSerialize();
 
         return $returnArray;
-      } else if ($object instanceof Jsonable) {
+      }
+      else if ($object instanceof Jsonable) {
         $returnArray [$key] = json_decode($object->toJson(), true);
 
         return $returnArray;
-      } else if ($object instanceof Arrayable) {
+      }
+      else if ($object instanceof Arrayable) {
         $returnArray [$key] = $object->toArray();
 
         return $returnArray;
-      } else {
+      }
+      else {
         $returnArray [$key] = $object;
 
         return $returnArray;
@@ -66,9 +72,11 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
   protected function checkEmpty($object) {
     if ($object instanceof ResponseObject) {
       return $object->isEmpty();
-    } else if ($object instanceof Collection) {
+    }
+    else if ($object instanceof Collection) {
       return $object->isEmpty();
-    } else {
+    }
+    else {
       return empty($object);
     }
   }

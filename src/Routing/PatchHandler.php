@@ -15,9 +15,17 @@ use IAmJulianAcosta\JsonApi\Exception;
 use IAmJulianAcosta\JsonApi\Http\Response;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
+use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 
 class PatchHandler extends DataModifierHandler {
+  /**
+   * @param null $id
+   *
+   * @return Model
+   * @throws Exception
+   * @throws \Throwable
+   */
   public function handle($id = null) {
     $this->controller->beforeHandlePatch();
     $this->controller->setRequestType(Controller::PATCH);
@@ -48,6 +56,12 @@ class PatchHandler extends DataModifierHandler {
     return $model;
   }
 
+  /**
+   * @param Model $model
+   * @param       $modelName
+   *
+   * @throws ValidationException
+   */
   protected function fillModelAttributes(Model $model, $modelName) {
     $attributes = $this->requestJsonApi->getAttributes();
     if (!empty ($attributes)) {
@@ -59,6 +73,9 @@ class PatchHandler extends DataModifierHandler {
     }
   }
 
+  /**
+   * @throws Exception
+   */
   protected function checkIfClientGeneratedIdWasSent() {
     if (!empty($this->requestJsonApi->getId())) {
       Exception::throwSingleException(
@@ -68,6 +85,11 @@ class PatchHandler extends DataModifierHandler {
     }
   }
 
+  /**
+   * @param Model $model
+   *
+   * @throws Exception
+   */
   protected function checkIfEmptyModelWasCreated(Model $model) {
     if (empty($model)) {
       Exception::throwSingleException(
@@ -76,6 +98,11 @@ class PatchHandler extends DataModifierHandler {
     }
   }
 
+  /**
+   * @param Model $model
+   *
+   * @throws \ReflectionException
+   */
   protected function clearCacheIfModelChanged(Model $model) {
     if ($model->isChanged()) {
       CacheManager::clearCache(StringUtils::dasherizedResourceName($this->resourceName), $this->requestJsonApi->getId(), $model);

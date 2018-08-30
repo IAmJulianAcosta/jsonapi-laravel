@@ -35,7 +35,10 @@ class RequestHandler {
   }
 
   /**
+   * @param $modelsNamespace
+   *
    * @return Model|Collection
+   * @throws Exception
    */
   public function handleRequest($modelsNamespace) {
     $this->checkIfMethodIsSupported();
@@ -49,6 +52,9 @@ class RequestHandler {
 
   /**
    * Handle GET requests
+   *
+   * @param $modelsNamespace
+   *
    * @return Model|Collection|null
    */
   protected function handleGet($modelsNamespace) {
@@ -57,7 +63,8 @@ class RequestHandler {
     if (empty($id)) {
       $handler = new GetAllHandler($this->controller, $modelsNamespace);
       return $handler->handle();
-    } else {
+    }
+    else {
       $handler = new GetSingleHandler($this->controller, $modelsNamespace);
       return $handler->handle($this->request->getId());
     }
@@ -65,7 +72,14 @@ class RequestHandler {
 
   /**
    * Handle POST requests
+   *
+   * @param $modelsNamespace
+   *
    * @return Model
+   * @throws Exception
+   * @throws \IAmJulianAcosta\JsonApi\Validation\ValidationException
+   * @throws \ReflectionException
+   * @throws \Throwable
    */
   protected function handlePost($modelsNamespace) {
     $handler = new PostHandler($this->controller, $modelsNamespace);
@@ -74,7 +88,12 @@ class RequestHandler {
 
   /**
    * Handle PATCH requests
+   *
+   * @param $modelsNamespace
+   *
    * @return Model|null
+   * @throws Exception
+   * @throws \Throwable
    */
   protected function handlePatch($modelsNamespace) {
     $handler = new PatchHandler($this->controller, $modelsNamespace);
@@ -83,7 +102,12 @@ class RequestHandler {
 
   /**
    * Handle PUT requests
+   *
+   * @param $modelsNamespace
+   *
    * @return Model|null
+   * @throws Exception
+   * @throws \Throwable
    */
   protected function handlePut($modelsNamespace) {
     return $this->handlePatch($modelsNamespace);
@@ -91,7 +115,11 @@ class RequestHandler {
 
   /**
    * Handle DELETE requests
+   *
+   * @param $modelsNamespace
+   *
    * @return Model|null
+   * @throws Exception
    */
   protected function handleDelete($modelsNamespace) {
     $handler = new DeleteHandler($this->controller, $modelsNamespace);
@@ -112,6 +140,11 @@ class RequestHandler {
     }
   }
 
+  /**
+   * @param $model
+   *
+   * @throws Exception
+   */
   protected function checkIfModelIsInvalid($model) {
     if (is_null($model)) {
       Exception::throwSingleException(

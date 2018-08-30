@@ -15,6 +15,7 @@ class ValidationException extends Exception {
    * This method returns a HTTP response representation of the Exception
    *
    * @return ValidationErrorResponse
+   * @throws Exception
    */
   public function response() {
     return new ValidationErrorResponse($this->errors, $this->httpErrorCode);

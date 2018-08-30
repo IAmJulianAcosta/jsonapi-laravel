@@ -12,6 +12,11 @@ use IAmJulianAcosta\JsonApi\Exception;
 use Illuminate\Database\Eloquent\Collection;
 
 class RequestInitializer {
+  /**
+   * @param Request $request
+   *
+   * @throws Exception
+   */
   public static function initialize(Request &$request) {
     static::initializeInclude($request);
     static::initializeSort($request);
@@ -21,7 +26,9 @@ class RequestInitializer {
   }
 
   /**
+   * @param Request $request
    *
+   * @throws Exception
    */
   protected static function getFieldsParametersFromRequest(Request &$request) {
     $fieldsCollection = new Collection();
@@ -30,42 +37,46 @@ class RequestInitializer {
       foreach ($fields as $model => $field) {
         $fieldsCollection->put($model, array_filter(explode(',', $field)));
       }
-    } else {
+    }
+    else {
       Exception::throwSingleException('Fields parameter must be an array', 0, Response::HTTP_BAD_REQUEST);
     }
     $request->setFields($fieldsCollection);
   }
 
   /**
-   *
+   * @param Request $request
    */
   protected static function initializeInclude(Request &$request) {
     $request->setInclude(($parameter = $request->input('include')) ? explode(',', $parameter) : []);
   }
 
   /**
-   *
+   * @param Request $request
    */
   protected static function initializeSort(Request &$request) {
     $request->setSort(($parameter = $request->input('sort')) ? explode(',', $parameter) : []);
   }
 
   /**
-   *
+   * @param Request $request
    */
   protected static function initializeFilter(Request &$request) {
     $request->setFilter(($parameter = $request->input('filter')) ? (is_array($parameter) ? $parameter : explode(',', $parameter)) : []);
   }
 
   /**
+   * @param Request $request
    *
+   * @throws Exception
    */
   protected static function initializePage(Request &$request) {
     $page = $request->input('page') ? $request->input('page') : [];
 
     if (!is_array($page)) {
       Exception::throwSingleException('Page parameter must be an array', 0, Response::HTTP_BAD_REQUEST);
-    } else {
+    }
+    else {
       static::checkIfPageIsValid($page);
 
       if (!empty($page)) {
@@ -78,6 +89,8 @@ class RequestInitializer {
 
   /**
    * @param $page
+   *
+   * @throws Exception
    */
   protected static function checkIfPageIsValid($page) {
     if (!empty($page) && (empty($page['size']) || empty($page['number']))) {

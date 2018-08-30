@@ -19,6 +19,7 @@ class StatusCodeGenerator {
    * A method for getting the proper HTTP status code for a successful request
    *
    * @param  string                                     $method "PUT", "POST", "DELETE" or "GET"
+   * @param TopLevelObject                              $topLevelObject
    * @param  Model|Collection|LengthAwarePaginator|null $model  The model that a PUT request was executed against
    *
    * @return int
@@ -62,6 +63,7 @@ class StatusCodeGenerator {
    *
    * @return int
    * @throws Exception
+   * @noinspection PhpInconsistentReturnPointsInspection
    */
   protected static function generateCodeForPatchRequest(Model $model) {
     if (!is_null($model) && $model->isChanged() === true) {
@@ -75,7 +77,8 @@ class StatusCodeGenerator {
   protected static function generateCodeForDeleteRequest(TopLevelObject $topLevelObject) {
     if (empty($topLevelObject->getMeta()) === true) {
       return Response::HTTP_NO_CONTENT;
-    } else {
+    }
+    else {
       return Response::HTTP_OK;
     }
   }

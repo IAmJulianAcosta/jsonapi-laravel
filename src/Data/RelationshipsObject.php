@@ -37,6 +37,16 @@ class RelationshipsObject extends ResponseObject {
    */
   protected $relationships;
 
+  /**
+   * RelationshipsObject constructor.
+   *
+   * @param Model|null       $model
+   * @param LinksObject|null $links
+   * @param MetaObject|null  $meta
+   *
+   * @throws Exception
+   * @throws \ReflectionException
+   */
   public function __construct(Model $model = null, LinksObject $links = null, MetaObject $meta = null) {
     $this->model = $model;
     $this->links = $links;
@@ -45,6 +55,9 @@ class RelationshipsObject extends ResponseObject {
     $this->setParameters();
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if (empty($this->links)) {
       if (empty ($this->model) && empty ($this->meta)) {
@@ -53,7 +66,8 @@ class RelationshipsObject extends ResponseObject {
           ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0
         );
       }
-    } else {
+    }
+    else {
       $links = $this->links->getLinks();
       if ($links->has('self') === false && $links->has('article') === false && $links->has('related') === false) {
         Exception::throwSingleException(
@@ -66,11 +80,16 @@ class RelationshipsObject extends ResponseObject {
 
   /**
    * Convert this model to an array with the JSON Api structure
+   * @throws \ReflectionException
    */
   private function setParameters() {
     $this->relationships = $this->relationsToArray();
   }
 
+  /**
+   * @return array
+   * @throws \ReflectionException
+   */
   public function relationsToArray() {
     $relations = [];
 
@@ -109,7 +128,8 @@ class RelationshipsObject extends ResponseObject {
             'data' => $relationData
           ];
           $relations[$index] = $relationName;
-        } else {
+        }
+        else {
           Model::throwInheritanceException(get_class($firstItem));
         }
       } //If is Model

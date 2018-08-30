@@ -19,10 +19,20 @@ class LinksObject extends ResponseObject {
    */
   protected $links;
 
+  /**
+   * LinksObject constructor.
+   *
+   * @param Collection $links
+   *
+   * @throws Exception
+   */
   public function __construct(Collection $links) {
     $this->setLinks($links);
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     foreach ($this->links as $link) {
       if (!$link instanceof LinkObject) {
@@ -49,6 +59,8 @@ class LinksObject extends ResponseObject {
 
   /**
    * @param Collection $links
+   *
+   * @throws Exception
    */
   public function setLinks(Collection $links) {
     $this->links = $links->mapWithKeys(

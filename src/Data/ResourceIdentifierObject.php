@@ -28,6 +28,14 @@ class ResourceIdentifierObject extends ResponseObject {
    */
   protected $type;
 
+  /**
+   * ResourceIdentifierObject constructor.
+   *
+   * @param Model $model
+   *
+   * @throws Exception
+   * @throws \ReflectionException
+   */
   public function __construct(Model $model) {
     //First remove all unwanted keys
     $model->filterForeignKeys();
@@ -38,6 +46,7 @@ class ResourceIdentifierObject extends ResponseObject {
 
   /**
    * Convert this model to an array with the JSON Api structure
+   * @throws \ReflectionException
    */
   protected function setParameters() {
     $model = $this->model;
@@ -51,6 +60,7 @@ class ResourceIdentifierObject extends ResponseObject {
 
   /**
    * Validates if required parameters for object are valid.
+   * @throws Exception
    */
   public function validateRequiredParameters() {
     if (empty ($this->type)) {

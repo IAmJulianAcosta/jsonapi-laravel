@@ -47,10 +47,18 @@ class ResponseGenerator {
     $this->resourceName = $controller->getResourceName();
   }
 
+  /**
+   * @param $model
+   *
+   * @return Response
+   * @throws Exception
+   * @throws \ReflectionException
+   */
   public function generateAdequateResponse($model) {
     if ($this->request->getMethod() === 'GET') {
       $response = $this->generateCacheableResponse($model);
-    } else {
+    }
+    else {
       $response = $this->generateNonCacheableResponse($model);
     }
     return $response;
@@ -67,7 +75,8 @@ class ResponseGenerator {
     $id = $this->request->getId();
     if (empty($id)) {
       $key = CacheManager::getResponseCacheForMultipleResources(StringUtils::dasherizedResourceName($this->resourceName));
-    } else {
+    }
+    else {
       $key = CacheManager::getResponseCacheForSingleResource($id,
         StringUtils::dasherizedResourceName($this->resourceName));
     }
@@ -89,6 +98,8 @@ class ResponseGenerator {
    *
    * @return Response
    *
+   * @throws Exception
+   * @throws \ReflectionException
    */
   private function generateNonCacheableResponse($models) {
     return $this->generateResponse($models, false);
@@ -99,6 +110,8 @@ class ResponseGenerator {
    * @param $loadRelations
    *
    * @return Response
+   * @throws Exception
+   * @throws \ReflectionException
    */
   private function generateResponse($models, $loadRelations = true) {
     $links = $this->generateResponseLinks();
@@ -120,6 +133,10 @@ class ResponseGenerator {
     return $response;
   }
 
+  /**
+   * @return LinksObject
+   * @throws Exception
+   */
   protected function generateResponseLinks() {
     return new LinksObject(
       new Collection(
@@ -147,6 +164,7 @@ class ResponseGenerator {
    * @param LinksObject $links
    *
    * @return Collection
+   * @throws Exception
    */
   protected function getModelsAsCollection($models, LinksObject &$links) {
     if ($models instanceof LengthAwarePaginator) {
@@ -154,11 +172,14 @@ class ResponseGenerator {
       $paginator = $models;
       $modelsCollection = new Collection($paginator->items());
       $links = $links->addLinks($this->getPaginationLinks($paginator));
-    } else if ($models instanceof Collection) {
+    }
+    else if ($models instanceof Collection) {
       $modelsCollection = $models;
-    } else if ($models instanceof Model) {
+    }
+    else if ($models instanceof Model) {
       $modelsCollection = new Collection([$models]);
-    } else {
+    }
+    else {
       Exception::throwSingleException("Unknown error generating response", 0,
         Response::HTTP_INTERNAL_SERVER_ERROR, static::ERROR_SCOPE);
     }
@@ -171,6 +192,7 @@ class ResponseGenerator {
    * @param LengthAwarePaginator $paginator
    *
    * @return Collection
+   * @throws Exception
    */
   protected function getPaginationLinks(LengthAwarePaginator $paginator) {
     $links = new Collection();
@@ -194,15 +216,19 @@ class ResponseGenerator {
   }
 
   /**
-   * @param $models
+   * @param            $models
+   * @param Collection $modelsCollection
    *
    * @return ResourceObject|Collection
+   * @throws Exception
+   * @throws \ReflectionException
    */
   protected function generateResourceObject($models, Collection $modelsCollection) {
     //If we have only a model, this will be the top level object, if not, will be a collection of ResourceObject
     if ($models instanceof Model) {
       return new ResourceObject($modelsCollection->get(0));
-    } else {
+    }
+    else {
       return $modelsCollection->map(
         function (Model $model) {
           return new ResourceObject($model);

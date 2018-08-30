@@ -28,6 +28,8 @@ class ResourceObject extends ResourceIdentifierObject {
 
   /**
    * Convert this model to an array with the JSON Api structure
+   * @throws \IAmJulianAcosta\JsonApi\Exception
+   * @throws \ReflectionException
    */
   protected function setParameters() {
     parent::setParameters();

@@ -15,8 +15,18 @@ use IAmJulianAcosta\JsonApi\Exception;
 use IAmJulianAcosta\JsonApi\Http\Response;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
+use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 
 class PostHandler extends DataModifierHandler {
+  /**
+   * @param null $id
+   *
+   * @return Model
+   * @throws Exception
+   * @throws ValidationException
+   * @throws \ReflectionException
+   * @throws \Throwable
+   */
   public function handle($id = null) {
     $this->controller->beforeHandlePost();
     $this->controller->setRequestType(Controller::POST);
@@ -52,6 +62,9 @@ class PostHandler extends DataModifierHandler {
     return $model;
   }
 
+  /**
+   * @throws Exception
+   */
   protected function checkIfClientGeneratedIdWasSent() {
     if (!empty($this->requestJsonApi->getId())) {
       Exception::throwSingleException(
@@ -61,6 +74,11 @@ class PostHandler extends DataModifierHandler {
     }
   }
 
+  /**
+   * @param $model
+   *
+   * @throws Exception
+   */
   protected function checkIfEmptyModelWasCreated($model) {
     if (empty($model)) {
       Exception::throwSingleException(

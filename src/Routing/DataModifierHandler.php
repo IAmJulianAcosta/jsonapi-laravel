@@ -16,6 +16,7 @@ abstract class DataModifierHandler extends Handler {
    * @param $model
    *
    * @throws Exception
+   * @throws \Throwable
    */
   protected function saveModel(Model $model) {
     try {
@@ -63,6 +64,11 @@ abstract class DataModifierHandler extends Handler {
     return null;
   }
 
+  /**
+   * @param $id
+   *
+   * @throws Exception
+   */
   protected function validateIfIdIsPresentInRequest($id) {
     if (empty($id)) {
       Exception::throwSingleException(

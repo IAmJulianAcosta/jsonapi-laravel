@@ -21,6 +21,7 @@ trait RegistersUsers {
   /**
    * Registers a new user
    *
+   * @param Request         $request
    * @param Authenticatable $user
    */
   public function registerUser(Request $request, Authenticatable $user) {
@@ -29,6 +30,13 @@ trait RegistersUsers {
     $this->guard($request)->login($user, true);
   }
 
+  /**
+   * @param Request         $request
+   * @param Authenticatable $user
+   * @param TopLevelObject  $topLevelObject
+   *
+   * @throws \IAmJulianAcosta\JsonApi\Exception
+   */
   protected function userRegistered(Request $request, Authenticatable $user, TopLevelObject $topLevelObject) {
     /** @var Guard $guard */
     $guard = $this->guard($request);

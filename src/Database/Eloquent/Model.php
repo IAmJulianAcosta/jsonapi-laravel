@@ -3,7 +3,7 @@
 namespace IAmJulianAcosta\JsonApi\Database\Eloquent;
 
 use IAmJulianAcosta\JsonApi\Database\Eloquent\Relations\RelationUpdater;
-use IAmJulianAcosta\JsonApi\Exception;
+use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 use IAmJulianAcosta\JsonApi\Http\Request;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
@@ -128,6 +128,11 @@ abstract class Model extends BaseModel {
     }
   }
 
+  /**
+   * @param bool $creatingModel
+   *
+   * @throws ValidationException
+   */
   public function validate($creatingModel = false) {
     $this->validator = Validator::validateModelAttributes(
       $this->attributes,
@@ -144,9 +149,10 @@ abstract class Model extends BaseModel {
   /**
    * Associate models' relationships
    *
+   * @param      $relationships
+   * @param      $modelsNamespace
    * @param bool $creating
    *
-   * @throws Exception
    */
   public function updateRelationships($relationships, $modelsNamespace, $creating = false) {
     $relationUpdater = new RelationUpdater($this);
@@ -166,7 +172,8 @@ abstract class Model extends BaseModel {
   public function loadRelatedModels($requestedRelations = []) {
     if (empty($requestedRelations)) {
       $this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
-    } else {
+    }
+    else {
       $this->exposedRelations = array_intersect(static::$visibleRelations, $requestedRelations);
     }
     /** @var string $relation */
@@ -197,7 +204,8 @@ abstract class Model extends BaseModel {
       $nestedModel = $this->{$relation};
       if ($nestedModel instanceof Model) {
         $nestedModel->loadRelatedModel($relations);
-      } else if ($nestedModel instanceof Collection) {
+      }
+      else if ($nestedModel instanceof Collection) {
         $nestedModels = $nestedModel;
         foreach ($nestedModels as $nestedModel) {
           $nestedModel->loadRelatedModel($relations);
@@ -271,7 +279,8 @@ abstract class Model extends BaseModel {
 
     if (empty($relations)) {
       return $instance->newQuery();
-    } else {
+    }
+    else {
       return static::with(array_merge($relations, static::$defaultExposedRelations));
     }
   }
@@ -413,11 +422,13 @@ abstract class Model extends BaseModel {
   /**
    * Returns the resource type if it is not null; class name otherwise
    * @return string
+   * @throws \ReflectionException
    */
   public function getResourceType() {
     if (!empty($this->resourceType)) {
       return $this->resourceType;
-    } else {
+    }
+    else {
       $reflectionClass = new \ReflectionClass($this);
 
       return $this->resourceType = Pluralizer::plural(
@@ -428,6 +439,7 @@ abstract class Model extends BaseModel {
 
   /**
    * @return string
+   * @throws \ReflectionException
    */
   public function getModelURL() {
     if (empty ($this->modelURL)) {

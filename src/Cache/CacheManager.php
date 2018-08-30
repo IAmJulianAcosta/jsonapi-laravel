@@ -68,8 +68,11 @@ class CacheManager {
 
 
   /**
+   * @param                                                  $resourceName
    * @param null                                             $id
    * @param \IAmJulianAcosta\JsonApi\Database\Eloquent\Model $model
+   *
+   * @throws \ReflectionException
    */
   public static function clearCache($resourceName, $id = null, Model $model = null) {
     //ID passed = update record

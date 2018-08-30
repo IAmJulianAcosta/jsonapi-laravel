@@ -19,7 +19,6 @@ class QueryFilter {
 
   /**
    * @param Request $request
-   * @param Builder $query
    *
    * @return array
    */
@@ -47,13 +46,20 @@ class QueryFilter {
       $paginator = $query->paginate($request->getPageSize(), $columns,
         sprintf('page[size]=%d&page[number]', $request->getPageSize()), $request->getPageNumber());
       return $paginator;
-    } else {
+    }
+    else {
       return $query->get($columns);
     }
   }
 
   /**
    * Function to handle sorting requests.
+   *
+   * @param Request $request
+   * @param Builder $query
+   * @param         $modelName
+   *
+   * @throws Exception
    */
   public static function sortRequest(Request $request, Builder &$query, $modelName) {
     $sort = $request->getSort();
@@ -180,7 +186,8 @@ class QueryFilter {
     a single query, if not, parse the string and group the methods:  */
     if ($filterName === "group") {
       static::parseGroup($filterValues, $query);
-    } else {
+    }
+    else {
       static::parseMethod($filterValues, $filterName, $query);
     }
   }

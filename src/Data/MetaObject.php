@@ -23,6 +23,9 @@ class MetaObject extends ResponseObject {
     $this->metaObjects = $metaObjects;
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if ($this->metaObjects->isEmpty()) {
       Exception::throwSingleException("Meta object should not be empty",

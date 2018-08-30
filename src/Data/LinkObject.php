@@ -33,6 +33,15 @@ class LinkObject extends ResponseObject {
    */
   protected $key;
 
+  /**
+   * LinkObject constructor.
+   *
+   * @param       $key
+   * @param       $url
+   * @param array $meta
+   *
+   * @throws Exception
+   */
   public function __construct($key, $url, $meta = []) {
     $this->url = $url;
     $this->meta = $meta;
@@ -44,12 +53,16 @@ class LinkObject extends ResponseObject {
         "href" => $url,
         "meta" => $meta
       ];
-    } else {
+    }
+    else {
       $this->url = $url;
     }
     $this->validateRequiredParameters();
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if (empty ($this->key)) {
       Exception::throwSingleException("Key must be present on link object",
@@ -66,7 +79,8 @@ class LinkObject extends ResponseObject {
     if (!empty($this->linkObject)) {
       $this->pushInstanceObjectToReturnArray($returnArray, "related");
       return $returnArray;
-    } else {
+    }
+    else {
       return $this->url;
     }
   }

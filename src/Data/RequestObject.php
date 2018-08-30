@@ -60,6 +60,9 @@ class RequestObject extends JSONAPIDataObject {
     $this->request = $request;
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if ($this->request->shouldHaveContent()) {
       $content = $this->content;
@@ -82,6 +85,8 @@ class RequestObject extends JSONAPIDataObject {
 
   /**
    * @param $content
+   *
+   * @throws Exception
    */
   private function validateContent($content) {
     if (!($content) || !is_array($content) || !array_key_exists('data', $content)) {
@@ -92,6 +97,8 @@ class RequestObject extends JSONAPIDataObject {
 
   /**
    * @param $data
+   *
+   * @throws Exception
    */
   private function validateType($data) {
     if (!array_key_exists("type", $data)) {
@@ -110,6 +117,8 @@ class RequestObject extends JSONAPIDataObject {
 
   /**
    * @param $data
+   *
+   * @throws Exception
    */
   private function validateId($data) {
     $method = $this->request->getMethod();

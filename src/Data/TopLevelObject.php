@@ -47,6 +47,8 @@ class TopLevelObject extends ResponseObject {
    * @param MetaObject|null                $meta
    * @param Collection|null                $included
    * @param LinksObject                    $links
+   *
+   * @throws Exception
    */
   public function __construct($data = null, $errors = null, MetaObject $meta = null, Collection $included = null,
     LinksObject $links = null
@@ -59,11 +61,21 @@ class TopLevelObject extends ResponseObject {
     $this->validateRequiredParameters();
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     $this->validatePresence($this->data, $this->errors, $this->meta);
     $this->validateCoexistence($this->data, $this->errors);
   }
 
+  /**
+   * @param $data
+   * @param $errors
+   * @param $meta
+   *
+   * @throws Exception
+   */
   private function validatePresence($data, $errors, $meta) {
     if (empty ($data) && empty($errors) && empty ($meta)) {
       Exception::throwSingleException(
@@ -73,6 +85,12 @@ class TopLevelObject extends ResponseObject {
     }
   }
 
+  /**
+   * @param $data
+   * @param $errors
+   *
+   * @throws Exception
+   */
   private function validateCoexistence($data, $errors) {
     if (!empty ($data) && !empty($errors)) {
       Exception::throwSingleException(
@@ -82,6 +100,10 @@ class TopLevelObject extends ResponseObject {
     }
   }
 
+  /**
+   * @return array|mixed
+   * @throws Exception
+   */
   public function jsonSerialize() {
     $returnArray = [
       "jsonapi" => [
@@ -98,6 +120,13 @@ class TopLevelObject extends ResponseObject {
     return $returnArray;
   }
 
+  /**
+   * @param $returnArray
+   * @param $key
+   *
+   * @return mixed|void
+   * @throws Exception
+   */
   protected function pushInstanceObjectToReturnArray(&$returnArray, $key) {
     if ($key === "included") {
       if (empty($this->data) && empty($this->errors) && empty($this->meta)) {
@@ -123,6 +152,8 @@ class TopLevelObject extends ResponseObject {
 
   /**
    * @param Collection|ResourceObject $data
+   *
+   * @throws Exception
    */
   public function setData($data) {
     $this->data = $data;
@@ -138,6 +169,8 @@ class TopLevelObject extends ResponseObject {
 
   /**
    * @param array $errors
+   *
+   * @throws Exception
    */
   public function setErrors($errors) {
     $this->errors = $errors;
@@ -153,6 +186,8 @@ class TopLevelObject extends ResponseObject {
 
   /**
    * @param MetaObject $meta
+   *
+   * @throws Exception
    */
   public function setMeta(MetaObject $meta) {
     $this->meta = $meta;

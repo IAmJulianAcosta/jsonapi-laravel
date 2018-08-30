@@ -135,23 +135,21 @@ class ValidationError extends ErrorObject {
         //Returning before break, omitting.
         if ($this->attribute === 'email') {
           return static::EXISTING_USER_EMAIL;
-        } else {
+        }
+        else {
           return static::UNIQUE;
         }
       default:
         $constantRuleName = s($this->rule)->underscored()->toUpperCase()->__toString();
-        try {
-          return constant("ValidationError::$constantRuleName");
-        } catch (\ErrorException $e) {
-          return static::NULL_ERROR_CODE;
-        }
+        return constant("ValidationError::$constantRuleName");
     }
   }
 
   protected function normalizeErrorCode(&$rule) {
     if ($rule === "array") {
       $rule = "array_error";
-    } else if ($rule === "alpha_num") {
+    }
+    else if ($rule === "alpha_num") {
       $rule = "alpha_numeric";
     }
   }

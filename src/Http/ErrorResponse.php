@@ -16,6 +16,8 @@ class ErrorResponse extends Response {
    *
    * @param Collection $errors
    * @param int        $httpErrorCode
+   *
+   * @throws \IAmJulianAcosta\JsonApi\Exception
    */
   public function __construct(Collection $errors, $httpErrorCode = self::HTTP_BAD_REQUEST) {
     parent::__construct(new TopLevelObject(null, $errors), $httpErrorCode);

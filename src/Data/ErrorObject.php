@@ -101,6 +101,9 @@ class ErrorObject extends ResponseObject {
     $this->meta = $meta;
   }
 
+  /**
+   * @throws Exception
+   */
   public function validateRequiredParameters() {
     if (empty ($this->key)) {
       Exception::throwSingleException("Title must be present on errors object",
@@ -179,6 +182,8 @@ class ErrorObject extends ResponseObject {
 
   /**
    * @param int $status
+   *
+   * @throws Exception
    */
   public function setStatus($status) {
     $this->status = $status;
@@ -194,6 +199,8 @@ class ErrorObject extends ResponseObject {
 
   /**
    * @param int $code
+   *
+   * @throws Exception
    */
   public function setCode($code) {
     $this->code = $code;
@@ -202,6 +209,8 @@ class ErrorObject extends ResponseObject {
 
   /**
    * @param string $title
+   *
+   * @throws Exception
    */
   public function setTitle($title) {
     $this->title = $title;

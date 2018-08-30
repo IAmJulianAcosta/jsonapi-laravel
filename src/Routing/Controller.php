@@ -82,6 +82,8 @@ abstract class Controller extends BaseController {
    * Controller constructor.
    *
    * @param Request $request
+   *
+   * @throws Exception
    */
   public function __construct(Request $request) {
     $this->request = $request;
@@ -93,6 +95,8 @@ abstract class Controller extends BaseController {
 
   /**
    * @param Request $request
+   *
+   * @throws Exception
    */
   protected function initializeRequest(Request $request) {
     $request->extractData();
@@ -118,8 +122,11 @@ abstract class Controller extends BaseController {
   /**
    * Fulfills the API request and return a response. This is the entrypoint of controller.
    *
+   * @param $modelsNamespace
+   *
    * @return Response
    * @throws Exception
+   * @throws \ReflectionException
    */
   public function fulfillRequest($modelsNamespace) {
     $this->beforeFulfillRequest();
@@ -162,6 +169,8 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after handling a request. Should be implemented by child classes.
+   *
+   * @param $models
    */
   public function afterHandleRequest($models) {
 
@@ -169,6 +178,8 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs before generating the response. Should be implemented by child classes.
+   *
+   * @param $models
    */
   public function beforeGenerateResponse($models) {
 
@@ -176,6 +187,11 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating the response. Shouldn't be overridden by child classes.
+   *
+   * @param          $model
+   * @param Response $response
+   *
+   * @throws \ReflectionException
    */
   public function afterGenerateResponse($model, Response $response) {
     switch ($this->requestType) {
@@ -215,6 +231,9 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating a GET response. Should be implemented by child classes.
+   *
+   * @param          $model
+   * @param Response $response
    */
   public function afterGenerateGetResponse($model, Response $response) {
 
@@ -239,6 +258,9 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+   *
+   * @param          $model
+   * @param Response $response
    */
   public function afterGenerateGetAllResponse($model, Response $response) {
 
@@ -253,6 +275,8 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after handling a POST request. Should be implemented by child classes.
+   *
+   * @param Model $model
    */
   public function afterHandlePost(Model $model) {
 
@@ -260,6 +284,11 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating a POST response. Should be implemented by child classes.
+   *
+   * @param          $model
+   * @param Response $response
+   *
+   * @throws \ReflectionException
    */
   public function afterGeneratePostResponse($model, Response $response) {
     if ($model instanceof Model) {
@@ -277,6 +306,8 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after handling a PATCH request. Should be implemented by child classes.
+   *
+   * @param $model
    */
   public function afterHandlePatch($model) {
 
@@ -284,6 +315,9 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+   *
+   * @param          $model
+   * @param Response $response
    */
   public function afterGeneratePatchResponse($model, Response $response) {
 
@@ -298,6 +332,8 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after handling a DELETE request. Should be implemented by child classes.
+   *
+   * @param $model
    */
   public function afterHandleDelete($model) {
 
@@ -305,6 +341,9 @@ abstract class Controller extends BaseController {
 
   /**
    * Method that runs after generating a GET response of all resources. Should be implemented by child classes.
+   *
+   * @param          $model
+   * @param Response $response
    */
   public function afterGenerateDeleteResponse($model, Response $response) {
 

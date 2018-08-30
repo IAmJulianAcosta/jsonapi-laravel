@@ -32,7 +32,14 @@ class RelationUpdater {
     $this->model = $model;
   }
 
-  public function updateRelationships($relationships, $modelsNamespace, $creating) {
+  /**
+   * @param $relationships
+   * @param $modelsNamespace
+   * @param $creating
+   *
+   * @throws Exception
+   */
+  public function checkRequiredClassPropertiesupdateRelationships($relationships, $modelsNamespace, $creating) {
     //Iterate all the relationships object
     foreach ($relationships as $relationshipName => $relationship) {
       if ($this->validateRelationship($relationship)) {
@@ -45,7 +52,8 @@ class RelationUpdater {
         else if (count(array_filter(array_keys($relationshipData), 'is_string')) == 0) {
           $relationshipDataItems = $relationshipData;
           $this->updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems, $relationshipName);
-        } else {
+        }
+        else {
           Exception::throwSingleException('Relationship type key not in the request',
             ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
         }
@@ -59,6 +67,7 @@ class RelationUpdater {
    * @param $relationship
    *
    * @return bool
+   * @throws Exception
    */
   public function validateRelationship($relationship) {
     if (is_array($relationship)) {
@@ -76,18 +85,21 @@ class RelationUpdater {
             Response::HTTP_BAD_REQUEST
           );
         }
-      } else {
+      }
+      else {
         Exception::throwSingleException(
           'Relationship must have an object with "data" key', ErrorObject::INVALID_ATTRIBUTES,
           Response::HTTP_BAD_REQUEST
         );
       }
-    } else {
+    }
+    else {
       //If the relationship is not an array, return error
       Exception::throwSingleException(
         'Relationship object is not an array', ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST
       );
     }
+    return false;
   }
 
 
@@ -96,7 +108,9 @@ class RelationUpdater {
    * @param string $relationshipName
    * @param bool   $creating
    *
-   * @throws \IAmJulianAcosta\JsonApi\Exception
+   * @param        $modelsNamespace
+   *
+   * @throws Exception
    */
   public function updateSingleRelationship($relationshipData, $relationshipName, $creating, $modelsNamespace) {
     //If we have a type of the relationship data
@@ -124,12 +138,18 @@ class RelationUpdater {
         /** @var MorphOneOrMany $relationship */
         $relationship->save($newRelationshipModel);
       }
-    } else {
+    }
+    else {
       Exception::throwSingleException("Relationship $relationshipName is not valid",
         ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
     }
   }
 
+  /**
+   * @param $relationshipData
+   *
+   * @throws Exception
+   */
   protected function checkRelationshipId($relationshipData) {
     //If we have an id of the relationship data
     if (!array_key_exists('id', $relationshipData)) {
@@ -145,6 +165,7 @@ class RelationUpdater {
    * @param $type
    *
    * @return Model
+   * @throws Exception
    */
   protected function getRelationshipModel($relationshipId, $relationshipModelName, $type) {
     $newRelationshipModel = forward_static_call_array([$relationshipModelName, 'find'], [$relationshipId]);
@@ -186,12 +207,15 @@ class RelationUpdater {
    * @param $creating
    * @param $relationshipDataItems
    * @param $relationshipName
+   *
+   * @throws Exception
    */
   public function updateMultipleRelationships($modelsNamespace, $creating, $relationshipDataItems, $relationshipName) {
     foreach ($relationshipDataItems as $relationshipDataItem) {
       if (array_key_exists('type', $relationshipDataItem)) {
         $this->updateSingleRelationship($relationshipDataItem, $relationshipName, $creating, $modelsNamespace);
-      } else {
+      }
+      else {
         Exception::throwSingleException("Relationship type key not present in the request for $relationshipName",
           ErrorObject::INVALID_ATTRIBUTES, Response::HTTP_BAD_REQUEST);
       }

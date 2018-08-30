@@ -17,6 +17,7 @@ class ClassUtils {
    *
    * @param      $controllerShortName string The name of the model (in plural)
    *
+   * @param      $namespace
    * @param bool $isPlural
    * @param bool $short
    *
@@ -34,6 +35,8 @@ class ClassUtils {
 
   /**
    * Generates controller short class name
+   *
+   * @param $controllerClass
    *
    * @return string
    */
@@ -58,6 +61,7 @@ class ClassUtils {
    * Generates model class name Default output: Path\To\Model\ModelName
    *
    * @param string $modelName   The name of the model
+   * @param        $namespace
    * @param bool   $isPlural    If is needed to convert this to singular
    * @param bool   $short       Should return short name (without namespace)
    * @param bool   $toLowerCase Should return lowered case model name
