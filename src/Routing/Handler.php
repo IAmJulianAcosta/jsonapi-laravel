@@ -52,19 +52,13 @@ abstract class Handler {
     $this->modelsNamespace = $modelsNamespace;
     $this->generateModelName();
     $this->checkModelInheritance();
+    forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
     $this->request = $controller->getRequest();
     $this->requestJsonApi = $controller->getRequestJsonApi();
     $this->resourceName = $controller->getResourceName();
   }
 
   abstract public function handle($id = null);
-
-  public function initializeModelNamespaces($modelsNamespace) {
-    $this->modelsNamespace = $modelsNamespace;
-    $this->generateModelName();
-    $this->checkModelInheritance();
-    forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
-  }
 
   /**
    * Generates model names from controller name class

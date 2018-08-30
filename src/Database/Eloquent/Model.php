@@ -122,8 +122,7 @@ abstract class Model extends BaseModel {
   public static function checkRequiredClassProperties() {
     foreach (static::$requiredClassProperties as $property) {
       $className = get_class(new static ());
-      $propertyIsSet = !isset ($className::$$property);
-      if ($propertyIsSet === true) {
+      if (!isset ($className::$$property)) {
         throw new \LogicException("Static property $property must be defined on $className model");
       }
     }
