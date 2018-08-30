@@ -43,6 +43,7 @@
 					/** @var Model $modelForRelation */
 					foreach ($modelsForRelation as $modelForRelation) {
 						//Check if object from collection is a model
+                        $modelForRelation->loadRelatedModels();
 						if ($modelForRelation instanceof Model === false) {
 							Model::throwInheritanceException(get_class($modelForRelation));
 						}
