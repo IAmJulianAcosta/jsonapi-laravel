@@ -19,7 +19,7 @@ abstract class GetHandler extends Handler {
    */
   protected function generateSelectQuery() {
     $modelName = $this->fullModelName;
-    return forward_static_call_array([$modelName, 'generateSelectQuery'], [$this->request->getInclude()]);
+    return forward_static_call_array([$modelName, 'generateSelectQuery']);
   }
 
 }
