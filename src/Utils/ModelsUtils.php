@@ -61,9 +61,8 @@ class ModelsUtils {
   /**
    * Returns the models from a relationship.
    *
-   * @param  Model     $model
-   * @param  string    $relationKey
-   *
+   * @param Model      $model
+   * @param string     $relationKey
    * @param Collection $requestAllowedFields
    * @param Collection $models
    *
@@ -134,21 +133,6 @@ class ModelsUtils {
     }
   }
 
-
-  /**
-   * @param Collection $models
-   * @param            $relationModel
-   * @param            $explodedRelationKeys
-   * @param            $requestAllowedFields
-   *
-   * @throws Exception
-   */
-  protected static function loadRelationForModel(Collection &$models, $relationModel, $explodedRelationKeys, $requestAllowedFields) {
-    if (!empty($explodedRelationKeys)) {
-      static::getModelsForRelation($relationModel, implode(".", $explodedRelationKeys), $requestAllowedFields, $models);
-    }
-  }
-
   /**
    * @param string     $relationKey
    * @param Collection $models
@@ -192,6 +176,5 @@ class ModelsUtils {
   protected static function generateKey(Model $model) {
     return sprintf("%s_%s", get_class($model), $model->getKey());
   }
-
 
 }

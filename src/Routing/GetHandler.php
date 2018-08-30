@@ -6,7 +6,6 @@
  * @author  Julian Acosta <iam@julianacosta.me>
  */
 
-
 namespace IAmJulianAcosta\JsonApi\Routing;
 
 use Illuminate\Database\Eloquent\Builder;
