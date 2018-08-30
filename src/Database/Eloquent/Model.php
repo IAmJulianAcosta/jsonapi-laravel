@@ -168,61 +168,6 @@ abstract class Model extends BaseModel {
    *			  RELATIONS LOADING
    * ========================================
    */
-  /**
-   * Load model relations
-   *
-   * @param array $requestedRelations
-   *
-   * @throws Exception
-   */
-  public function loadRelatedModels($requestedRelations = []) {
-    $requestedRelations = empty($requestedRelations) ? static::$defaultExposedRelations : $requestedRelations;
-    $this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
-    /** @var string $relation */
-    foreach (static::$visibleRelations as $relation) {
-      //Explode the relation separated by dots
-      $relationArray = explode(".", $relation);
-
-      //Pass the array to loadModels
-      $this->loadRelatedModel($relationArray);
-    }
-  }
-
-  /**
-   * @param array $relations
-   *
-   * @throws Exception
-   */
-  protected function loadRelatedModel($relations) {
-    //Get the first relation to load
-    $relation = array_shift($relations);
-
-    //Now load it
-    try {
-      if (!$this->relationLoaded($relation)) {
-        $this->load($relation);
-      }
-    }
-    catch(RelationNotFoundException $e) {
-      Exception::throwSingleException('Invalid relationship: ' . $relation, ErrorObject::INVALID_RELATION,
-        Response::HTTP_NOT_IMPLEMENTED, 0, 'The relationship wasn\'t declared in the model, so you need to declare it on order to make this work');
-    }
-
-    // If relations is not empty, load recursively
-    if (!empty($relations)) {
-      /** @var Model $nestedModel */
-      $nestedModel = $this->{$relation};
-      if ($nestedModel instanceof Model) {
-        $nestedModel->loadRelatedModel($relations);
-      }
-      else if ($nestedModel instanceof Collection) {
-        $nestedModels = $nestedModel;
-        foreach ($nestedModels as $nestedModel) {
-          $nestedModel->loadRelatedModel($relations);
-        }
-      }
-    }
-  }
 
   /**
    *
@@ -417,10 +362,11 @@ abstract class Model extends BaseModel {
   }
 
   /**
-   * @param array $exposedRelations
+   * @param array $requestedRelations
    */
-  public function setExposedRelations($exposedRelations) {
-    $this->exposedRelations = array_intersect(static::$visibleRelations, $exposedRelations);
+  public function setExposedRelations($requestedRelations = []) {
+    $requestedRelations = empty($requestedRelations) ? static::$defaultExposedRelations : $requestedRelations;
+    $this->exposedRelations = array_intersect(static::$visibleRelations, $requestedRelations);
   }
 
   /**

@@ -119,9 +119,7 @@ class ResponseGenerator {
     /** @var Collection $modelsCollection */
     $modelsCollection = $this->getModelsAsCollection($models, $links);
 
-    if ($loadRelations === true) {
-      $this->loadRelatedModels($modelsCollection);
-    }
+    $this->setExposedRelationsForModels($modelsCollection);
 
     $included = ModelsUtils::getIncludedModels($modelsCollection, $this->request);
     $resourceObject = $this->generateResourceObject($models, $modelsCollection);
@@ -148,16 +146,14 @@ class ResponseGenerator {
   }
 
   /**
-   * Load related models before generating response
+   * Sets the models exposed relations to be returned in the included object
    *
-   * @param $models
-   *
-   * @throws Exception
+   * @param Collection $models
    */
-  private function loadRelatedModels(Collection $models) {
+  protected function setExposedRelationsForModels(Collection $models) {
     /** @var Model $model */
     foreach ($models as $model) {
-      $model->loadRelatedModels($this->request->getInclude());
+      $model->setExposedRelations($this->request->getInclude());
     }
   }
 

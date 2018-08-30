@@ -47,7 +47,6 @@ class ModelsUtils {
         /** @var Model $modelForRelation */
         foreach ($modelsForRelation as $modelForRelation) {
           //Check if object from collection is a model
-          $modelForRelation->loadRelatedModels();
           if (!$modelForRelation instanceof Model) {
             Model::throwInheritanceException(get_class($modelForRelation));
           }
@@ -90,33 +89,36 @@ class ModelsUtils {
     }
     else if ($relationModels instanceof Collection) {
       /** @var Model $relationModel */
-      foreach ($relationModels as $relationModel) {
-        static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
+
+      $ids = $relationModels->map(function ($item) {
+        return $item->id;
+      })->toArray();
+      $first = $relationModels->first();
+
+      /** @var Model $modelClass */
+      $modelClass = get_class($first);
+
+      $primaryKey = $first->getPrimaryKey();
+      $modelsFromDatabase = forward_static_call_array([$modelClass, 'with'], [$modelClass::$visibleRelations])
+        ->whereIn($primaryKey, $ids)
+        ->get();
+
+      foreach ($modelsFromDatabase as $modelFromDatabase) {
+        static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $modelFromDatabase);
       }
     }
     else {
       /** @var Model $relationModel */
       $relationModel = $relationModels;
-      static::processModelRelation($relationKey, $relationModel, $models, $explodedRelationKeys, $requestAllowedFields);
+
+      self::filterUnwantedKeys($requestAllowedFields, $relationKey, $model);
+      $modelClass = get_class($relationModel);
+      $visibleRelations = $modelClass::$visibleRelations;
+      $modelFromDatabase = $relationModels->fresh($visibleRelations);
+      static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $modelFromDatabase);
     }
 
     return $models;
-  }
-
-  /**
-   * @param            $relationKey
-   * @param Model      $relationModel
-   * @param Collection $models
-   * @param            $explodedRelationKeys
-   * @param Collection $requestAllowedFields
-   *
-   * @throws Exception
-   */
-  protected static function processModelRelation($relationKey, Model $relationModel, Collection &$models,
-    $explodedRelationKeys, Collection $requestAllowedFields
-  ) {
-    static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $relationModel);
-    static::loadRelationForModel($models, $relationModel, $explodedRelationKeys, $requestAllowedFields);
   }
 
   /**
@@ -131,6 +133,7 @@ class ModelsUtils {
         ErrorObject::RELATION_DOESNT_EXISTS_IN_MODEL, Response::HTTP_UNPROCESSABLE_ENTITY);
     }
   }
+
 
   /**
    * @param Collection $models
@@ -167,6 +170,7 @@ class ModelsUtils {
       $models->put($key, $relationModel);
     }
   }
+
 
   /**
    * Removed unwanted keys from attributes. Uses data from request to do it. This should be done in Relation, but
