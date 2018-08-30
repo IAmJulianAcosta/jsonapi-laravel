@@ -176,12 +176,8 @@ abstract class Model extends BaseModel {
    * @throws Exception
    */
   public function loadRelatedModels($requestedRelations = []) {
-    if (empty($requestedRelations)) {
-      $this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
-    }
-    else {
-      $this->exposedRelations = array_intersect(static::$visibleRelations, $requestedRelations);
-    }
+    $requestedRelations = empty($requestedRelations) ? static::$defaultExposedRelations : $requestedRelations;
+    $this->exposedRelations = array_intersect(static::$visibleRelations, static::$defaultExposedRelations);
     /** @var string $relation */
     foreach (static::$visibleRelations as $relation) {
       //Explode the relation separated by dots
@@ -288,15 +284,9 @@ abstract class Model extends BaseModel {
    *		         SELECT QUERY
    * ========================================
    */
-  public static function generateSelectQuery(array $relations = []) {
-    $instance = new static;
-
-    if (empty($relations)) {
-      return $instance->newQuery();
-    }
-    else {
-      return static::with(array_merge($relations, static::$defaultExposedRelations));
-    }
+  public static function generateSelectQuery() {
+    $relationsToQuery = static::$visibleRelations;
+    return static::with($relationsToQuery);
   }
 
   /*
