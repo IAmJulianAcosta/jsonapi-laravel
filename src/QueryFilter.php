@@ -156,8 +156,14 @@ class QueryFilter {
     //First explode the comma separated string into array
     $filterValuesArray = explode(",", $filterValues);
 
-    //The method is the first parameter, so remove it from array
-    $method = array_shift($filterValuesArray);
+    if (count($filterValuesArray) > 1) {
+      //The method is the first parameter, so remove it from array
+      $method = array_shift($filterValuesArray);
+    }
+    else {
+      //Default to where
+      $method = 'where';
+    }
 
     //Add as first parameter the column that is queried
     array_unshift($filterValuesArray, $filterName);
@@ -173,7 +179,7 @@ class QueryFilter {
 
     So the next step is calling the method in $query object, passing the array.
     */
-    $query = call_user_func_array(array($query, $method), $filterValuesArray);
+    $query = call_user_func_array([$query, $method], $filterValuesArray);
   }
 
   /**
