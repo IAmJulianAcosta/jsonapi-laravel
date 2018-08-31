@@ -86,7 +86,7 @@ class ModelsUtils {
     if (is_null($relationModels)) {
       return null;
     }
-    else if ($relationModels instanceof Collection) {
+    else if ($relationModels instanceof Collection && $relationModels->isNotEmpty()) {
       /** @var Model $relationModel */
 
       $ids = $relationModels->map(function ($item) {
