@@ -102,7 +102,7 @@ class ResponseGenerator {
    * @throws \ReflectionException
    */
   private function generateNonCacheableResponse($models) {
-    return $this->generateResponse($models, false);
+    return $this->generateResponse($models);
   }
 
   /**
@@ -113,7 +113,7 @@ class ResponseGenerator {
    * @throws Exception
    * @throws \ReflectionException
    */
-  private function generateResponse($models, $loadRelations = true) {
+  private function generateResponse($models) {
     $links = $this->generateResponseLinks();
 
     /** @var Collection $modelsCollection */
