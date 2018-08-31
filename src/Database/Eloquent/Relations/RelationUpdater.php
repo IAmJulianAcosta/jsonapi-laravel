@@ -39,7 +39,7 @@ class RelationUpdater {
    *
    * @throws Exception
    */
-  public function checkRequiredClassPropertiesupdateRelationships($relationships, $modelsNamespace, $creating) {
+  public function updateRelationships($relationships, $modelsNamespace, $creating) {
     //Iterate all the relationships object
     foreach ($relationships as $relationshipName => $relationship) {
       if ($this->validateRelationship($relationship)) {
