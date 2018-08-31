@@ -106,7 +106,7 @@ class ModelsUtils {
         static::addModelToRelationModelsCollection($relationKey, $models, $requestAllowedFields, $modelFromDatabase);
       }
     }
-    else {
+    else if($relationModels instanceof Model) {
       /** @var Model $relationModel */
       $relationModel = $relationModels;
 
