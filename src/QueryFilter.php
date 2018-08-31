@@ -175,7 +175,7 @@ class QueryFilter {
        */
       $query = call_user_func_array([$query, 'whereHas'], [$filterName, function (Builder $query) use ($method, $filterValuesArray) {
         $primaryKey = $query->getModel()->getKeyName();
-        call_user_func_array([$query, $method], [$primaryKey, '=', $filterValuesArray[1]]);
+        call_user_func_array([$query, $method], [$primaryKey, '=', $filterValuesArray[0]]);
       }]);
     }
     else {
