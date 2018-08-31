@@ -148,38 +148,54 @@ class QueryFilter {
   }
 
   /**
-   * @param $filterValues
-   * @param $filterName
-   * @param $query
+   * @param string $filterValues
+   * @param string $filterName
+   * @param Builder $query
    */
   protected static function parseMethod($filterValues, $filterName, &$query) {
     //First explode the comma separated string into array
     $filterValuesArray = explode(",", $filterValues);
 
+    //The method should be send as the first parameter, we get it from array. If not present, it defaults to 'where'
     if (count($filterValuesArray) > 1) {
-      //The method is the first parameter, so remove it from array
       $method = array_shift($filterValuesArray);
     }
     else {
-      //Default to where
       $method = 'where';
     }
 
-    //Add as first parameter the column that is queried
-    array_unshift($filterValuesArray, $filterName);
+    //We determine if the parameter used is a relation
+    $modelClass = get_class($query->getModel());
+    $isRelation = in_array($filterName, $modelClass::$visibleRelations);
 
-    //If the method requires the second parameter as an array, create a new array with first parameter as
-    //string and second parameter as array
-    if (in_array($method, static::$methodsThatReceiveAnArray)) {
-      $filterValuesArray = [array_shift($filterValuesArray), $filterValuesArray];
+    if ($isRelation) {
+      /*
+       * If is relation we call the method whereHas that will find all the models that has a relationship with the name
+       * provided, and then we filter these records using the provided filter method to compare to
+       */
+      $query = call_user_func_array([$query, 'whereHas'], [$filterName, function (Builder $query) use ($method, $filterValuesArray) {
+        $primaryKey = $query->getModel()->getKeyName();
+        call_user_func_array([$query, $method], [$primaryKey, '=', $filterValuesArray[1]]);
+      }]);
     }
+    else {
+      //Add as first parameter the column that is being queried
+      array_unshift($filterValuesArray, $filterName);
 
-    /*At this moment we have an array with the first parameter with the column, and the other ones with the query
-    operators, something like ['votes', '>=', 100]. The method name is out of the array and stored in $method.
+      //If the method requires the second parameter as an array, create a new array with first parameter as
+      //string and second parameter as array
+      if (in_array($method, static::$methodsThatReceiveAnArray)) {
+        $filterValuesArray = [array_shift($filterValuesArray), $filterValuesArray];
+      }
 
-    So the next step is calling the method in $query object, passing the array.
-    */
-    $query = call_user_func_array([$query, $method], $filterValuesArray);
+      /*
+       * At this moment we have an array with the first parameter with the column, and the other ones with the query
+       * operators, something like ['votes', '>=', 100]. The method name is out of the array and stored in $method.
+       *
+       * So the next step is calling the method in $query object, passing the array.
+       */
+      $query = call_user_func_array([$query, $method], $filterValuesArray);
+    }
   }
 
   /**
