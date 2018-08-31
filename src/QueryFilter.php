@@ -166,7 +166,7 @@ class QueryFilter {
 
     //We determine if the parameter used is a relation
     $modelClass = get_class($query->getModel());
-    $isRelation = in_array($filterName, $modelClass::$visibleRelations);
+    $isRelation = in_array($filterName, $modelClass::$relationsToFilter);
 
     if ($isRelation) {
       /*
