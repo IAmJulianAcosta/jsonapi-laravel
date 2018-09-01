@@ -53,6 +53,7 @@ abstract class Handler {
     $this->generateModelName();
     $this->checkModelInheritance();
     forward_static_call([$this->fullModelName, 'checkRequiredClassProperties']);
+    forward_static_call([$this->fullModelName, 'validateRelationsToFilter']);
     $this->request = $controller->getRequest();
     $this->requestJsonApi = $controller->getRequestJsonApi();
     $this->resourceName = $controller->getResourceName();

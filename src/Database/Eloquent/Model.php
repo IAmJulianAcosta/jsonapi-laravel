@@ -7,6 +7,7 @@ use IAmJulianAcosta\JsonApi\Validation\ValidationException;
 use IAmJulianAcosta\JsonApi\Http\Request;
 use IAmJulianAcosta\JsonApi\Utils\StringUtils;
 use IAmJulianAcosta\JsonApi\Validation\Validator;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Pluralizer;
 use Illuminate\Database\Eloquent\Model as BaseModel;
 use Carbon\Carbon;
@@ -123,13 +124,26 @@ abstract class Model extends BaseModel {
   }
 
   /**
-   * This function check if all configuration variables are set for this model
+   * Check if all configuration variables are set for this model
    */
   public static function checkRequiredClassProperties() {
+    $className = get_class(new static ());
     foreach (static::$requiredClassProperties as $property) {
-      $className = get_class(new static ());
       if (!isset ($className::$$property)) {
         throw new \LogicException("Static property $property must be defined on $className model");
+      }
+    }
+  }
+
+  /**
+   * Check if relationships defined on $relationsToFilter are relationships
+   */
+  public static function validateRelationsToFilter() {
+    $model = new static ();
+    $className = get_class($model);
+    foreach (static::$relationsToFilter as $relation) {
+      if (!method_exists ($className, $relation) || $model->{$relation}() instanceof Relation) {
+        throw new \LogicException("Relationship $relation must be defined on $className model");
       }
     }
   }
