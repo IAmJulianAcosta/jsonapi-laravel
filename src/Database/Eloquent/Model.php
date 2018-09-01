@@ -142,8 +142,11 @@ abstract class Model extends BaseModel {
     $model = new static ();
     $className = get_class($model);
     foreach (static::$relationsToFilter as $relation) {
-      if (!method_exists ($className, $relation) || $model->{$relation}() instanceof Relation) {
+      if (!method_exists ($className, $relation) ) {
         throw new \LogicException("Relationship $relation must be defined on $className model");
+      }
+      else if (!$model->{$relation}() instanceof Relation) {
+        throw new \LogicException("Method $relation on $className model must return a relationship");
       }
     }
   }
