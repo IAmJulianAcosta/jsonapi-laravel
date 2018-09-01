@@ -79,7 +79,7 @@ class TopLevelObject extends ResponseObject {
   private function validatePresence($data, $errors, $meta) {
     if (empty ($data) && empty($errors) && empty ($meta)) {
       Exception::throwSingleException(
-        "Either 'data' 'errors' or 'meta' object must be present on JSON API top level object",
+        "Either 'data', 'errors' or 'meta' object must be present on JSON API top level object",
         ErrorObject::UNKNOWN_ERROR, Response::HTTP_INTERNAL_SERVER_ERROR, 0
       );
     }
@@ -125,17 +125,8 @@ class TopLevelObject extends ResponseObject {
    * @param $key
    *
    * @return mixed|void
-   * @throws Exception
    */
   protected function pushInstanceObjectToReturnArray(&$returnArray, $key) {
-    if ($key === "included") {
-      if (empty($this->data) && empty($this->errors) && empty($this->meta)) {
-        Exception::throwSingleException
-        ("Trying to send included resources, but no data is present",
-          ErrorObject::LOGIC_ERROR, Response::HTTP_UNPROCESSABLE_ENTITY, 0
-        );
-      }
-    }
     parent::pushInstanceObjectToReturnArray($returnArray, $key);
   }
 
