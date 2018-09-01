@@ -15,18 +15,18 @@ use JsonSerializable;
 
 abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializable {
   /**
-   * Adds an object property to array if not empty
+   * Adds an object property to array if not empty (or forced to add)
    *
-   * @param $returnArray
-   * @param $key
-   *
-   * @param $object
+   * @param array                     $returnArray The array that will receive the object
+   * @param string                    $key         Key of the object
+   * @param ResourceObject|Collection $object      Object to be added
+   * @param bool                      $forceAdd    Force add the object even if is empty
    *
    * @return array
    * @see Collection::jsonSerialize()
    */
-  protected function pushToReturnArray(&$returnArray, $key, $object) {
-    if ($this->checkEmpty($object) === false) {
+  protected function pushToReturnArray(&$returnArray, $key, $object, $forceAdd) {
+    if ($forceAdd || !$this->checkEmpty($object)) {
       if ($object instanceof JsonSerializable) {
         $returnArray [$key] = $object->jsonSerialize();
 
@@ -53,15 +53,12 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
   }
 
   /**
-   * @param $returnArray
-   * @param $key
-   *
-   * @return mixed
+   * @param array  $returnArray
+   * @param string $key
+   * @param bool   $forceAddWhenIsEmpty
    */
-  protected function pushInstanceObjectToReturnArray(&$returnArray, $key) {
-    $this->pushToReturnArray($returnArray, $key, $this->{$key});
-
-    return $returnArray;
+  protected function pushInstanceObjectToReturnArray(&$returnArray, $key, $forceAddWhenIsEmpty = false) {
+    $this->pushToReturnArray($returnArray, $key, $this->{$key}, $forceAddWhenIsEmpty);
   }
 
   /**

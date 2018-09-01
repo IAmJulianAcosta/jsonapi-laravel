@@ -102,7 +102,6 @@ class TopLevelObject extends ResponseObject {
 
   /**
    * @return array|mixed
-   * @throws Exception
    */
   public function jsonSerialize() {
     $returnArray = [
@@ -111,23 +110,18 @@ class TopLevelObject extends ResponseObject {
       ]
     ];
 
-    $this->pushInstanceObjectToReturnArray($returnArray, "data");
-    $this->pushInstanceObjectToReturnArray($returnArray, "errors");
+    //At this point we have validated that the response has data or errors, not both
+    if (empty($this->errors)) {
+      $this->pushInstanceObjectToReturnArray($returnArray, "data", true);
+    }
+    else if (empty($this->data)) {
+      $this->pushInstanceObjectToReturnArray($returnArray, "errors");
+    }
     $this->pushInstanceObjectToReturnArray($returnArray, "meta");
     $this->pushInstanceObjectToReturnArray($returnArray, "included");
     $this->pushInstanceObjectToReturnArray($returnArray, "links");
 
     return $returnArray;
-  }
-
-  /**
-   * @param $returnArray
-   * @param $key
-   *
-   * @return mixed|void
-   */
-  protected function pushInstanceObjectToReturnArray(&$returnArray, $key) {
-    parent::pushInstanceObjectToReturnArray($returnArray, $key);
   }
 
   public function isEmpty() {
