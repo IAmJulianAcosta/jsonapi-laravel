@@ -93,13 +93,6 @@ abstract class Model extends BaseModel {
   public static $visibleRelations = [];
 
   /**
-   * This relationships are used in order to determine if a filter parameter is a relation or not
-   *
-   * @var  array
-   */
-  public static $relationsToFilter = [];
-
-  /**
    * Relations that will be returned in the included object of this model. This array is generated in runtime
    *
    * @var array
