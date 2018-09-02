@@ -165,6 +165,7 @@ class ResponseGenerator {
    * @throws Exception
    */
   protected function getModelsAsCollection($models, LinksObject &$links) {
+    $modelsCollection = null;
     if ($models instanceof LengthAwarePaginator) {
       /** @var LengthAwarePaginator $paginator */
       $paginator = $models;
