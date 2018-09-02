@@ -42,15 +42,15 @@ class TopLevelObject extends ResponseObject {
   /**
    * TopLevelObject constructor.
    *
-   * @param ResourceObject|Collection|null $data
-   * @param Collection                     $errors
-   * @param MetaObject|null                $meta
-   * @param Collection|null                $included
-   * @param LinksObject                    $links
+   * @param ResourceObject|Collection $data
+   * @param Collection                $errors
+   * @param MetaObject                $meta
+   * @param Collection                $included
+   * @param LinksObject               $links
    *
    * @throws Exception
    */
-  public function __construct($data = null, $errors = null, MetaObject $meta = null, Collection $included = null,
+  public function __construct($data = null, Collection $errors = null, MetaObject $meta = null, Collection $included = null,
     LinksObject $links = null
   ) {
     $this->data = $data;
