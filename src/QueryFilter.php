@@ -173,10 +173,19 @@ class QueryFilter {
        * If is relation we call the method whereHas that will find all the models that has a relationship with the name
        * provided, and then we filter these records using the provided filter method to compare to
        */
-      $query = call_user_func_array([$query, 'whereHas'], [$filterName, function (Builder $query) use ($method, $filterValuesArray) {
-        $primaryKey = $query->getModel()->getKeyName();
-        call_user_func_array([$query, $method], [$primaryKey, '=', $filterValuesArray[0]]);
-      }]);
+      try {
+        $query = call_user_func_array([$query, 'whereHas'], [$filterName, function (Builder $query) use ($method, $filterValuesArray) {
+          $primaryKey = $query->getModel()->getKeyName();
+          call_user_func_array([$query, $method], [$primaryKey, '=', $filterValuesArray[0]]);
+        }]);
+      }
+        /*
+         * This exception is thrown when the relationship is not present, it comes from Eloquent so is renamed as a
+         * Logic exception so developer can understand that the problem is a missing relationship
+         */
+      catch (\BadMethodCallException $e) {
+        throw new \LogicException("Relationship $filterName must be defined on $modelClass model");
+      }
     }
     else {
       //Add as first parameter the column that is being queried
