@@ -25,7 +25,7 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
    * @return array
    * @see Collection::jsonSerialize()
    */
-  protected function pushToReturnArray(&$returnArray, $key, $object, $forceAdd) {
+  protected function pushToReturnArray(&$returnArray, $key, $object, $forceAdd = false) {
     if ($forceAdd || !$this->checkEmpty($object)) {
       if ($object instanceof JsonSerializable) {
         $returnArray [$key] = $object->jsonSerialize();
