@@ -17,10 +17,10 @@ abstract class ResponseObject extends JSONAPIDataObject implements JsonSerializa
   /**
    * Adds an object property to array if not empty (or forced to add)
    *
-   * @param array                     $returnArray The array that will receive the object
-   * @param string                    $key         Key of the object
-   * @param ResourceObject|Collection $object      Object to be added
-   * @param bool                      $forceAdd    Force add the object even if is empty
+   * @param array  $returnArray The array that will receive the object
+   * @param string $key         Key of the object
+   * @param mixed  $object      Object to be added
+   * @param bool   $forceAdd    Force add the object even if is empty
    *
    * @return array
    * @see Collection::jsonSerialize()
