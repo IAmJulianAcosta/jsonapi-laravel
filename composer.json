@@ -18,12 +18,12 @@
     ],
     "require": {
 	    "php" : "~7.2",
-	    "laravel/framework": "^5.4",
-	    "illuminate/auth": "^5.4",
-        "illuminate/database": "^5.4",
-        "illuminate/http": "^5.4",
-        "illuminate/support": "^5.4",
-		"illuminate/pagination" : "^5.4",
+	    "laravel/framework": "5.6.*",
+	    "illuminate/auth": "5.6.*",
+        "illuminate/database": "5.6.*",
+        "illuminate/http": "5.6.*",
+        "illuminate/support": "5.6.*",
+		"illuminate/pagination" : "5.6.*",
 	    "danielstjules/stringy": "^2.3"
     },
     "require-dev": {
