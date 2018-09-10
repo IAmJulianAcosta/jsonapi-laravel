@@ -33,11 +33,16 @@ abstract class Model extends BaseModel {
   static protected $cacheTime = 0;
 
   /**
-   * Represents the
+   * Represents the foreign keys of the model
    *
    * @var array
    */
   protected $foreignKeys = [];
+
+  /**
+   * All the fields ending with '_id' that aren't foreign keys
+   */
+  protected static $notForeignKeys = [];
 
   /**
    * Validation error messages
@@ -61,8 +66,7 @@ abstract class Model extends BaseModel {
   protected static $nonSortableColumns;
 
   /**
-   * Has this model been changed inother ways than those
-   * specified by the request
+   * Has this model been changed inother ways than those specified by the request
    *
    * Ref: http://jsonapi.org/format/#crud-updating-responses-200
    *
@@ -308,7 +312,7 @@ abstract class Model extends BaseModel {
    * @return array
    */
   public function getHidden() {
-    return array_merge(parent::getHidden(), $this->getForeignKeys());
+    return array_diff(array_merge(parent::getHidden(), $this->getForeignKeys()), static::$notForeignKeys);
   }
 
   /**
